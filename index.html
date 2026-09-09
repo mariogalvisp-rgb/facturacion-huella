@@ -6,180 +6,253 @@
     <title>Facturación Huella de Origen</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Lato', sans-serif; background-color: #f5f1ed; color: #2C1810; }
-        .container { max-width: 1300px; margin: 0 auto; padding: 20px; }
-        header { background: #2C1810; color: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: center; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 15px; }
+        header { background: linear-gradient(135deg, #2C1810 0%, #4a2c1a 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 25px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        header .logo { width: 70px; height: 70px; margin: 0 auto 10px; }
         header h1 { font-family: 'Playfair Display', serif; font-size: 2em; margin-bottom: 5px; }
-        header .slogan { font-size: 0.9em; opacity: 0.9; letter-spacing: 2px; }
-        nav { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
-        nav button { flex: 1; min-width: 140px; padding: 12px 20px; background: #2C1810; color: white; border: none; border-radius: 6px; cursor: pointer; font-family: 'Lato'; font-weight: bold; transition: all 0.3s; }
-        nav button.active { background: #D4A574; color: #2C1810; }
-        nav button:hover { transform: translateY(-2px); }
+        header .slogan { font-size: 0.9em; opacity: 0.95; letter-spacing: 1px; font-style: italic; }
+        nav { display: flex; gap: 8px; margin-bottom: 25px; flex-wrap: wrap; }
+        nav button { flex: 1; min-width: 120px; padding: 12px 16px; background: #2C1810; color: white; border: none; border-radius: 6px; cursor: pointer; font-family: 'Lato'; font-weight: bold; transition: all 0.3s; font-size: 0.95em; }
+        nav button.active { background: #D4A574; color: #2C1810; box-shadow: 0 4px 12px rgba(212,165,116,0.4); }
+        nav button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
         .section { display: none; }
         .section.active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #D4A574; }
-        .card h3 { color: #2C1810; font-family: 'Playfair Display'; margin-bottom: 10px; font-size: 1.3em; }
+        .card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid #D4A574; margin-bottom: 15px; }
+        .card h2, .card h3 { color: #2C1810; font-family: 'Playfair Display'; margin-bottom: 15px; }
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #2C1810; font-weight: bold; font-size: 0.9em; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: 'Lato'; font-size: 1em; }
-        input:focus, select:focus { outline: none; border-color: #D4A574; box-shadow: 0 0 8px rgba(212,165,116,0.3); }
-        button.btn { padding: 12px 24px; background: #D4A574; color: #2C1810; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-family: 'Lato'; transition: all 0.3s; }
-        button.btn:hover { background: #2C1810; color: #D4A574; }
-        button.btn-small { padding: 6px 12px; font-size: 0.85em; }
+        label { display: block; margin-bottom: 6px; color: #2C1810; font-weight: bold; font-size: 0.9em; }
+        input, select, textarea { width: 100%; padding: 11px; border: 1px solid #ddd; border-radius: 6px; font-family: 'Lato'; font-size: 1em; transition: border-color 0.3s; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #D4A574; box-shadow: 0 0 8px rgba(212,165,116,0.3); background: #fffdf9; }
+        button.btn { padding: 12px 24px; background: #D4A574; color: #2C1810; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-family: 'Lato'; transition: all 0.3s; font-size: 0.95em; }
+        button.btn:hover { background: #2C1810; color: #D4A574; transform: translateY(-2px); }
+        button.btn-small { padding: 8px 16px; font-size: 0.85em; }
         button.btn-delete { background: #c94a3a; color: white; }
-        button.btn-whatsapp { background: #25D366; color: white; }
-        table { width: 100%; border-collapse: collapse; background: white; }
+        button.btn-delete:hover { background: #a83a2a; }
+        button.btn-secondary { background: #999; color: white; }
+        button.btn-secondary:hover { background: #777; }
+        table { width: 100%; border-collapse: collapse; background: white; margin-top: 15px; }
         thead { background: #2C1810; color: white; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 0.95em; }
         tbody tr:hover { background: #f9f6f3; }
         .badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold; }
-        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; overflow: auto; }
+        .badge-success { background: #28a745; color: white; }
+        .badge-warning { background: #ffc107; color: #000; }
+        .badge-danger { background: #dc3545; color: white; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; overflow: auto; }
         .modal.active { display: flex; }
-        .modal-content { background: white; padding: 30px; border-radius: 8px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; margin: auto; }
+        .modal-content { background: white; padding: 25px; border-radius: 8px; max-width: 90%; width: 100%; max-height: 85vh; overflow-y: auto; margin: auto; position: relative; }
         .close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 2em; cursor: pointer; color: #999; }
+        .close-btn:hover { color: #333; }
         .modal-header { font-family: 'Playfair Display'; font-size: 1.5em; color: #2C1810; margin-bottom: 20px; border-bottom: 2px solid #D4A574; padding-bottom: 10px; }
-        .modal-list { max-height: 500px; overflow-y: auto; }
-        .modal-item { padding: 12px; border-bottom: 1px solid #eee; cursor: auto; transition: background 0.2s; border-left: 4px solid transparent; display: flex; align-items: center; gap: 12px; }
+        .modal-list { max-height: 400px; overflow-y: auto; }
+        .modal-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s; border-left: 4px solid transparent; }
         .modal-item:hover { background: #f9f6f3; border-left-color: #D4A574; }
         .modal-item strong { display: block; color: #2C1810; }
         .modal-item small { color: #999; font-size: 0.85em; }
-        .modal-item input { cursor: text; }
-        .producto-cantidad-input { width: 70px !important; padding: 8px !important; text-align: center; font-weight: bold; border: 2px solid #D4A574 !important; }
-        .invoice { background: white; padding: 40px; border-radius: 8px; }
-        .info-box { background: #f9f6f3; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #D4A574; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
-        .estado-pedidoenpreparación { background: #ffc107; color: #000; }
-        .estado-enviado { background: #17a2b8; color: white; }
-        .estado-entregado { background: #28a745; color: white; }
-        .estado-solicitudedepago { background: #fd7e14; color: white; }
-        .estado-pagado { background: #20c997; color: white; }
-        .estado-completado { background: #6f42c1; color: white; }
-        
-        @media print {
-            body { background: white; }
-            .container { max-width: 100%; padding: 0; }
-            nav, header, .btn, .modal, .close-btn, button { display: none !important; }
-            .invoice { box-shadow: none; border: none; padding: 0; }
-            .section { display: none; }
-            .print-section { display: block !important; }
-        }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .info-box { background: #f9f6f3; padding: 15px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid #D4A574; font-size: 0.95em; }
+        .info-box p { margin-bottom: 8px; }
+        .success-msg { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 12px; border-radius: 6px; margin-bottom: 15px; }
+        .error-msg { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 12px; border-radius: 6px; margin-bottom: 15px; }
+        .search-result { background: #e8f5e9; border-left: 4px solid #4caf50; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
+        .search-result.not-found { background: #fde8f0; border-left-color: #c94a3a; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        @media print { body { background: white; } .container { max-width: 100%; padding: 0; } nav, header, button, .modal, .close-btn, .footer { display: none !important; } .section { display: none; } #pdf-content { display: block !important; margin: 0; padding: 20px; } }
+        #pdf-content { display: none; background: white; padding: 40px; }
+        .pdf-logo { width: 60px; height: auto; margin: 0 auto 15px; display: block; }
+        .pdf-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #D4A574; padding-bottom: 20px; }
+        .pdf-header h1 { font-family: 'Playfair Display'; font-size: 1.8em; color: #2C1810; margin-bottom: 5px; }
+        .pdf-header .tagline { color: #D4A574; font-size: 0.95em; font-style: italic; margin-bottom: 10px; }
+        .pdf-contact { font-size: 0.9em; color: #666; }
+        .pdf-content { margin: 30px 0; }
+        .pdf-section { margin-bottom: 25px; }
+        .pdf-section h3 { border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 12px; color: #2C1810; font-size: 1.1em; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        .pdf-table thead { background: #2C1810; color: white; }
+        .pdf-table th, .pdf-table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; font-size: 0.9em; }
+        .pdf-table tbody tr:nth-child(even) { background: #f9f6f3; }
+        .pdf-total { text-align: right; font-size: 1.1em; margin-top: 20px; padding-top: 15px; border-top: 2px solid #D4A574; }
+        .pdf-total h2 { color: #D4A574; font-size: 1.4em; margin-top: 10px; }
+        .pdf-footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; font-size: 0.85em; color: #999; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>☕ HUELLA DE ORIGEN</h1>
-            <div class="slogan">DESDE EL ORIGEN, DEJA HUELLA</div>
+            <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA2ADYAAD/4QCMRXhpZgAATU0AKgAAAAgABQESAAMAAAABAAEAAAEaAAUAAAABAAAASgEbAAUAAAABAAAAUgEoAAMAAAABAAIAAIdpAAQAAAABAAAAWgAAAAAAAADYAAAAAQAAANgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAABQqgAw" alt="Huella de Origen" class="logo" style="width: 80px; height: auto;">
+            <h1>HUELLA DE ORIGEN</h1>
+            <div class="slogan">El origen que puedes sentir en cada taza</div>
         </header>
 
         <nav>
-            <button class="nav-btn active" data-section="clientes">👥 Clientes</button>
+            <button class="nav-btn active" data-section="buscar-cliente">🔍 Buscar</button>
+            <button class="nav-btn" data-section="nuevo-cliente">➕ Nuevo Cliente</button>
             <button class="nav-btn" data-section="nueva-factura">📄 Nueva Factura</button>
-            <button class="nav-btn" data-section="facturas">📋 Facturas</button>
-            <button class="nav-btn" data-section="seguimiento">📍 Seguimiento</button>
+            <button class="nav-btn" data-section="facturas">📋 Historial</button>
             <button class="nav-btn" data-section="reportes">📊 Reportes</button>
         </nav>
 
-        <!-- CLIENTES -->
-        <section id="clientes" class="section active">
-            <h2>Clientes Pendientes de Pago</h2>
-            <div class="grid-3" id="clientesList"></div>
+        <!-- BUSCAR CLIENTE -->
+        <section id="buscar-cliente" class="section active">
+            <div class="card">
+                <h2>🔍 Buscar Cliente</h2>
+                <p style="margin-bottom: 15px; color: #666;">Ingresa el número de celular para encontrar un cliente existente</p>
+                <div class="form-group">
+                    <label>Número de Celular</label>
+                    <input type="tel" id="searchPhone" placeholder="ej: 3117682407 o +57 311 768 2407" onkeyup="buscarClientePorCelular()">
+                </div>
+                <div id="searchResult"></div>
+            </div>
+        </section>
+
+        <!-- NUEVO CLIENTE -->
+        <section id="nuevo-cliente" class="section">
+            <div class="card">
+                <h2>➕ Crear Nuevo Cliente</h2>
+                <form id="newClientForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Nombre Completo *</label>
+                            <input type="text" id="clientNombre" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Celular *</label>
+                            <input type="tel" id="clientCelular" placeholder="3117682407" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Correo Electrónico</label>
+                            <input type="email" id="clientEmail">
+                        </div>
+                        <div class="form-group">
+                            <label>Ciudad</label>
+                            <input type="text" id="clientCiudad" placeholder="ej: Bogotá, Medellín">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Dirección</label>
+                        <textarea id="clientDireccion" rows="2" placeholder="Calle 123 #45..."></textarea>
+                    </div>
+                    <button type="submit" class="btn" style="width: 100%; margin-top: 15px;">✅ Guardar Cliente</button>
+                </form>
+                <div id="clientFormMessage"></div>
+            </div>
         </section>
 
         <!-- NUEVA FACTURA -->
         <section id="nueva-factura" class="section">
             <div class="card">
-                <h2>Nueva Factura</h2>
+                <h2>📄 Nueva Factura</h2>
+                
                 <div class="form-group">
-                    <label>👤 Cliente: <strong id="clienteSeleccionadoText">Seleccionar</strong></label>
-                    <button class="btn" onclick="openClientModal()">🔍 Buscar Cliente</button>
-                </div>
-
-                <div class="info-box" id="datosCiente" style="display: none;">
-                    <p><strong>Nombre:</strong> <span id="infoNombre"></span></p>
-                    <p><strong>Comercial:</strong> <span id="infoComercial"></span></p>
-                    <div class="form-group">
-                        <label>📱 WhatsApp (ej: +573001234567)</label>
-                        <input type="text" id="telefonoCliente" placeholder="+57..." onchange="guardarTelefonoCliente()">
-                    </div>
-                    <div class="form-group">
-                        <label>📍 Dirección</label>
-                        <input type="text" id="direccionCliente" placeholder="Calle 123 #45..." onchange="guardarDireccionCliente()">
-                    </div>
-                    <div class="form-group">
-                        <label>🏘️ Ciudad</label>
-                        <input type="text" id="ciudadCliente" placeholder="Bogotá, Medellín, etc..." onchange="guardarCiudadCliente()">
+                    <label>Buscar Cliente por Celular *</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="tel" id="facturaClientPhone" placeholder="3117682407" style="flex: 1;">
+                        <button type="button" class="btn" onclick="buscarClienteParaFactura()" style="width: auto;">🔍 Buscar</button>
                     </div>
                 </div>
 
-                <div id="productosFactura" style="display: none;">
-                    <button class="btn" onclick="openProductModal()">➕ Agregar Productos</button>
-                    <table id="itemsTable" style="margin-top: 20px;">
-                        <thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th></tr></thead>
+                <div id="clienteSeleccionadoBox" style="display: none; margin-bottom: 20px;">
+                    <div class="info-box">
+                        <p><strong>Cliente:</strong> <span id="facturaClientNombre"></span></p>
+                        <p><strong>Celular:</strong> <span id="facturaClientCelular"></span></p>
+                        <p><strong>Correo:</strong> <span id="facturaClientEmail"></span></p>
+                        <p><strong>Dirección:</strong> <span id="facturaClientDireccion"></span></p>
+                        <p><strong>Ciudad:</strong> <span id="facturaClientCiudad"></span></p>
+                        <button type="button" class="btn-secondary btn-small" onclick="cambiarCliente()">Cambiar Cliente</button>
+                    </div>
+                </div>
+
+                <div id="facturaFormBox" style="display: none;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Vendedor / Canal de Venta *</label>
+                            <select id="vendedor" required>
+                                <option value="">-- Seleccionar --</option>
+                                <option value="Felipe">Felipe</option>
+                                <option value="Mario">Mario</option>
+                                <option value="Juana">Juana</option>
+                                <option value="Angela">Angela</option>
+                                <option value="Página web">Página web</option>
+                                <option value="MercadoLibre">MercadoLibre</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Estado de Pago *</label>
+                            <select id="estadoPago" required>
+                                <option value="Pendiente">Pendiente</option>
+                                <option value="Pagada">Pagada</option>
+                                <option value="Parcial">Parcial</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-top: 25px; margin-bottom: 15px;">Productos</h3>
+                    <button type="button" class="btn btn-small" onclick="openProductModal()" style="margin-bottom: 15px;">➕ Agregar Productos</button>
+
+                    <table id="itemsTable">
+                        <thead><tr><th>Producto</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th><th></th></tr></thead>
                         <tbody id="itemsBody"></tbody>
                     </table>
-                    <div style="margin-top: 20px; text-align: right;">
-                        <div class="form-group" style="width: 200px; margin-left: auto;">
-                            <label>Descuento %</label>
-                            <input type="number" id="descuentoPorcentaje" value="0" onchange="calcularTotales()">
+
+                    <div style="margin-top: 20px; background: #f9f6f3; padding: 15px; border-radius: 6px;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Descuento (%)</label>
+                                <input type="number" id="descuentoPorcentaje" value="0" min="0" max="100" onchange="calcularTotales()">
+                            </div>
+                            <div class="form-group">
+                                <label>Envío ($)</label>
+                                <input type="number" id="envio" value="0" min="0" onchange="calcularTotales()">
+                            </div>
                         </div>
-                        <div class="form-group" style="width: 200px; margin-left: auto;">
-                            <label>Envío ($)</label>
-                            <input type="number" id="envio" value="0" onchange="calcularTotales()">
-                        </div>
+                    </div>
+
+                    <div style="text-align: right; margin-top: 20px; padding: 20px; background: white; border-radius: 6px; border: 2px solid #D4A574;">
                         <p><strong>Subtotal:</strong> $<span id="subtotalDisplay">0</span></p>
                         <p id="descuentoDisplay" style="color: #28a745;"></p>
                         <p id="envioDisplay"></p>
-                        <h3 style="color: #D4A574; font-size: 1.3em; margin-top: 10px;">TOTAL: $<span id="totalDisplay">0</span></h3>
-                        <button class="btn" style="margin-top: 20px; width: 100%;" onclick="guardarFactura()">✅ Guardar Factura</button>
+                        <h3 style="color: #D4A574; font-size: 1.5em; margin-top: 10px;">TOTAL: $<span id="totalDisplay">0</span></h3>
                     </div>
+
+                    <button type="button" class="btn" style="width: 100%; margin-top: 20px; font-size: 1.05em; padding: 15px;" onclick="guardarFactura()">✅ Guardar Factura</button>
                 </div>
             </div>
         </section>
 
         <!-- FACTURAS -->
         <section id="facturas" class="section">
-            <h2>Todas las Facturas</h2>
-            <table>
-                <thead><tr><th>ID</th><th>Cliente</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
-                <tbody id="facturasTable"></tbody>
-            </table>
-        </section>
-
-        <!-- SEGUIMIENTO -->
-        <section id="seguimiento" class="section">
-            <h2>Seguimiento de Pedidos</h2>
-            <div id="seguimientoList"></div>
+            <div class="card">
+                <h2>📋 Historial de Facturas</h2>
+                <table>
+                    <thead><tr><th>Factura</th><th>Cliente</th><th>Fecha</th><th>Vendedor</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+                    <tbody id="facturasTable"></tbody>
+                </table>
+            </div>
         </section>
 
         <!-- REPORTES -->
         <section id="reportes" class="section">
-            <h2>Reportes</h2>
             <div class="grid-2">
                 <div class="card">
-                    <h3>📊 Resumen</h3>
+                    <h3>📊 Resumen de Ventas</h3>
                     <p><strong>Total Ventas:</strong> $<span id="totalVentas">0</span></p>
-                    <p><strong>Facturas:</strong> <span id="totalFacturas">0</span></p>
+                    <p><strong>Total Facturas:</strong> <span id="totalFacturas">0</span></p>
                     <p><strong>Pagadas:</strong> $<span id="totalPagadas">0</span></p>
-                    <p><strong>Por Pagar:</strong> $<span id="totalPorPagar">0</span></p>
-                    <button class="btn" style="margin-top: 20px; width: 100%;" onclick="descargarReporte()">📥 Descargar Excel</button>
+                    <p><strong>Pendientes:</strong> $<span id="totalPendientes">0</span></p>
+                    <button class="btn" style="width: 100%; margin-top: 20px;" onclick="descargarReporte()">📥 Descargar Excel</button>
+                </div>
+
+                <div class="card">
+                    <h3>👥 Vendedores / Canales</h3>
+                    <div id="ventasPorVendedor"></div>
                 </div>
             </div>
         </section>
-    </div>
-
-    <!-- MODAL CLIENTES -->
-    <div id="clienteModal" class="modal">
-        <div class="modal-content">
-            <button class="close-btn" onclick="closeClientModal()">✕</button>
-            <div class="modal-header">Seleccionar Cliente</div>
-            <input type="text" id="clienteSearch" placeholder="Buscar cliente..." style="margin-bottom: 15px;">
-            <div class="modal-list" id="clientesList"></div>
-        </div>
     </div>
 
     <!-- MODAL PRODUCTOS -->
@@ -189,78 +262,15 @@
             <div class="modal-header">Seleccionar Productos</div>
             <input type="text" id="productSearch" placeholder="Buscar producto..." style="margin-bottom: 15px;">
             <div class="modal-list" id="productsList"></div>
-            <button class="btn" style="margin-top: 15px; width: 100%;" onclick="agregarAlCarrito()">🛒 Agregar al Carrito</button>
+            <button class="btn" style="width: 100%; margin-top: 15px;" onclick="agregarProductosSeleccionados()">🛒 Agregar al Carrito</button>
         </div>
     </div>
 
-    <!-- MODAL FACTURA -->
-    <div id="invoiceModal" class="modal">
-        <div class="modal-content">
-            <button class="close-btn" onclick="closeInvoiceModal()">✕</button>
-            <div id="invoiceContent"></div>
-            <div style="margin-top: 20px; display: flex; gap: 10px;">
-                <button class="btn btn-whatsapp" style="flex: 1;" onclick="enviarWhatsAppFactura()">💬 WhatsApp</button>
-                <button class="btn" style="flex: 1;" onclick="window.print()">🖨️ Imprimir</button>
-                <button class="btn btn-delete" style="flex: 1;" onclick="eliminarFacturaActual()">🗑️ Eliminar</button>
-            </div>
-        </div>
-    </div>
+    <!-- CONTENEDOR PDF OCULTO -->
+    <div id="pdf-content"></div>
 
     <script>
         // DATOS
-        const clientes = [
-            { id: 1, nombre: 'CAMILO GUTIERREZ', comercial: 'A-ANGELA' },
-            { id: 2, nombre: 'SANDRA DONCEL', comercial: 'A-MARIO' },
-            { id: 3, nombre: 'RICARDO TORRES', comercial: 'A-ANGELA' },
-            { id: 4, nombre: 'MONICA OSORNO', comercial: 'B-ANGELA' },
-            { id: 5, nombre: 'VIVIAN JARAMILLO', comercial: 'A-MARIO' },
-            { id: 6, nombre: 'JUAN CARLOS LEON', comercial: 'B-VICTOR' },
-            { id: 7, nombre: 'MARTHA RODRIGUEZ', comercial: 'A-ANGELA' },
-            { id: 8, nombre: 'FERNANDO GARCIA', comercial: 'A-MARIO' },
-            { id: 9, nombre: 'PATRICIA MORENO', comercial: 'B-ANGELA' },
-            { id: 10, nombre: 'LUIS HERNANDEZ', comercial: 'A-VICTOR' },
-            { id: 11, nombre: 'CLAUDIA SILVA', comercial: 'A-ANGELA' },
-            { id: 12, nombre: 'PEDRO RAMIREZ', comercial: 'B-MARIO' },
-            { id: 13, nombre: 'ELENA FUENTES', comercial: 'A-VICTOR' },
-            { id: 14, nombre: 'MIGUEL ANGEL', comercial: 'A-ANGELA' },
-            { id: 15, nombre: 'ROSA MARIA', comercial: 'B-VICTOR' },
-            { id: 16, nombre: 'ANDRES VARGAS', comercial: 'A-MARIO' },
-            { id: 17, nombre: 'ISABEL CASTILLO', comercial: 'A-ANGELA' },
-            { id: 18, nombre: 'DAVID ORTIZ', comercial: 'B-ANGELA' },
-            { id: 19, nombre: 'CAROLINA LOPEZ', comercial: 'A-VICTOR' },
-            { id: 20, nombre: 'FRANCISCO JAVIER', comercial: 'A-MARIO' },
-            { id: 21, nombre: 'ALEJANDRA REYES', comercial: 'B-ANGELA' },
-            { id: 22, nombre: 'ROBERTO CRUZ', comercial: 'A-VICTOR' },
-            { id: 23, nombre: 'VALENTINA SOTO', comercial: 'A-ANGELA' },
-            { id: 24, nombre: 'SERGIO ROMERO', comercial: 'A-MARIO' },
-            { id: 25, nombre: 'NATALIA PENA', comercial: 'B-VICTOR' },
-            { id: 26, nombre: 'CARLOS MORENO', comercial: 'B-ANGELA' },
-            { id: 27, nombre: 'DIEGO TORRES', comercial: 'A-MARIO' },
-            { id: 28, nombre: 'GABRIELA FLORES', comercial: 'A-ANGELA' },
-            { id: 29, nombre: 'ALEJANDRO GUTIERREZ', comercial: 'B-VICTOR' },
-            { id: 30, nombre: 'VERONICA DELGADO', comercial: 'A-VICTOR' },
-            { id: 31, nombre: 'JOAQUIN MEDINA', comercial: 'A-MARIO' },
-            { id: 32, nombre: 'FERNANDA BLANCO', comercial: 'B-ANGELA' },
-            { id: 33, nombre: 'RICARDO NAVARRO', comercial: 'A-ANGELA' },
-            { id: 34, nombre: 'ADRIANA CORTEZ', comercial: 'A-VICTOR' },
-            { id: 35, nombre: 'MANUEL CASTRO', comercial: 'B-MARIO' },
-            { id: 36, nombre: 'SUSANA VEGA', comercial: 'A-ANGELA' },
-            { id: 37, nombre: 'PABLO HERRERA', comercial: 'A-MARIO' },
-            { id: 38, nombre: 'LAURA JIMENEZ', comercial: 'B-VICTOR' },
-            { id: 39, nombre: 'VICTOR SANZ', comercial: 'A-VICTOR' },
-            { id: 40, nombre: 'MONICA RAMOS', comercial: 'A-ANGELA' },
-            { id: 41, nombre: 'LUIS FERNANDO', comercial: 'B-MARIO' },
-            { id: 42, nombre: 'PATRICIA GUTZ', comercial: 'A-VICTOR' },
-            { id: 43, nombre: 'RAFAEL NUNEZ', comercial: 'A-MARIO' },
-            { id: 44, nombre: 'ELENA GUZMAN', comercial: 'B-ANGELA' },
-            { id: 45, nombre: 'JUAN PABLO', comercial: 'A-ANGELA' },
-            { id: 46, nombre: 'ADRIANA MOLINA', comercial: 'A-VICTOR' },
-            { id: 47, nombre: 'CARLOS BELLO', comercial: 'B-MARIO' },
-            { id: 48, nombre: 'ROSA PAULA', comercial: 'A-ANGELA' },
-            { id: 49, nombre: 'SERGIO ABAD', comercial: 'A-MARIO' },
-            { id: 50, nombre: 'GABRIELA RUIZ', comercial: 'B-VICTOR' }
-        ];
-
         const productos = [
             { id: 1, nombre: 'COLIBRI HONEY 454GM MOLIDO/GRANO', precio: 50900 },
             { id: 2, nombre: 'CHIVITO DE PARAMO 454GM', precio: 46900 },
@@ -284,198 +294,184 @@
             { id: 20, nombre: 'FILTROS PAPEL CHEMEX', precio: 18000 }
         ];
 
-        // VARIABLES GLOBALES
+        // VARIABLES
+        let clientes = [];
         let facturas = [];
         let clienteSeleccionado = null;
-        let facturaActual = null;
         let itemsTemp = [];
         let productosSeleccionados = {};
 
         // INICIALIZAR
         function init() {
-            cargarFacturas();
-            renderClientesNoPagados();
+            cargarDatos();
+            renderProductos();
             renderFacturas();
-            renderSeguimiento();
-            renderReporte();
+            renderReportes();
         }
 
-        // GUARDAR/CARGAR FACTURAS
-        function cargarFacturas() {
-            const guardadas = localStorage.getItem('facturas');
-            if (guardadas) {
-                try {
-                    facturas = JSON.parse(guardadas);
-                } catch (e) {
-                    console.error('Error cargando facturas:', e);
-                    facturas = [];
-                }
-            }
+        function cargarDatos() {
+            const clientesGuardados = localStorage.getItem('clientes_huella');
+            const facturasGuardadas = localStorage.getItem('facturas_huella');
+            if (clientesGuardados) clientes = JSON.parse(clientesGuardados);
+            if (facturasGuardadas) facturas = JSON.parse(facturasGuardadas);
         }
 
-        function guardarFacturasLocalStorage() {
-            localStorage.setItem('facturas', JSON.stringify(facturas));
+        function guardarDatos() {
+            localStorage.setItem('clientes_huella', JSON.stringify(clientes));
+            localStorage.setItem('facturas_huella', JSON.stringify(facturas));
         }
 
-        // CLIENTES
-        function renderClientesNoPagados() {
-            const list = document.getElementById('clientesList');
-            const pendientes = clientes.filter(c => facturas.some(f => f.cliente.id === c.id && f.estado !== 'Completado'));
-            
-            if (pendientes.length === 0) {
-                list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #999;">✅ ¡Todos completados!</div>';
+        // NORMALIZAR TELÉFONO
+        function normalizarTelefono(tel) {
+            let limpio = tel.replace(/\D/g, '');
+            if (limpio.startsWith('57')) limpio = limpio.substring(2);
+            if (limpio.length === 10) limpio = '3' + limpio;
+            return limpio;
+        }
+
+        // CREAR CLIENTE
+        document.getElementById('newClientForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('clientNombre').value.trim();
+            const celular = normalizarTelefono(document.getElementById('clientCelular').value);
+            const email = document.getElementById('clientEmail').value.trim();
+            const ciudad = document.getElementById('clientCiudad').value.trim();
+            const direccion = document.getElementById('clientDireccion').value.trim();
+
+            if (!nombre || !celular || celular.length < 10) {
+                mostrarMensaje('clientFormMessage', '❌ Completa nombre y celular válido', 'error');
                 return;
             }
-            
-            list.innerHTML = pendientes.map(c => {
-                const fact = facturas.filter(f => f.cliente.id === c.id).pop();
-                const dirGuardada = localStorage.getItem(`direccion_${c.id}`) || 'No registrada';
-                const ciudadGuardada = localStorage.getItem(`ciudad_${c.id}`) || '';
-                const direccionCompleta = ciudadGuardada ? `${dirGuardada}, ${ciudadGuardada}` : dirGuardada;
-                const factId = fact?.id || '';
-                return `<div class="card" style="cursor: pointer;" onclick="irAEditarFactura('${factId}')">
-                    <h3>${c.nombre}</h3>
-                    <p><strong>Comercial:</strong> ${c.comercial}</p>
-                    <p><strong>📍 Dirección:</strong> ${direccionCompleta}</p>
-                    <p><strong>Factura:</strong> ${fact?.id || 'N/A'}</p>
-                    <p><strong>Total:</strong> $${Math.round(fact?.total || 0).toLocaleString('es-ES')}</p>
-                    <p><strong>Estado:</strong> <span class="badge estado-${fact?.estado.toLowerCase().replace(/\s+/g,'')}">${fact?.estado || 'N/A'}</span></p>
-                </div>`;
-            }).join('');
+
+            const existe = clientes.find(c => normalizarTelefono(c.celular) === celular);
+            if (existe) {
+                mostrarMensaje('clientFormMessage', '❌ Este cliente ya existe', 'error');
+                return;
+            }
+
+            const nuevoCliente = { id: Date.now(), nombre, celular, email, ciudad, direccion };
+            clientes.push(nuevoCliente);
+            guardarDatos();
+            mostrarMensaje('clientFormMessage', `✅ Cliente "${nombre}" creado exitosamente`, 'success');
+            this.reset();
+            setTimeout(() => {
+                document.querySelector('[data-section="buscar-cliente"]').click();
+                document.getElementById('searchPhone').value = celular;
+                buscarClientePorCelular();
+            }, 1500);
+        });
+
+        // BUSCAR CLIENTE POR CELULAR
+        function buscarClientePorCelular() {
+            const phone = normalizarTelefono(document.getElementById('searchPhone').value);
+            const resultBox = document.getElementById('searchResult');
+            resultBox.innerHTML = '';
+
+            if (phone.length < 10) {
+                resultBox.innerHTML = '<p style="color: #999;">Ingresa un número válido</p>';
+                return;
+            }
+
+            const cliente = clientes.find(c => normalizarTelefono(c.celular) === phone);
+
+            if (cliente) {
+                resultBox.innerHTML = `
+                    <div class="search-result">
+                        <h3 style="color: #4caf50; margin-bottom: 10px;">✓ Cliente encontrado</h3>
+                        <p><strong>Nombre:</strong> ${cliente.nombre}</p>
+                        <p><strong>Celular:</strong> ${cliente.celular}</p>
+                        <p><strong>Email:</strong> ${cliente.email || 'No registrado'}</p>
+                        <p><strong>Dirección:</strong> ${cliente.direccion || 'No registrada'}</p>
+                        <p><strong>Ciudad:</strong> ${cliente.ciudad || 'No registrada'}</p>
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <button class="btn" style="flex: 1;" onclick="irAFacturaConCliente(${cliente.id})">📄 Nueva Factura</button>
+                            <button class="btn-secondary" style="flex: 1; padding: 12px;" onclick="abrirEditarCliente(${cliente.id})">✏️ Editar</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                resultBox.innerHTML = `
+                    <div class="search-result not-found">
+                        <h3 style="color: #c94a3a; margin-bottom: 10px;">✗ Cliente no encontrado</h3>
+                        <p>No existe un cliente con este número.</p>
+                        <button class="btn" style="width: 100%; margin-top: 15px;" onclick="document.querySelector('[data-section=\"nuevo-cliente\"]').click(); document.getElementById('clientCelular').value = '${document.getElementById('searchPhone').value}';">➕ Crear Nuevo Cliente</button>
+                    </div>
+                `;
+            }
         }
 
-        // NAVEGAR A EDITAR FACTURA
-        function irAEditarFactura(facturaId) {
-            const fact = facturas.find(f => f.id === facturaId);
-            if (!fact) return;
+        function buscarClienteParaFactura() {
+            const phone = normalizarTelefono(document.getElementById('facturaClientPhone').value);
+            const cliente = clientes.find(c => normalizarTelefono(c.celular) === phone);
 
-            clienteSeleccionado = fact.cliente;
-            itemsTemp = JSON.parse(JSON.stringify(fact.items));
-            
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.querySelector('[data-section="nueva-factura"]').classList.add('active');
-            document.getElementById('nueva-factura').classList.add('active');
+            if (!cliente) {
+                alert('❌ Cliente no encontrado');
+                return;
+            }
 
-            document.getElementById('clienteSeleccionadoText').textContent = fact.cliente.nombre;
-            document.getElementById('infoNombre').textContent = fact.cliente.nombre;
-            document.getElementById('infoComercial').textContent = fact.cliente.comercial;
-            document.getElementById('datosCiente').style.display = 'block';
-            document.getElementById('productosFactura').style.display = 'block';
-
-            const telGuardado = localStorage.getItem(`telefono_${fact.cliente.id}`);
-            const dirGuardada = localStorage.getItem(`direccion_${fact.cliente.id}`);
-            const ciudadGuardada = localStorage.getItem(`ciudad_${fact.cliente.id}`);
-            document.getElementById('telefonoCliente').value = telGuardado || '';
-            document.getElementById('direccionCliente').value = dirGuardada || '';
-            document.getElementById('ciudadCliente').value = ciudadGuardada || '';
-            
-            document.getElementById('descuentoPorcentaje').value = fact.descuentoPorcentaje || '0';
-            document.getElementById('envio').value = fact.envio || '0';
-
-            renderItemsFactura();
-            calcularTotales();
-        }
-
-        // TELÉFONO, DIRECCIÓN Y CIUDAD
-        function guardarTelefonoCliente() {
-            if (!clienteSeleccionado) return;
-            const telefono = document.getElementById('telefonoCliente').value;
-            if (telefono) localStorage.setItem(`telefono_${clienteSeleccionado.id}`, telefono);
-        }
-
-        function guardarDireccionCliente() {
-            if (!clienteSeleccionado) return;
-            const direccion = document.getElementById('direccionCliente').value;
-            if (direccion) localStorage.setItem(`direccion_${clienteSeleccionado.id}`, direccion);
-        }
-
-        function guardarCiudadCliente() {
-            if (!clienteSeleccionado) return;
-            const ciudad = document.getElementById('ciudadCliente').value;
-            if (ciudad) localStorage.setItem(`ciudad_${clienteSeleccionado.id}`, ciudad);
-        }
-
-        // CLIENTE MODAL
-        function openClientModal() {
-            document.getElementById('clienteModal').classList.add('active');
-            renderClientesList();
-            document.getElementById('clienteSearch').addEventListener('input', renderClientesList);
-        }
-
-        function closeClientModal() {
-            document.getElementById('clienteModal').classList.remove('active');
-        }
-
-        function renderClientesList() {
-            const search = document.getElementById('clienteSearch').value.toLowerCase();
-            const filtered = clientes.filter(c => c.nombre.toLowerCase().includes(search));
-            const list = document.getElementById('clientesList');
-            list.innerHTML = filtered.map(c => `<div class="modal-item" onclick="seleccionarCliente(${c.id})" style="cursor: pointer;">
-                <div>
-                    <strong>${c.nombre}</strong>
-                    <small>${c.comercial}</small>
-                </div>
-            </div>`).join('');
-        }
-
-        function seleccionarCliente(id) {
-            const c = clientes.find(x => x.id === id);
-            if (!c) return;
-
-            clienteSeleccionado = c;
+            clienteSeleccionado = cliente;
             itemsTemp = [];
-            productosSeleccionados = {};
-            
-            document.getElementById('clienteSeleccionadoText').textContent = c.nombre;
-            document.getElementById('datosCiente').style.display = 'block';
-            document.getElementById('productosFactura').style.display = 'block';
-            document.getElementById('infoNombre').textContent = c.nombre;
-            document.getElementById('infoComercial').textContent = c.comercial;
-
-            const telGuardado = localStorage.getItem(`telefono_${c.id}`);
-            const dirGuardada = localStorage.getItem(`direccion_${c.id}`);
-            const ciudadGuardada = localStorage.getItem(`ciudad_${c.id}`);
-            document.getElementById('telefonoCliente').value = telGuardado || '';
-            document.getElementById('direccionCliente').value = dirGuardada || '';
-            document.getElementById('ciudadCliente').value = ciudadGuardada || '';
-
+            document.getElementById('facturaClientNombre').textContent = cliente.nombre;
+            document.getElementById('facturaClientCelular').textContent = cliente.celular;
+            document.getElementById('facturaClientEmail').textContent = cliente.email || 'No registrado';
+            document.getElementById('facturaClientDireccion').textContent = cliente.direccion || 'No registrada';
+            document.getElementById('facturaClientCiudad').textContent = cliente.ciudad || 'No registrada';
+            document.getElementById('clienteSeleccionadoBox').style.display = 'block';
+            document.getElementById('facturaFormBox').style.display = 'block';
+            document.getElementById('itemsBody').innerHTML = '';
             document.getElementById('descuentoPorcentaje').value = '0';
             document.getElementById('envio').value = '0';
-            renderItemsFactura();
             calcularTotales();
-            closeClientModal();
         }
 
-        // PRODUCTOS MODAL
+        function cambiarCliente() {
+            clienteSeleccionado = null;
+            itemsTemp = [];
+            document.getElementById('facturaClientPhone').value = '';
+            document.getElementById('clienteSeleccionadoBox').style.display = 'none';
+            document.getElementById('facturaFormBox').style.display = 'none';
+        }
+
+        function irAFacturaConCliente(clienteId) {
+            const cliente = clientes.find(c => c.id === clienteId);
+            if (cliente) {
+                clienteSeleccionado = cliente;
+                document.querySelector('[data-section="nueva-factura"]').click();
+                document.getElementById('facturaClientPhone').value = cliente.celular;
+                buscarClienteParaFactura();
+            }
+        }
+
+        // MODAL PRODUCTOS
         function openProductModal() {
             if (!clienteSeleccionado) {
-                alert('Selecciona un cliente primero');
+                alert('❌ Selecciona un cliente primero');
                 return;
             }
             document.getElementById('productModal').classList.add('active');
-            renderProductsList();
-            document.getElementById('productSearch').addEventListener('input', renderProductsList);
+            renderProductos();
         }
 
         function closeProductModal() {
             document.getElementById('productModal').classList.remove('active');
         }
 
-        function renderProductsList() {
-            const search = document.getElementById('productSearch').value.toLowerCase();
-            const filtered = productos.filter(p => p.nombre.toLowerCase().includes(search));
+        function renderProductos() {
             const list = document.getElementById('productsList');
-            list.innerHTML = filtered.map(p => `<div class="modal-item">
-                <input type="number" class="producto-cantidad-input" id="cant_${p.id}" min="0" value="0" placeholder="Cant">
-                <div style="flex: 1;">
-                    <strong>${p.nombre}</strong>
-                    <small>$${p.precio.toLocaleString('es-ES')}</small>
+            const search = (document.getElementById('productSearch')?.value || '').toLowerCase();
+            const filtered = productos.filter(p => p.nombre.toLowerCase().includes(search));
+            list.innerHTML = filtered.map(p => `
+                <div class="modal-item">
+                    <input type="number" id="cant_${p.id}" min="0" value="0" placeholder="Cantidad" style="width: 80px; padding: 8px; margin-right: 10px;">
+                    <div style="flex: 1;">
+                        <strong>${p.nombre}</strong>
+                        <small>$${p.precio.toLocaleString('es-ES')}</small>
+                    </div>
                 </div>
-            </div>`).join('');
+            `).join('');
         }
 
-        function agregarAlCarrito() {
+        function agregarProductosSeleccionados() {
             productos.forEach(p => {
                 const cant = parseInt(document.getElementById(`cant_${p.id}`)?.value || 0);
                 if (cant > 0) {
@@ -483,13 +479,7 @@
                     if (existe) {
                         existe.cantidad = cant;
                     } else {
-                        itemsTemp.push({
-                            id: p.id,
-                            nombre: p.nombre,
-                            precio: p.precio,
-                            cantidad: cant,
-                            subtotal: p.precio * cant
-                        });
+                        itemsTemp.push({ id: p.id, nombre: p.nombre, precio: p.precio, cantidad: cant });
                     }
                 }
             });
@@ -504,18 +494,15 @@
                 <td>${item.nombre}</td>
                 <td><input type="number" value="${item.cantidad}" min="1" onchange="actualizarCantidad(${i}, this.value)" style="width: 60px;"></td>
                 <td>$${item.precio.toLocaleString('es-ES')}</td>
-                <td>$${Math.round(item.precio * (parseInt(document.querySelector(\`input[onchange*='actualizarCantidad'\]\`) || {value: item.cantidad}).value || item.cantidad)).toLocaleString('es-ES')}</td>
-                <td><button class="btn-small btn-delete" onclick="eliminarItem(${i})">🗑️</button></td>
+                <td>$${Math.round(item.precio * item.cantidad).toLocaleString('es-ES')}</td>
+                <td><button class="btn-delete btn-small" onclick="eliminarItem(${i})">🗑️</button></td>
             </tr>`).join('');
         }
 
         function actualizarCantidad(i, cant) {
-            if (itemsTemp[i]) {
-                itemsTemp[i].cantidad = parseInt(cant) || 0;
-                itemsTemp[i].subtotal = itemsTemp[i].precio * itemsTemp[i].cantidad;
-            }
-            renderItemsFactura();
+            itemsTemp[i].cantidad = Math.max(1, parseInt(cant) || 1);
             calcularTotales();
+            renderItemsFactura();
         }
 
         function eliminarItem(i) {
@@ -538,18 +525,10 @@
         }
 
         function guardarFactura() {
-            if (!clienteSeleccionado) {
-                alert('Selecciona un cliente');
+            if (!clienteSeleccionado || itemsTemp.length === 0 || !document.getElementById('vendedor').value) {
+                alert('❌ Completa: Cliente, Productos y Vendedor');
                 return;
             }
-            if (itemsTemp.length === 0) {
-                alert('Agrega productos');
-                return;
-            }
-
-            guardarDireccionCliente();
-            guardarTelefonoCliente();
-            guardarCiudadCliente();
 
             const subtotal = itemsTemp.reduce((s, i) => s + (i.precio * i.cantidad), 0);
             const desc = parseInt(document.getElementById('descuentoPorcentaje').value) || 0;
@@ -558,7 +537,7 @@
             const total = subtotal - descMonto + env;
 
             const factura = {
-                id: 'FAC-' + Date.now(),
+                id: 'HO-' + String(facturas.length + 1).padStart(5, '0'),
                 cliente: clienteSeleccionado,
                 items: itemsTemp,
                 subtotal: subtotal,
@@ -566,227 +545,171 @@
                 descuentoMonto: descMonto,
                 envio: env,
                 total: total,
-                estado: 'Pedido en preparación',
+                vendedor: document.getElementById('vendedor').value,
+                estado: document.getElementById('estadoPago').value,
                 fecha: new Date().toLocaleDateString('es-ES')
             };
 
             facturas.push(factura);
-            guardarFacturasLocalStorage();
+            guardarDatos();
 
             alert('✅ Factura guardada: ' + factura.id);
+            generarPDF(factura);
             
             clienteSeleccionado = null;
             itemsTemp = [];
-            document.getElementById('clienteSeleccionadoText').textContent = 'Seleccionar';
-            document.getElementById('datosCiente').style.display = 'none';
-            document.getElementById('productosFactura').style.display = 'none';
-            document.getElementById('itemsBody').innerHTML = '';
-
-            renderClientesNoPagados();
+            cambiarCliente();
             renderFacturas();
-            renderSeguimiento();
-            renderReporte();
+            renderReportes();
+        }
+
+        // PDF
+        function generarPDF(factura) {
+            const pdfDiv = document.getElementById('pdf-content');
+            pdfDiv.innerHTML = `
+                <div style="font-family: 'Arial', sans-serif; color: #2C1810; max-width: 600px; margin: 0 auto;">
+                    <div style="text-align: center; border-bottom: 2px solid #D4A574; padding-bottom: 20px; margin-bottom: 25px;">
+                        <div style="margin-bottom: 15px;">
+                            <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA2ADYAAD/4QCMRXhpZgAATU0AKgAAAAgABQESAAMAAAABAAEAAAEaAAUAAAABAAAASgEbAAUAAAABAAAAUgEoAAMAAAABAAIAAIdpAAQAAAABAAAAWgAAAAAAAADYAAAAAQAAANgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAABQqgAw" style="width: 70px; height: auto;">
+                        </div>
+                        <h1 style="font-size: 1.8em; margin: 0 0 5px 0;">HUELLA DE ORIGEN</h1>
+                        <p style="color: #D4A574; font-style: italic; margin: 0 0 10px 0;">El origen que puedes sentir en cada taza</p>
+                        <p style="font-size: 0.9em; margin: 5px 0;">📱 311 768 2407 | ✉️ comercial@huelladeorigen.com</p>
+                    </div>
+
+                    <h2 style="text-align: center; font-size: 1.5em; margin-bottom: 20px;">FACTURA</h2>
+                    <p style="text-align: center; font-size: 1.2em; color: #D4A574; margin-bottom: 25px;"><strong>${factura.id}</strong></p>
+
+                    <table style="width: 100%; margin-bottom: 20px; border-collapse: collapse;">
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 8px 0;"><strong>Fecha:</strong> ${factura.fecha}</td>
+                            <td style="text-align: right; padding: 8px 0;"><strong>Vendedor:</strong> ${factura.vendedor}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 8px 0;"><strong>Cliente:</strong> ${factura.cliente.nombre}</td>
+                            <td style="text-align: right; padding: 8px 0;"><strong>Estado:</strong> ${factura.estado}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0;"><strong>Celular:</strong> ${factura.cliente.celular}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0;"><strong>Dirección:</strong> ${factura.cliente.direccion || 'N/A'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0;"><strong>Ciudad:</strong> ${factura.cliente.ciudad || 'N/A'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0;"><strong>Email:</strong> ${factura.cliente.email || 'N/A'}</td>
+                        </tr>
+                    </table>
+
+                    <table style="width: 100%; margin: 25px 0; border-collapse: collapse;">
+                        <thead style="background: #2C1810; color: white;">
+                            <tr>
+                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Producto</th>
+                                <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Cant.</th>
+                                <th style="padding: 10px; text-align: right; border: 1px solid #ddd;">P. Unit.</th>
+                                <th style="padding: 10px; text-align: right; border: 1px solid #ddd;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${factura.items.map(item => `<tr>
+                                <td style="padding: 10px; border: 1px solid #ddd; border-left: none; border-right: none;">${item.nombre}</td>
+                                <td style="padding: 10px; text-align: center; border: 1px solid #ddd; border-left: none; border-right: none;">${item.cantidad}</td>
+                                <td style="padding: 10px; text-align: right; border: 1px solid #ddd; border-left: none; border-right: none;">$${item.precio.toLocaleString('es-ES')}</td>
+                                <td style="padding: 10px; text-align: right; border: 1px solid #ddd; border-left: none; border-right: none;">$${Math.round(item.precio * item.cantidad).toLocaleString('es-ES')}</td>
+                            </tr>`).join('')}
+                        </tbody>
+                    </table>
+
+                    <div style="text-align: right; margin: 25px 0; padding: 15px; background: #f9f6f3; border-radius: 6px;">
+                        <p style="margin: 5px 0;"><strong>Subtotal:</strong> $${factura.subtotal.toLocaleString('es-ES')}</p>
+                        ${factura.descuentoMonto > 0 ? `<p style="margin: 5px 0; color: #28a745;"><strong>Descuento (${factura.descuentoPorcentaje}%):</strong> -$${Math.round(factura.descuentoMonto).toLocaleString('es-ES')}</p>` : ''}
+                        ${factura.envio > 0 ? `<p style="margin: 5px 0;"><strong>Envío:</strong> +$${Math.round(factura.envio).toLocaleString('es-ES')}</p>` : ''}
+                        <p style="margin-top: 10px; font-size: 1.2em; color: #D4A574; border-top: 2px solid #D4A574; padding-top: 10px;"><strong>TOTAL: $${Math.round(factura.total).toLocaleString('es-ES')}</strong></p>
+                    </div>
+
+                    <div style="text-align: center; padding-top: 20px; border-top: 1px solid #ddd; font-size: 0.85em; color: #999;">
+                        <p>Gracias por tu compra</p>
+                        <p>¡Disfruta nuestro café de especialidad!</p>
+                    </div>
+                </div>
+            `;
+
+            const element = pdfDiv.innerHTML;
+            const opt = {
+                margin: 10,
+                filename: `Factura_${factura.id}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+            };
+
+            html2pdf().set(opt).from(element).save();
         }
 
         // FACTURAS
         function renderFacturas() {
             const tbody = document.getElementById('facturasTable');
             tbody.innerHTML = facturas.map(f => `<tr>
-                <td>${f.id}</td>
+                <td><strong>${f.id}</strong></td>
                 <td>${f.cliente.nombre}</td>
+                <td>${f.fecha}</td>
+                <td>${f.vendedor}</td>
                 <td>$${Math.round(f.total).toLocaleString('es-ES')}</td>
-                <td><span class="badge estado-${f.estado.toLowerCase().replace(/\s+/g,'')}">${f.estado}</span></td>
-                <td><button class="btn-small" onclick="mostrarFactura('${f.id}')">Ver</button></td>
+                <td><span class="badge ${f.estado === 'Pagada' ? 'badge-success' : f.estado === 'Pendiente' ? 'badge-danger' : 'badge-warning'}">${f.estado}</span></td>
+                <td><button class="btn-small" onclick="verFactura(${facturas.indexOf(f)})">Ver</button></td>
             </tr>`).join('');
         }
 
-        function mostrarFactura(id) {
-            const fact = facturas.find(f => f.id === id);
-            if (!fact) return;
-            facturaActual = fact;
-            mostrarInvoice(fact);
-        }
-
-        function mostrarInvoice(fac) {
-            const cont = document.getElementById('invoiceContent');
-            let itemsHTML = fac.items.map(i => `<tr>
-                <td>${i.nombre}</td>
-                <td>${i.cantidad}</td>
-                <td>$${i.precio.toLocaleString('es-ES')}</td>
-                <td>$${Math.round(i.precio * i.cantidad).toLocaleString('es-ES')}</td>
-            </tr>`).join('');
-
-            const dirGuardada = localStorage.getItem(`direccion_${fac.cliente.id}`) || '';
-            const ciudadGuardada = localStorage.getItem(`ciudad_${fac.cliente.id}`) || '';
-            const direccionCompleta = ciudadGuardada ? `${dirGuardada}, ${ciudadGuardada}` : dirGuardada;
-
-            cont.innerHTML = `<div class="invoice">
-                <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #D4A574; padding-bottom: 15px;">
-                    <h1 style="font-family: 'Playfair Display'; font-size: 2em; color: #2C1810; margin-bottom: 5px;">☕ HUELLA DE ORIGEN</h1>
-                    <p style="color: #D4A574; font-size: 1.1em; letter-spacing: 2px;">DESDE EL ORIGEN, DEJA HUELLA</p>
-                </div>
-
-                <h2 style="text-align: center; font-family: 'Playfair Display'; font-size: 1.8em; margin-bottom: 20px;">FACTURA</h2>
-                <p style="text-align: center; color: #D4A574; font-size: 1.1em; margin-bottom: 20px;">${fac.id}</p>
-
-                <table style="margin-bottom: 20px;">
-                    <tr><td style="border: none;"><strong>Cliente:</strong> ${fac.cliente.nombre}</td><td style="border: none; text-align: right;"><strong>Fecha:</strong> ${fac.fecha}</td></tr>
-                    <tr><td style="border: none;"><strong>Comercial:</strong> ${fac.cliente.comercial}</td><td style="border: none; text-align: right;"><strong>Estado:</strong> ${fac.estado}</td></tr>
-                    ${direccionCompleta ? `<tr><td style="border: none;"><strong>📍 Dirección:</strong> ${direccionCompleta}</td><td style="border: none;"></td></tr>` : ''}
-                </table>
-
-                <table style="margin: 20px 0;">
-                    <thead><tr><th>Producto</th><th>Cant</th><th>Precio</th><th>Subtotal</th></tr></thead>
-                    <tbody>${itemsHTML}</tbody>
-                </table>
-
-                <div style="text-align: right;">
-                    <p><strong>Subtotal:</strong> $${fac.subtotal.toLocaleString('es-ES')}</p>
-                    ${fac.descuentoMonto > 0 ? `<p style="color: #28a745;"><strong>Descuento (${fac.descuentoPorcentaje}%):</strong> -$${Math.round(fac.descuentoMonto).toLocaleString('es-ES')}</p>` : ''}
-                    ${fac.envio > 0 ? `<p><strong>Envío:</strong> +$${Math.round(fac.envio).toLocaleString('es-ES')}</p>` : ''}
-                    <h3 style="color: #D4A574; font-size: 1.3em; margin-top: 10px;">TOTAL: $${Math.round(fac.total).toLocaleString('es-ES')}</h3>
-                </div>
-            </div>`;
-
-            document.getElementById('invoiceModal').classList.add('active');
-        }
-
-        function closeInvoiceModal() {
-            document.getElementById('invoiceModal').classList.remove('active');
-        }
-
-        function enviarWhatsAppFactura() {
-            if (!facturaActual) return;
-            const telGuardado = localStorage.getItem(`telefono_${facturaActual.cliente.id}`);
-            if (!telGuardado) {
-                alert('❌ No hay teléfono guardado. Agrega el teléfono en Nueva Factura.');
-                return;
-            }
-
-            const mensaje = `*☕ HUELLA DE ORIGEN - Factura*\n\n📄 *Factura:* ${facturaActual.id}\n👤 *Cliente:* ${facturaActual.cliente.nombre}\n💰 *Total:* $${Math.round(facturaActual.total).toLocaleString('es-ES')}\n📦 *Estado:* ${facturaActual.estado}\n\n*DESDE EL ORIGEN, DEJA HUELLA* 🌿`;
-            const numeroLimpio = telGuardado.replace(/\D/g, '');
-            window.open(`https://wa.me/${numeroLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
-        }
-
-        function eliminarFacturaActual() {
-            if (!facturaActual || !confirm('¿Eliminar esta factura?')) return;
-            facturas = facturas.filter(f => f.id !== facturaActual.id);
-            guardarFacturasLocalStorage();
-            closeInvoiceModal();
-            renderFacturas();
-            renderClientesNoPagados();
-            renderSeguimiento();
-            renderReporte();
-        }
-
-        // SEGUIMIENTO
-        function renderSeguimiento() {
-            const list = document.getElementById('seguimientoList');
-            if (facturas.length === 0) {
-                list.innerHTML = '<p>No hay facturas</p>';
-                return;
-            }
-
-            list.innerHTML = facturas.map((f, idx) => `<div class="card" style="margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <h3>${f.cliente.nombre}</h3>
-                        <p><strong>${f.id}</strong> - $${Math.round(f.total).toLocaleString('es-ES')}</p>
-                    </div>
-                    <div>
-                        <select onchange="actualizarEstado('${f.id}', this.value)">
-                            <option value="${f.estado}" selected>${f.estado}</option>
-                            <option value="Pedido en preparación">Pedido en preparación</option>
-                            <option value="Enviado">Enviado</option>
-                            <option value="Entregado">Entregado</option>
-                            <option value="Solicitud de pago">Solicitud de pago</option>
-                            <option value="Pagado">Pagado</option>
-                            <option value="Completado">Completado</option>
-                        </select>
-                    </div>
-                </div>
-            </div>`).join('');
-        }
-
-        function actualizarEstado(id, est) {
-            const f = facturas.find(x => x.id === id);
-            if (f) {
-                f.estado = est;
-                guardarFacturasLocalStorage();
-                renderSeguimiento();
-                renderFacturas();
-                renderClientesNoPagados();
-                renderReporte();
-                enviarActualizacionWhatsApp(f, est);
-            }
-        }
-
-        function enviarActualizacionWhatsApp(factura, nuevoEstado) {
-            const telefonoGuardado = localStorage.getItem(`telefono_${factura.cliente.id}`);
-            if (!telefonoGuardado) return;
-
-            let mensaje = `*☕ HUELLA DE ORIGEN - Actualización de Pedido*\n\n📄 *Factura:* ${factura.id}\n`;
-
-            switch(nuevoEstado) {
-                case 'Pedido en preparación':
-                    mensaje += `📦 *Estado:* ☕ Pedido en preparación\n\n¡Tu pedido está siendo preparado con los mejores granos de café!`;
-                    break;
-                case 'Enviado':
-                    mensaje += `📦 *Estado:* 🚚 Enviado\n\n¡Tu pedido está en camino! Pronto estará en tus manos.`;
-                    break;
-                case 'Entregado':
-                    mensaje += `📦 *Estado:* ✅ Entregado\n\n¡Tu pedido ha sido entregado! Esperamos que disfrutes nuestro café. ☕`;
-                    break;
-                case 'Solicitud de pago':
-                    mensaje += `📦 *Estado:* 💳 Solicitud de pago\n\n💰 *Total:* $${Math.round(factura.total).toLocaleString('es-ES')}\n🔑 *Llave pago:* 0090417769\n\nPuedes realizar el pago a través de transferencia bancaria.`;
-                    break;
-                case 'Pagado':
-                    mensaje += `📦 *Estado:* ✓ Pago recibido\n\n¡Gracias por tu pago! Apreciamos tu confianza.`;
-                    break;
-                case 'Completado':
-                    mensaje += `📦 *Estado:* 🎉 Pedido completado\n\n¡Gracias por tu compra! No dudes en volver pronto.`;
-                    break;
-                default:
-                    mensaje += `📦 *Estado:* ${nuevoEstado}`;
-            }
-
-            mensaje += `\n\n*DESDE EL ORIGEN, DEJA HUELLA* 🌿`;
-
-            const numeroLimpio = telefonoGuardado.replace(/\D/g, '');
-            window.open(`https://wa.me/${numeroLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
+        function verFactura(idx) {
+            generarPDF(facturas[idx]);
         }
 
         // REPORTES
-        function renderReporte() {
+        function renderReportes() {
             const tot = facturas.reduce((s, f) => s + f.total, 0);
-            const pag = facturas.filter(f => f.estado === 'Pagado' || f.estado === 'Completado').reduce((s, f) => s + f.total, 0);
+            const pag = facturas.filter(f => f.estado === 'Pagada').reduce((s, f) => s + f.total, 0);
+            const pend = tot - pag;
+
             document.getElementById('totalVentas').textContent = Math.round(tot).toLocaleString('es-ES');
             document.getElementById('totalFacturas').textContent = facturas.length;
             document.getElementById('totalPagadas').textContent = Math.round(pag).toLocaleString('es-ES');
-            document.getElementById('totalPorPagar').textContent = Math.round(tot - pag).toLocaleString('es-ES');
+            document.getElementById('totalPendientes').textContent = Math.round(pend).toLocaleString('es-ES');
+
+            const ventasVendedor = {};
+            facturas.forEach(f => {
+                ventasVendedor[f.vendedor] = (ventasVendedor[f.vendedor] || 0) + f.total;
+            });
+
+            document.getElementById('ventasPorVendedor').innerHTML = Object.entries(ventasVendedor)
+                .map(([v, t]) => `<p><strong>${v}:</strong> $${Math.round(t).toLocaleString('es-ES')}</p>`)
+                .join('');
         }
 
         function descargarReporte() {
-            if (facturas.length === 0) {
-                alert('No hay facturas');
-                return;
-            }
-
-            const ws = XLSX.utils.json_to_sheet(facturas.map(f => ({
-                'ID': f.id,
+            const datos = facturas.map(f => ({
+                'Factura': f.id,
                 'Cliente': f.cliente.nombre,
-                'Comercial': f.cliente.comercial,
                 'Fecha': f.fecha,
+                'Vendedor': f.vendedor,
                 'Subtotal': f.subtotal,
                 'Descuento': f.descuentoMonto,
                 'Envío': f.envio,
                 'Total': f.total,
                 'Estado': f.estado
-            })));
+            }));
 
+            const ws = XLSX.utils.json_to_sheet(datos);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Facturas');
             XLSX.writeFile(wb, 'Facturas_Huella_Origen.xlsx');
+        }
+
+        function mostrarMensaje(elementId, mensaje, tipo) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = `<div class="${tipo === 'error' ? 'error-msg' : 'success-msg'}">${mensaje}</div>`;
+            setTimeout(() => { el.innerHTML = ''; }, 4000);
         }
 
         // NAVEGACIÓN
@@ -797,10 +720,8 @@
                 e.target.classList.add('active');
                 const sec = e.target.dataset.section;
                 document.getElementById(sec).classList.add('active');
-                if (sec === 'clientes') renderClientesNoPagados();
                 if (sec === 'facturas') renderFacturas();
-                if (sec === 'seguimiento') renderSeguimiento();
-                if (sec === 'reportes') renderReporte();
+                if (sec === 'reportes') renderReportes();
             });
         });
 
