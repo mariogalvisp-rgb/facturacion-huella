@@ -98,11 +98,18 @@
         </nav>
 
         <!-- CLIENTES -->
-        <section id="clientes" class="section">
+        <section id="clientes" class="section active">
             <div class="card">
                 <h2>👥 Base de Clientes</h2>
                 <p style="margin-bottom: 15px; color: #666;">Todos tus clientes registrados</p>
-                <input type="text" id="clientesSearch" placeholder="Buscar por nombre o celular..." style="margin-bottom: 15px;">
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <input type="text" id="clientesSearch" placeholder="🔍 Busca por nombre o celular..." style="flex: 1; font-size: 1em;">
+                    <button class="btn" onclick="limpiarBuscador()" style="width: auto;">Limpiar</button>
+                </div>
+
+                <div id="clientesResultado"></div>
+                
                 <table>
                     <thead><tr><th>Nombre</th><th>Celular</th><th>Dirección</th><th>Ciudad</th><th>Email</th><th>Facturas</th><th>Acciones</th></tr></thead>
                     <tbody id="clientesTable"></tbody>
@@ -162,9 +169,10 @@
                 <h2>📄 Nueva Factura</h2>
                 
                 <div class="form-group">
-                    <label>Buscar Cliente por Celular *</label>
+                    <label>Buscar Cliente (por nombre o celular) *</label>
                     <div style="display: flex; gap: 10px;">
-                        <input type="tel" id="facturaClientPhone" placeholder="3117682407" style="flex: 1;">
+                        <input type="text" id="facturaClientPhone" placeholder="ej: Carlos Pérez o 3117682407" style="flex: 1;">
+                        <button type="button" class="btn" onclick="abrirModalClientes()" style="width: auto;">📋 Ver Lista</button>
                         <button type="button" class="btn" onclick="buscarClienteParaFactura()" style="width: auto;">🔍 Buscar</button>
                     </div>
                 </div>
@@ -268,6 +276,16 @@
         </section>
     </div>
 
+    <!-- MODAL SELECCIONAR CLIENTE -->
+    <div id="clienteModalFactura" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="cerrarModalClientes()">✕</button>
+            <div class="modal-header">Seleccionar Cliente</div>
+            <input type="text" id="clienteModalSearch" placeholder="🔍 Busca por nombre o celular..." style="margin-bottom: 15px;">
+            <div class="modal-list" id="clienteModalList"></div>
+        </div>
+    </div>
+
     <!-- MODAL PRODUCTOS -->
     <div id="productModal" class="modal">
         <div class="modal-content">
@@ -324,6 +342,7 @@
             
             // Listener para buscar clientes
             document.getElementById('clientesSearch')?.addEventListener('input', renderClientesTable);
+            document.getElementById('clienteModalSearch')?.addEventListener('input', renderClienteModalList);
             document.getElementById('productSearch')?.addEventListener('input', renderProductos);
         }
 
@@ -369,7 +388,52 @@
             }).join('');
         }
 
-        // NORMALIZAR TELÉFONO
+        function limpiarBuscador() {
+            document.getElementById('clientesSearch').value = '';
+            renderClientesTable();
+        }
+
+        function abrirModalClientes() {
+            document.getElementById('clienteModalFactura').classList.add('active');
+            renderClienteModalList();
+        }
+
+        function cerrarModalClientes() {
+            document.getElementById('clienteModalFactura').classList.remove('active');
+        }
+
+        function renderClienteModalList() {
+            const search = (document.getElementById('clienteModalSearch')?.value || '').toLowerCase();
+            const list = document.getElementById('clienteModalList');
+
+            const filtrados = clientes.filter(c => 
+                c.nombre.toLowerCase().includes(search) || 
+                normalizarTelefono(c.celular).includes(search.replace(/\D/g, ''))
+            );
+
+            if (filtrados.length === 0) {
+                list.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No hay clientes</div>';
+                return;
+            }
+
+            list.innerHTML = filtrados.map(c => `
+                <div class="modal-item" onclick="seleccionarClienteDelModal(${c.id})">
+                    <div style="flex: 1;">
+                        <strong>${c.nombre}</strong>
+                        <small>${c.celular} | ${c.ciudad || '—'}</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function seleccionarClienteDelModal(clienteId) {
+            const cliente = clientes.find(c => c.id === clienteId);
+            if (cliente) {
+                document.getElementById('facturaClientPhone').value = cliente.nombre;
+                cargarClienteEnFactura(cliente);
+                cerrarModalClientes();
+            }
+        }
         function normalizarTelefono(tel) {
             let limpio = tel.replace(/\D/g, '');
             if (limpio.startsWith('57')) limpio = limpio.substring(2);
