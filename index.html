@@ -618,7 +618,19 @@
         }
 
         function closeInvoiceModal() { document.getElementById('invoiceModal').classList.remove('active'); }
-        function enviarWhatsApp() { alert('WhatsApp: ' + facturaActual.id); }
+        function enviarWhatsApp() { 
+            if (!facturaActual) return;
+            
+            const mensaje = `Hola! 📄\n\nTe envío la factura de tu pedido:\n\nFactura: ${facturaActual.id}\nFecha: ${facturaActual.fecha}\nTotal: $${Math.round(facturaActual.total).toLocaleString('es-ES')}\n\n☕ Huella de Origen\nDESDe EL ORIGEN, DEJA HUELLA`;
+            
+            // Copiar al portapapeles
+            navigator.clipboard.writeText(mensaje).then(() => {
+                alert('✅ Mensaje copiado!\n\nAhora:\n1. Abre WhatsApp\n2. Busca el cliente\n3. Pega el mensaje (Ctrl+V o Command+V)');
+            }).catch(() => {
+                // Si no se puede copiar, mostrar el mensaje
+                alert('📱 Mensaje:\n\n' + mensaje);
+            });
+        }
         function imprimirFactura() { window.print(); }
         function eliminarFactura() {
             if (!facturaActual) return;
