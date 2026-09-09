@@ -90,15 +90,28 @@
         </header>
 
         <nav>
-            <button class="nav-btn active" data-section="buscar-cliente">🔍 Buscar</button>
+            <button class="nav-btn active" data-section="clientes">👥 Clientes</button>
             <button class="nav-btn" data-section="nuevo-cliente">➕ Nuevo Cliente</button>
             <button class="nav-btn" data-section="nueva-factura">📄 Nueva Factura</button>
             <button class="nav-btn" data-section="facturas">📋 Historial</button>
             <button class="nav-btn" data-section="reportes">📊 Reportes</button>
         </nav>
 
+        <!-- CLIENTES -->
+        <section id="clientes" class="section">
+            <div class="card">
+                <h2>👥 Base de Clientes</h2>
+                <p style="margin-bottom: 15px; color: #666;">Todos tus clientes registrados</p>
+                <input type="text" id="clientesSearch" placeholder="Buscar por nombre o celular..." style="margin-bottom: 15px;">
+                <table>
+                    <thead><tr><th>Nombre</th><th>Celular</th><th>Dirección</th><th>Ciudad</th><th>Email</th><th>Facturas</th><th>Acciones</th></tr></thead>
+                    <tbody id="clientesTable"></tbody>
+                </table>
+            </div>
+        </section>
+
         <!-- BUSCAR CLIENTE -->
-        <section id="buscar-cliente" class="section active">
+        <section id="buscar-cliente" class="section" style="display: none;">
             <div class="card">
                 <h2>🔍 Buscar Cliente</h2>
                 <p style="margin-bottom: 15px; color: #666;">Ingresa el número de celular para encontrar un cliente existente</p>
@@ -305,8 +318,13 @@
         function init() {
             cargarDatos();
             renderProductos();
+            renderClientesTable();
             renderFacturas();
             renderReportes();
+            
+            // Listener para buscar clientes
+            document.getElementById('clientesSearch')?.addEventListener('input', renderClientesTable);
+            document.getElementById('productSearch')?.addEventListener('input', renderProductos);
         }
 
         function cargarDatos() {
@@ -319,6 +337,36 @@
         function guardarDatos() {
             localStorage.setItem('clientes_huella', JSON.stringify(clientes));
             localStorage.setItem('facturas_huella', JSON.stringify(facturas));
+        }
+
+        function renderClientesTable() {
+            const table = document.getElementById('clientesTable');
+            const search = (document.getElementById('clientesSearch')?.value || '').toLowerCase();
+            
+            const filtrados = clientes.filter(c => 
+                c.nombre.toLowerCase().includes(search) || 
+                normalizarTelefono(c.celular).includes(search.replace(/\D/g, ''))
+            );
+
+            if (filtrados.length === 0) {
+                table.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #999;">No hay clientes registrados</td></tr>';
+                return;
+            }
+
+            table.innerHTML = filtrados.map(c => {
+                const numFacturas = facturas.filter(f => f.cliente.id === c.id).length;
+                return `<tr>
+                    <td><strong>${c.nombre}</strong></td>
+                    <td>${c.celular}</td>
+                    <td>${c.direccion || '—'}</td>
+                    <td>${c.ciudad || '—'}</td>
+                    <td>${c.email || '—'}</td>
+                    <td><span class="badge badge-success">${numFacturas}</span></td>
+                    <td>
+                        <button class="btn-small" onclick="irAFacturaConCliente(${c.id})">📄 Factura</button>
+                    </td>
+                </tr>`;
+            }).join('');
         }
 
         // NORMALIZAR TELÉFONO
@@ -354,10 +402,10 @@
             guardarDatos();
             mostrarMensaje('clientFormMessage', `✅ Cliente "${nombre}" creado exitosamente`, 'success');
             this.reset();
+            renderClientesTable();
             setTimeout(() => {
-                document.querySelector('[data-section="buscar-cliente"]').click();
-                document.getElementById('searchPhone').value = celular;
-                buscarClientePorCelular();
+                document.querySelector('[data-section="clientes"]').click();
+                renderClientesTable();
             }, 1500);
         });
 
@@ -401,14 +449,25 @@
         }
 
         function buscarClienteParaFactura() {
-            const phone = normalizarTelefono(document.getElementById('facturaClientPhone').value);
-            const cliente = clientes.find(c => normalizarTelefono(c.celular) === phone);
+            const entrada = document.getElementById('facturaClientPhone').value;
+            const phone = normalizarTelefono(entrada);
+            const search = entrada.toLowerCase();
+
+            // Buscar por celular O por nombre
+            const cliente = clientes.find(c => 
+                normalizarTelefono(c.celular) === phone || 
+                c.nombre.toLowerCase().includes(search)
+            );
 
             if (!cliente) {
-                alert('❌ Cliente no encontrado');
+                alert('❌ Cliente no encontrado\n\nBusca por:\n• Nombre\n• Celular');
                 return;
             }
 
+            cargarClienteEnFactura(cliente);
+        }
+
+        function cargarClienteEnFactura(cliente) {
             clienteSeleccionado = cliente;
             itemsTemp = [];
             document.getElementById('facturaClientNombre').textContent = cliente.nombre;
@@ -435,10 +494,9 @@
         function irAFacturaConCliente(clienteId) {
             const cliente = clientes.find(c => c.id === clienteId);
             if (cliente) {
-                clienteSeleccionado = cliente;
                 document.querySelector('[data-section="nueva-factura"]').click();
-                document.getElementById('facturaClientPhone').value = cliente.celular;
-                buscarClienteParaFactura();
+                document.getElementById('facturaClientPhone').value = cliente.nombre;
+                cargarClienteEnFactura(cliente);
             }
         }
 
@@ -559,6 +617,7 @@
             clienteSeleccionado = null;
             itemsTemp = [];
             cambiarCliente();
+            renderClientesTable();
             renderFacturas();
             renderReportes();
         }
@@ -720,6 +779,7 @@
                 e.target.classList.add('active');
                 const sec = e.target.dataset.section;
                 document.getElementById(sec).classList.add('active');
+                if (sec === 'clientes') renderClientesTable();
                 if (sec === 'facturas') renderFacturas();
                 if (sec === 'reportes') renderReportes();
             });
