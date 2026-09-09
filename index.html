@@ -104,6 +104,10 @@
                         <label>📱 WhatsApp (ej: +573001234567)</label>
                         <input type="text" id="telefonoCliente" placeholder="+57..." onchange="guardarTelefonoCliente()">
                     </div>
+                    <div class="form-group">
+                        <label>📍 Dirección</label>
+                        <input type="text" id="direccionCliente" placeholder="Calle 123 #45..." onchange="guardarDireccionCliente()">
+                    </div>
                 </div>
 
                 <h3 class="section-title" style="margin-top: 30px;">Productos</h3>
@@ -343,12 +347,45 @@
             }
             list.innerHTML = pendientes.map(c => {
                 const fact = facturas.filter(f => f.cliente.id === c.id).pop();
-                return `<div class="card">
+                const dirGuardada = localStorage.getItem(`direccion_${c.id}`);
+                return `<div class="card" style="cursor: pointer;" onclick="irAEditarFactura('${fact.id}')">
                     <h3>${c.nombre}</h3>
                     <p><strong>Comercial:</strong> ${c.comercial}</p>
-                    <p><strong>Estado:</strong> ${fact?.estado || 'N/A'}</p>
+                    ${dirGuardada ? `<p><strong>Dirección:</strong> ${dirGuardada}</p>` : ''}
+                    <p><strong>Factura:</strong> ${fact?.id || 'N/A'}</p>
+                    <p><strong>Estado:</strong> <span class="badge estado-${fact?.estado.toLowerCase().replace(/\s+/g,'')}">${fact?.estado || 'N/A'}</span></p>
                 </div>`;
             }).join('');
+        }
+
+        function irAEditarFactura(facturaId) {
+            const fact = facturas.find(f => f.id === facturaId);
+            if (fact) {
+                // Ir a Nueva Factura
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                document.querySelector('[data-section="nueva-factura"]').classList.add('active');
+                document.getElementById('nueva-factura').classList.add('active');
+                
+                // Cargar datos de la factura
+                clienteSeleccionado = fact.cliente;
+                document.getElementById('clienteSeleccionadoText').textContent = fact.cliente.nombre;
+                document.getElementById('datosCiente').style.display = 'block';
+                document.getElementById('infoNombre').textContent = fact.cliente.nombre;
+                document.getElementById('infoComercial').textContent = fact.cliente.comercial;
+                
+                const telGuardado = localStorage.getItem(`telefono_${fact.cliente.id}`);
+                const dirGuardada = localStorage.getItem(`direccion_${fact.cliente.id}`);
+                document.getElementById('telefonoCliente').value = telGuardado || '';
+                document.getElementById('direccionCliente').value = dirGuardada || '';
+                
+                // Cargar items
+                itemsTemp = [...fact.items];
+                document.getElementById('descuentoPorcentaje').value = fact.descuentoPorcentaje || '0';
+                document.getElementById('envio').value = fact.envio || '0';
+                renderItemsFactura();
+                calcularTotales();
+            }
         }
 
         // CLIENTE MODAL
@@ -388,9 +425,11 @@
                 document.getElementById('infoNombre').textContent = c.nombre;
                 document.getElementById('infoComercial').textContent = c.comercial;
                 
-                // Cargar teléfono guardado si existe
+                // Cargar teléfono y dirección guardados si existen
                 const telGuardado = localStorage.getItem(`telefono_${c.id}`);
+                const dirGuardada = localStorage.getItem(`direccion_${c.id}`);
                 document.getElementById('telefonoCliente').value = telGuardado || '';
+                document.getElementById('direccionCliente').value = dirGuardada || '';
                 
                 closeClientModal();
             }
@@ -401,6 +440,14 @@
             const telefono = document.getElementById('telefonoCliente').value;
             if (telefono) {
                 localStorage.setItem(`telefono_${clienteSeleccionado.id}`, telefono);
+            }
+        }
+
+        function guardarDireccionCliente() {
+            if (!clienteSeleccionado) return;
+            const direccion = document.getElementById('direccionCliente').value;
+            if (direccion) {
+                localStorage.setItem(`direccion_${clienteSeleccionado.id}`, direccion);
             }
         }
 
@@ -612,12 +659,15 @@
                 <td>$${i.subtotal.toLocaleString('es-ES')}</td>
             </tr>`).join('');
 
+            const dirGuardada = localStorage.getItem(`direccion_${fac.cliente.id}`);
+
             cont.innerHTML = `<div class="invoice">
                 <h2 style="text-align: center; font-family: 'Playfair Display'; font-size: 1.8em; margin-bottom: 20px;">FACTURA</h2>
                 <p style="text-align: center; color: #D4A574; font-size: 1.1em; margin-bottom: 20px;">${fac.id}</p>
                 <table style="margin-bottom: 20px;">
                     <tr><td style="border: none;"><strong>Cliente:</strong> ${fac.cliente.nombre}</td><td style="border: none; text-align: right;"><strong>Fecha:</strong> ${fac.fecha}</td></tr>
                     <tr><td style="border: none;"><strong>Comercial:</strong> ${fac.cliente.comercial}</td><td style="border: none; text-align: right;"><strong>Estado:</strong> ${fac.estado}</td></tr>
+                    ${dirGuardada ? `<tr><td style="border: none; font-size: 0.85em;"><strong>📍 Dirección:</strong> ${dirGuardada}</td><td style="border: none;"></td></tr>` : ''}
                 </table>
                 <table style="margin: 20px 0;">
                     <thead><tr><th>Producto</th><th>Cant</th><th>Precio</th><th>Subtotal</th></tr></thead>
@@ -737,7 +787,55 @@
 
         function actualizarEstado(id, est) {
             const f = facturas.find(x => x.id === id);
-            if (f) { f.estado = est; localStorage.setItem('facturas', JSON.stringify(facturas)); renderSeguimiento(); }
+            if (f) { 
+                f.estado = est; 
+                localStorage.setItem('facturas', JSON.stringify(facturas)); 
+                renderSeguimiento();
+                
+                // Enviar mensaje de actualización por WhatsApp
+                enviarMensajeEstado(f, est);
+            }
+        }
+
+        function enviarMensajeEstado(factura, nuevoEstado) {
+            const telefonoGuardado = localStorage.getItem(`telefono_${factura.cliente.id}`);
+            
+            if (!telefonoGuardado) {
+                console.log('No hay teléfono guardado para este cliente');
+                return;
+            }
+
+            let mensaje = `*☕ HUELLA DE ORIGEN - Actualización de Pedido*\n\n📄 *Factura:* ${factura.id}\n`;
+
+            switch(nuevoEstado) {
+                case 'Pedido en preparación':
+                    mensaje += `📦 *Estado:* ☕ Pedido en preparación\n\n¡Tu pedido está siendo preparado con los mejores granos de café!`;
+                    break;
+                case 'Enviado':
+                    mensaje += `📦 *Estado:* 🚚 Enviado\n\n¡Tu pedido está en camino! Pronto estará en tus manos.`;
+                    break;
+                case 'Entregado':
+                    mensaje += `📦 *Estado:* ✅ Entregado\n\n¡Tu pedido ha sido entregado! Esperamos que disfrutes nuestro café. ☕`;
+                    break;
+                case 'Solicitud de pago':
+                    mensaje += `📦 *Estado:* 💳 Solicitud de pago\n\n💰 *Total:* $${Math.round(factura.total).toLocaleString('es-ES')}\n\n🔑 *Llave pago:* 0090417769\n\nPuedes realizar el pago a través de transferencia bancaria o convenio.`;
+                    break;
+                case 'Pagado':
+                    mensaje += `📦 *Estado:* ✓ Pago recibido\n\n¡Gracias por tu pago! Apreciamos tu confianza.`;
+                    break;
+                case 'Completado':
+                    mensaje += `📦 *Estado:* 🎉 Pedido completado\n\n¡Gracias por tu compra! No dudes en volver pronto.`;
+                    break;
+                default:
+                    mensaje += `📦 *Estado:* ${nuevoEstado}`;
+            }
+
+            mensaje += `\n\n*DESDE EL ORIGEN, DEJA HUELLA* 🌿`;
+
+            const numeroLimpio = telefonoGuardado.replace(/\D/g, '');
+            
+            // Abre WhatsApp automáticamente (detecta si tiene Business)
+            window.open(`https://wa.me/${numeroLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
         }
 
         function renderReporte() {
