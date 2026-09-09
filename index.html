@@ -1632,18 +1632,38 @@
         }
 
         function buscarClienteParaFactura() {
-            const entrada = document.getElementById('facturaClientPhone').value;
+            const input = document.getElementById('facturaClientPhone');
+            if (!input) return;
+            
+            const entrada = input.value.trim();
+            
+            if (!entrada) {
+                alert('⚠️ Ingresa el nombre o celular del cliente');
+                return;
+            }
+            
             const phone = normalizarTelefono(entrada);
             const search = entrada.toLowerCase();
 
-            // Buscar por celular O por nombre
-            const cliente = clientes.find(c => 
-                normalizarTelefono(c.celular) === phone || 
-                c.nombre.toLowerCase().includes(search)
+            // Buscar por celular exacto O por nombre exacto (prioridad) O por nombre parcial
+            let cliente = clientes.find(c => 
+                normalizarTelefono(c.celular) === phone
             );
+            
+            if (!cliente) {
+                cliente = clientes.find(c => 
+                    c.nombre.toLowerCase() === search
+                );
+            }
+            
+            if (!cliente) {
+                cliente = clientes.find(c => 
+                    c.nombre.toLowerCase().includes(search)
+                );
+            }
 
             if (!cliente) {
-                alert('❌ Cliente no encontrado\n\nBusca por:\n• Nombre\n• Celular');
+                alert('❌ Cliente no encontrado\n\nBusca por:\n• Nombre completo\n• Celular (con o sin código)');
                 return;
             }
 
@@ -1653,8 +1673,9 @@
         function filtrarClientesFactura() {
             const entrada = document.getElementById('facturaClientPhone')?.value || '';
             const dropdown = document.getElementById('facturaClientesDropdown');
+            if (!dropdown) return; // Si no existe dropdown, no hacer nada
 
-            if (entrada.length < 1) {
+            if (entrada.trim().length < 1) {
                 dropdown.style.display = 'none';
                 return;
             }
@@ -1662,14 +1683,14 @@
             const search = entrada.toLowerCase();
             const filtrados = clientes.filter(c => 
                 c.nombre.toLowerCase().includes(search) || 
-                c.celular.includes(entrada)
+                normalizarTelefono(c.celular).includes(normalizarTelefono(entrada))
             );
 
             if (filtrados.length === 0) {
                 dropdown.innerHTML = '<div style="padding: 12px; color: #999; text-align: center;">Sin resultados</div>';
             } else {
                 dropdown.innerHTML = filtrados.map(c => `
-                    <div class="modal-item" onclick="seleccionarClienteFactura(${c.id})" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; hover-background: #f5f5f5;">
+                    <div class="modal-item" onclick="seleccionarClienteFactura(${c.id})" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; background: white; transition: background 0.2s;">
                         <strong style="display: block; color: #2C1810;">${c.nombre}</strong>
                         <small style="color: #999;">📱 ${c.celular} | 🏘️ ${c.ciudad || 'N/A'}</small>
                     </div>
@@ -1680,45 +1701,80 @@
 
         function seleccionarClienteFactura(clienteId) {
             const cliente = clientes.find(c => c.id === clienteId);
-            if (cliente) {
-                document.getElementById('facturaClientPhone').value = cliente.nombre;
-                document.getElementById('facturaClientesDropdown').style.display = 'none';
-                cargarClienteEnFactura(cliente);
-            }
+            if (!cliente) return;
+            
+            const phoneField = document.getElementById('facturaClientPhone');
+            const dropdown = document.getElementById('facturaClientesDropdown');
+            
+            if (phoneField) phoneField.value = cliente.nombre;
+            if (dropdown) dropdown.style.display = 'none';
+            
+            cargarClienteEnFactura(cliente);
         }
 
         function cargarClienteEnFactura(cliente) {
+            if (!cliente) return;
+            
             clienteSeleccionado = cliente;
             itemsTemp = [];
-            document.getElementById('facturaClientNombre').textContent = cliente.nombre;
-            document.getElementById('facturaClientIdentificacion').textContent = cliente.identificacion || '—';
-            document.getElementById('facturaClientCelular').textContent = cliente.celular;
-            document.getElementById('facturaClientEmail').textContent = cliente.email || 'No registrado';
-            document.getElementById('facturaClientDireccion').textContent = cliente.direccion || 'No registrada';
-            document.getElementById('facturaClientCiudad').textContent = cliente.ciudad || 'No registrada';
-            document.getElementById('clienteSeleccionadoBox').style.display = 'block';
-            document.getElementById('facturaFormBox').style.display = 'block';
-            document.getElementById('itemsBody').innerHTML = '';
-            document.getElementById('descuentoPorcentaje').value = '0';
-            document.getElementById('envio').value = '0';
+            
+            // Asignar datos con validación de elementos
+            const elements = {
+                'facturaClientNombre': cliente.nombre,
+                'facturaClientIdentificacion': cliente.identificacion || '—',
+                'facturaClientCelular': cliente.celular,
+                'facturaClientEmail': cliente.email || 'No registrado',
+                'facturaClientDireccion': cliente.direccion || 'No registrada',
+                'facturaClientCiudad': cliente.ciudad || 'No registrada'
+            };
+            
+            Object.entries(elements).forEach(([id, value]) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            });
+            
+            // Mostrar secciones
+            const boxCliente = document.getElementById('clienteSeleccionadoBox');
+            const boxFormula = document.getElementById('facturaFormBox');
+            const itemBody = document.getElementById('itemsBody');
+            const descuento = document.getElementById('descuentoPorcentaje');
+            const envio = document.getElementById('envio');
+            
+            if (boxCliente) boxCliente.style.display = 'block';
+            if (boxFormula) boxFormula.style.display = 'block';
+            if (itemBody) itemBody.innerHTML = '';
+            if (descuento) descuento.value = '0';
+            if (envio) envio.value = '0';
+            
             calcularTotales();
+            
+            console.log('✅ Cliente cargado:', cliente.nombre);
         }
 
         function cambiarCliente() {
             clienteSeleccionado = null;
             itemsTemp = [];
-            document.getElementById('facturaClientPhone').value = '';
-            document.getElementById('clienteSeleccionadoBox').style.display = 'none';
-            document.getElementById('facturaFormBox').style.display = 'none';
+            
+            const phoneField = document.getElementById('facturaClientPhone');
+            const boxCliente = document.getElementById('clienteSeleccionadoBox');
+            const boxFormula = document.getElementById('facturaFormBox');
+            
+            if (phoneField) phoneField.value = '';
+            if (boxCliente) boxCliente.style.display = 'none';
+            if (boxFormula) boxFormula.style.display = 'none';
         }
 
         function irAFacturaConCliente(clienteId) {
             const cliente = clientes.find(c => c.id === clienteId);
-            if (cliente) {
-                document.querySelector('[data-section="nueva-factura"]').click();
-                document.getElementById('facturaClientPhone').value = cliente.nombre;
-                cargarClienteEnFactura(cliente);
-            }
+            if (!cliente) return;
+            
+            const btn = document.querySelector('[data-section="nueva-factura"]');
+            const phoneField = document.getElementById('facturaClientPhone');
+            
+            if (btn) btn.click();
+            if (phoneField) phoneField.value = cliente.nombre;
+            
+            cargarClienteEnFactura(cliente);
         }
 
         function irANuevoCliente() {
@@ -1803,27 +1859,48 @@
 
         function calcularTotales() {
             const subtotal = itemsTemp.reduce((s, i) => s + (i.precio * i.cantidad), 0);
-            const desc = parseInt(document.getElementById('descuentoPorcentaje').value) || 0;
+            
+            const descEl = document.getElementById('descuentoPorcentaje');
+            const envEl = document.getElementById('envio');
+            const desc = descEl ? (parseInt(descEl.value) || 0) : 0;
+            const env = envEl ? (parseInt(envEl.value) || 0) : 0;
+            
             const descMonto = subtotal * (desc / 100);
-            const env = parseInt(document.getElementById('envio').value) || 0;
             const total = subtotal - descMonto + env;
 
-            document.getElementById('subtotalDisplay').textContent = Math.round(subtotal).toLocaleString('es-ES');
-            document.getElementById('totalDisplay').textContent = Math.round(total).toLocaleString('es-ES');
-            document.getElementById('descuentoDisplay').innerHTML = desc > 0 ? `<strong>Descuento (${desc}%):</strong> -$${Math.round(descMonto).toLocaleString('es-ES')}` : '';
-            document.getElementById('envioDisplay').innerHTML = env > 0 ? `<strong>Envío:</strong> +$${Math.round(env).toLocaleString('es-ES')}` : '';
+            const subtotalEl = document.getElementById('subtotalDisplay');
+            const totalEl = document.getElementById('totalDisplay');
+            const descDisplayEl = document.getElementById('descuentoDisplay');
+            const envDisplayEl = document.getElementById('envioDisplay');
+            
+            if (subtotalEl) subtotalEl.textContent = Math.round(subtotal).toLocaleString('es-ES');
+            if (totalEl) totalEl.textContent = Math.round(total).toLocaleString('es-ES');
+            if (descDisplayEl) descDisplayEl.innerHTML = desc > 0 ? `<strong>Descuento (${desc}%):</strong> -$${Math.round(descMonto).toLocaleString('es-ES')}` : '';
+            if (envDisplayEl) envDisplayEl.innerHTML = env > 0 ? `<strong>Envío:</strong> +$${Math.round(env).toLocaleString('es-ES')}` : '';
         }
 
         function guardarFactura() {
-            if (!clienteSeleccionado || itemsTemp.length === 0 || !document.getElementById('vendedor').value) {
-                alert('❌ Completa: Cliente, Productos y Vendedor');
+            if (!clienteSeleccionado || itemsTemp.length === 0) {
+                alert('❌ Completa: Cliente y al menos 1 Producto');
+                return;
+            }
+            
+            const vendedorEl = document.getElementById('vendedor');
+            const estadoPagoEl = document.getElementById('estadoPago');
+            
+            if (!vendedorEl || !vendedorEl.value) {
+                alert('❌ Selecciona un Vendedor');
                 return;
             }
 
             const subtotal = itemsTemp.reduce((s, i) => s + (i.precio * i.cantidad), 0);
-            const desc = parseInt(document.getElementById('descuentoPorcentaje').value) || 0;
+            
+            const descEl = document.getElementById('descuentoPorcentaje');
+            const envEl = document.getElementById('envio');
+            const desc = descEl ? (parseInt(descEl.value) || 0) : 0;
+            const env = envEl ? (parseInt(envEl.value) || 0) : 0;
+            
             const descMonto = subtotal * (desc / 100);
-            const env = parseInt(document.getElementById('envio').value) || 0;
             const total = subtotal - descMonto + env;
 
             const factura = {
@@ -1835,8 +1912,8 @@
                 descuentoMonto: descMonto,
                 envio: env,
                 total: total,
-                vendedor: document.getElementById('vendedor').value,
-                estado: document.getElementById('estadoPago').value,
+                vendedor: vendedorEl.value,
+                estado: estadoPagoEl ? (estadoPagoEl.value || 'Pendiente') : 'Pendiente',
                 fecha: new Date().toLocaleDateString('es-ES')
             };
 
