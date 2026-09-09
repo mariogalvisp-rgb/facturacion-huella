@@ -881,7 +881,7 @@
                     <div class="form-group">
                         <label>Buscar Cliente <span style="color: var(--error);">*</span></label>
                         <div style="position: relative; display: flex; gap: 12px;">
-                            <input type="text" id="facturaClientPhone" placeholder="Nombre o celular..." style="flex: 1;" onkeyup="filtrarClientesFactura()">
+                            <input type="text" id="facturaClientPhone" placeholder="Nombre o celular..." style="flex: 1;" onkeyup="filtrarClientesFactura()" onkeydown="if(event.key==='Enter') buscarClienteParaFactura();">
                             <button type="button" class="btn btn-small" onclick="abrirModalClientesFactura()">Ver Lista</button>
                             <button type="button" class="btn btn-small" onclick="buscarClienteParaFactura()">Buscar</button>
                         </div>
@@ -1298,8 +1298,11 @@
 
         // INICIALIZAR
         function init() {
+            console.log('🚀 INICIANDO APLICACIÓN...');
             cargarConfigSupabase(); // Cargar config de Supabase si existe
             cargarDatos(); // Cargar 161 clientes si es primera vez
+            
+            console.log('✅ DATOS CARGADOS. Clientes totales:', clientes.length);
             
             // Renderizar solo si los elementos existen
             if (document.getElementById('productsList')) renderProductos();
@@ -1311,22 +1314,33 @@
             document.getElementById('clientesModalSearch')?.addEventListener('input', filtrarClientesModal);
             document.getElementById('clienteModalSearch')?.addEventListener('input', renderClienteListaFactura);
             document.getElementById('productSearch')?.addEventListener('input', renderProductos);
+            
+            console.log('✅ APP LISTA');
         }
 
         function cargarDatos() {
+            console.log('📥 CARGANDO DATOS...');
             const clientesGuardados = localStorage.getItem('clientes_huella');
             const facturasGuardadas = localStorage.getItem('facturas_huella');
             
             // Si no hay clientes guardados, cargar desde seed (primera ejecución)
             if (!clientesGuardados) {
+                console.log('   Primera ejecución: cargando desde seed...');
                 clientes = JSON.parse(JSON.stringify(clientesSeed)); // Copiar seed
                 guardarEnStorage();
-                console.log('✅ Se cargaron 161 clientes automáticamente');
+                console.log('✅ Se cargaron ' + clientes.length + ' clientes automáticamente');
             } else {
+                console.log('   Cargando desde localStorage...');
                 clientes = JSON.parse(clientesGuardados);
+                console.log('✅ Se cargaron ' + clientes.length + ' clientes desde localStorage');
             }
             
-            if (facturasGuardadas) facturas = JSON.parse(facturasGuardadas);
+            if (facturasGuardadas) {
+                facturas = JSON.parse(facturasGuardadas);
+                console.log('✅ Se cargaron ' + facturas.length + ' facturas');
+            }
+            
+            console.log('PRIMER CLIENTE:', clientes.length > 0 ? clientes[0].nombre : 'NINGUNO');
         }
 
         function guardarEnStorage() {
@@ -1632,76 +1646,144 @@
         }
 
         function buscarClienteParaFactura() {
+            console.log('🔍 INICIANDO buscarClienteParaFactura...');
+            console.log('Total de clientes en memoria:', clientes.length);
+            
             const input = document.getElementById('facturaClientPhone');
-            if (!input) return;
+            if (!input) {
+                console.error('❌ Input no encontrado');
+                return;
+            }
             
             const entrada = input.value.trim();
+            console.log('Entrada del usuario:', entrada);
             
             if (!entrada) {
                 alert('⚠️ Ingresa el nombre o celular del cliente');
                 return;
             }
             
-            const phone = normalizarTelefono(entrada);
-            const search = entrada.toLowerCase();
-
-            // Buscar por celular exacto O por nombre exacto (prioridad) O por nombre parcial
-            let cliente = clientes.find(c => 
-                normalizarTelefono(c.celular) === phone
-            );
-            
-            if (!cliente) {
-                cliente = clientes.find(c => 
-                    c.nombre.toLowerCase() === search
-                );
-            }
-            
-            if (!cliente) {
-                cliente = clientes.find(c => 
-                    c.nombre.toLowerCase().includes(search)
-                );
-            }
-
-            if (!cliente) {
-                alert('❌ Cliente no encontrado\n\nBusca por:\n• Nombre completo\n• Celular (con o sin código)');
+            if (clientes.length === 0) {
+                console.error('❌ PROBLEMA: clientes está vacío!');
+                alert('❌ ERROR: No hay clientes cargados. Recarga la página.');
                 return;
             }
-
-            cargarClienteEnFactura(cliente);
+            
+            console.log('Primeros 5 clientes:', clientes.slice(0, 5).map(c => c.nombre));
+            
+            // BÚSQUEDA DIRECTA - SIN DROPDOWN
+            const phone = normalizarTelefono(entrada);
+            console.log('Teléfono normalizado:', phone);
+            
+            // 1. Buscar por celular exacto
+            let cliente = clientes.find(c => {
+                const cel = normalizarTelefono(c.celular);
+                if (cel === phone) {
+                    console.log('✅ ENCONTRADO POR CELULAR:', c.nombre);
+                    return true;
+                }
+                return false;
+            });
+            
+            if (cliente) {
+                cargarClienteEnFactura(cliente);
+                return;
+            }
+            
+            // 2. Buscar por nombre EXACTO (uppercase)
+            const entradaUpper = entrada.toUpperCase();
+            cliente = clientes.find(c => {
+                if (c.nombre.toUpperCase() === entradaUpper) {
+                    console.log('✅ ENCONTRADO POR NOMBRE EXACTO:', c.nombre);
+                    return true;
+                }
+                return false;
+            });
+            
+            if (cliente) {
+                cargarClienteEnFactura(cliente);
+                return;
+            }
+            
+            // 3. Buscar por nombre PARCIAL
+            console.log('Buscando coincidencias parciales de:', entradaUpper);
+            const filtrados = clientes.filter(c => {
+                const match = c.nombre.toUpperCase().includes(entradaUpper);
+                if (match) {
+                    console.log('  → Coincidencia:', c.nombre);
+                }
+                return match;
+            });
+            
+            console.log('Encontradas', filtrados.length, 'coincidencias');
+            
+            if (filtrados.length === 0) {
+                alert('❌ Cliente no encontrado\n\nTú escribiste: "' + entrada + '"\n\nIntenta con:\n• Nombre completo: ANGELA MORA\n• Nombre parcial: MORA\n• Celular');
+                return;
+            }
+            
+            if (filtrados.length === 1) {
+                console.log('✅ Una coincidencia exacta:', filtrados[0].nombre);
+                cargarClienteEnFactura(filtrados[0]);
+                return;
+            }
+            
+            // Si hay múltiples resultados, cargar el PRIMERO
+            console.log('Múltiples coincidencias. Cargando la primera:', filtrados[0].nombre);
+            alert(`✓ Se encontraron ${filtrados.length} resultados.\n\n${filtrados.map(c => c.nombre).join('\n')}\n\nCargando: ${filtrados[0].nombre}`);
+            cargarClienteEnFactura(filtrados[0]);
         }
 
         function filtrarClientesFactura() {
             const entrada = document.getElementById('facturaClientPhone')?.value || '';
             const dropdown = document.getElementById('facturaClientesDropdown');
-            if (!dropdown) return; // Si no existe dropdown, no hacer nada
+            if (!dropdown) {
+                console.warn('⚠️ Dropdown no encontrado');
+                return;
+            }
 
             if (entrada.trim().length < 1) {
                 dropdown.style.display = 'none';
                 return;
             }
 
-            const search = entrada.toLowerCase();
-            const filtrados = clientes.filter(c => 
-                c.nombre.toLowerCase().includes(search) || 
-                normalizarTelefono(c.celular).includes(normalizarTelefono(entrada))
-            );
+            console.log('🔎 Filtrando dropdown con entrada:', entrada);
+            console.log('   Clientes disponibles:', clientes.length);
+
+            // Filtrar por nombre O celular
+            const filtrados = clientes.filter(c => {
+                const nombre = c.nombre.toUpperCase();
+                const entrUpper = entrada.toUpperCase();
+                const celNorm = normalizarTelefono(c.celular);
+                const entrNorm = normalizarTelefono(entrada);
+                
+                const match = nombre.includes(entrUpper) || celNorm.includes(entrNorm);
+                return match;
+            });
+
+            console.log('   Resultados encontrados:', filtrados.length);
+            filtrados.forEach((c, i) => console.log(`   ${i + 1}. ${c.nombre}`));
 
             if (filtrados.length === 0) {
                 dropdown.innerHTML = '<div style="padding: 12px; color: #999; text-align: center;">Sin resultados</div>';
+                dropdown.style.display = 'block';
             } else {
-                dropdown.innerHTML = filtrados.map(c => `
-                    <div class="modal-item" onclick="seleccionarClienteFactura(${c.id})" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; background: white; transition: background 0.2s;">
+                dropdown.innerHTML = filtrados.map((c, idx) => `
+                    <div class="modal-item" onclick="seleccionarClienteFacturaDirecto(${c.id})" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; background: ${idx === 0 ? '#f0e8d0' : 'white'}; transition: background 0.2s; font-weight: ${idx === 0 ? '600' : '400'};">
                         <strong style="display: block; color: #2C1810;">${c.nombre}</strong>
-                        <small style="color: #999;">📱 ${c.celular} | 🏘️ ${c.ciudad || 'N/A'}</small>
+                        <small style="color: #999;">📱 ${c.celular || 'Sin celular'} | 🏘️ ${c.ciudad || 'N/A'}</small>
                     </div>
                 `).join('');
+                dropdown.style.display = 'block';
             }
-            dropdown.style.display = 'block';
         }
 
-        function seleccionarClienteFactura(clienteId) {
+        function seleccionarClienteFacturaDirecto(clienteId) {
             const cliente = clientes.find(c => c.id === clienteId);
-            if (!cliente) return;
+            if (!cliente) {
+                console.error('Cliente no encontrado:', clienteId);
+                return;
+            }
             
             const phoneField = document.getElementById('facturaClientPhone');
             const dropdown = document.getElementById('facturaClientesDropdown');
@@ -1710,10 +1792,20 @@
             if (dropdown) dropdown.style.display = 'none';
             
             cargarClienteEnFactura(cliente);
+            console.log('✅ Cliente cargado desde dropdown:', cliente.nombre);
+        }
+
+        function seleccionarClienteFactura(clienteId) {
+            seleccionarClienteFacturaDirecto(clienteId); // Alias para compatibilidad
         }
 
         function cargarClienteEnFactura(cliente) {
-            if (!cliente) return;
+            if (!cliente) {
+                console.error('❌ Error: cliente es null/undefined');
+                return;
+            }
+            
+            console.log('📋 Cargando cliente:', cliente.nombre, '(ID:', cliente.id + ')');
             
             clienteSeleccionado = cliente;
             itemsTemp = [];
@@ -1722,7 +1814,7 @@
             const elements = {
                 'facturaClientNombre': cliente.nombre,
                 'facturaClientIdentificacion': cliente.identificacion || '—',
-                'facturaClientCelular': cliente.celular,
+                'facturaClientCelular': cliente.celular || 'Sin registrar',
                 'facturaClientEmail': cliente.email || 'No registrado',
                 'facturaClientDireccion': cliente.direccion || 'No registrada',
                 'facturaClientCiudad': cliente.ciudad || 'No registrada'
@@ -1730,7 +1822,11 @@
             
             Object.entries(elements).forEach(([id, value]) => {
                 const el = document.getElementById(id);
-                if (el) el.textContent = value;
+                if (el) {
+                    el.textContent = value;
+                } else {
+                    console.warn('⚠️ Elemento no encontrado:', id);
+                }
             });
             
             // Mostrar secciones
@@ -1740,15 +1836,21 @@
             const descuento = document.getElementById('descuentoPorcentaje');
             const envio = document.getElementById('envio');
             
-            if (boxCliente) boxCliente.style.display = 'block';
-            if (boxFormula) boxFormula.style.display = 'block';
+            if (boxCliente) {
+                boxCliente.style.display = 'block';
+                console.log('✅ Mostrado: clienteSeleccionadoBox');
+            }
+            if (boxFormula) {
+                boxFormula.style.display = 'block';
+                console.log('✅ Mostrado: facturaFormBox');
+            }
             if (itemBody) itemBody.innerHTML = '';
             if (descuento) descuento.value = '0';
             if (envio) envio.value = '0';
             
             calcularTotales();
             
-            console.log('✅ Cliente cargado:', cliente.nombre);
+            console.log('✅✅ Cliente cargado correctamente:', cliente.nombre);
         }
 
         function cambiarCliente() {
