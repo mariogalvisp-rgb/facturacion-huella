@@ -100,6 +100,10 @@
                 <div class="info-box" id="datosCiente" style="display: none;">
                     <p><strong>Nombre:</strong> <span id="infoNombre"></span></p>
                     <p><strong>Comercial:</strong> <span id="infoComercial"></span></p>
+                    <div class="form-group">
+                        <label>📱 WhatsApp (ej: +573001234567)</label>
+                        <input type="text" id="telefonoCliente" placeholder="+57..." onchange="guardarTelefonoCliente()">
+                    </div>
                 </div>
 
                 <h3 class="section-title" style="margin-top: 30px;">Productos</h3>
@@ -383,7 +387,20 @@
                 document.getElementById('datosCiente').style.display = 'block';
                 document.getElementById('infoNombre').textContent = c.nombre;
                 document.getElementById('infoComercial').textContent = c.comercial;
+                
+                // Cargar teléfono guardado si existe
+                const telGuardado = localStorage.getItem(`telefono_${c.id}`);
+                document.getElementById('telefonoCliente').value = telGuardado || '';
+                
                 closeClientModal();
+            }
+        }
+
+        function guardarTelefonoCliente() {
+            if (!clienteSeleccionado) return;
+            const telefono = document.getElementById('telefonoCliente').value;
+            if (telefono) {
+                localStorage.setItem(`telefono_${clienteSeleccionado.id}`, telefono);
             }
         }
 
@@ -619,17 +636,32 @@
 
         function closeInvoiceModal() { document.getElementById('invoiceModal').classList.remove('active'); }
         function enviarWhatsApp() { 
-            if (!facturaActual) return;
+            if (!facturaActual || !clienteSeleccionado) {
+                alert('❌ Selecciona un cliente primero');
+                return;
+            }
             
-            const mensaje = `Hola! 📄\n\nTe envío la factura de tu pedido:\n\nFactura: ${facturaActual.id}\nFecha: ${facturaActual.fecha}\nTotal: $${Math.round(facturaActual.total).toLocaleString('es-ES')}\n\n☕ Huella de Origen\nDESDe EL ORIGEN, DEJA HUELLA`;
+            const telefono = document.getElementById('telefonoCliente').value;
+            if (!telefono) {
+                alert('⚠️ Ingresa el número de WhatsApp del cliente');
+                return;
+            }
+
+            const mensaje = `*☕ HUELLA DE ORIGEN*\n\n📄 *Factura:* ${facturaActual.id}\n📅 *Fecha:* ${facturaActual.fecha}\n👤 *Cliente:* ${facturaActual.cliente.nombre}\n\n💰 *Total:* $${Math.round(facturaActual.total).toLocaleString('es-ES')}\n\n📦 *Estado:* Pedido en preparación\n\n¡Tu pedido está siendo preparado! Te notificaremos cuando esté listo.\n\n*DESDE EL ORIGEN, DEJA HUELLA* 🌿`;
+
+            // Crear diálogo para elegir WhatsApp o WhatsApp Business
+            const tipo = confirm('¿Usar WhatsApp Business?\n\nOK = WhatsApp Business\nCancel = WhatsApp Normal');
             
-            // Copiar al portapapeles
-            navigator.clipboard.writeText(mensaje).then(() => {
-                alert('✅ Mensaje copiado!\n\nAhora:\n1. Abre WhatsApp\n2. Busca el cliente\n3. Pega el mensaje (Ctrl+V o Command+V)');
-            }).catch(() => {
-                // Si no se puede copiar, mostrar el mensaje
-                alert('📱 Mensaje:\n\n' + mensaje);
-            });
+            // Formatear número sin símbolos para URL
+            const numeroLimpio = telefono.replace(/\D/g, '');
+            
+            if (tipo) {
+                // WhatsApp Business
+                window.open(`https://wa.me/${numeroLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
+            } else {
+                // WhatsApp Normal
+                window.open(`https://api.whatsapp.com/send?phone=${numeroLimpio}&text=${encodeURIComponent(mensaje)}`, '_blank');
+            }
         }
         function imprimirFactura() { window.print(); }
         function eliminarFactura() {
