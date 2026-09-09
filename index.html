@@ -801,7 +801,7 @@
                 <!-- Búsqueda en Modal -->
                 <div style="padding: 20px; border-bottom: 1px solid var(--borde);">
                     <div style="position: relative;">
-                        <input type="text" id="clientesModalSearch" placeholder="Buscar por nombre o celular..." style="width: 100%;" onkeyup="filtrarClientesModal()">
+                        <input type="text" id="clientesModalSearch" placeholder="Buscar por nombre..." style="width: 100%;" onkeyup="filtrarClientesModal()">
                         <!-- Dropdown búsqueda -->
                         <div id="clientesModalDropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--borde); border-top: none; border-radius: 0 0 calc(var(--radio) - 2px) calc(var(--radio) - 2px); max-height: 300px; overflow-y: auto; z-index: 100; box-shadow: var(--sombra-media); margin-top: -5px;"></div>
                     </div>
@@ -881,7 +881,7 @@
                     <div class="form-group">
                         <label>Buscar Cliente <span style="color: var(--error);">*</span></label>
                         <div style="position: relative; display: flex; gap: 12px;">
-                            <input type="text" id="facturaClientPhone" placeholder="Nombre o celular..." style="flex: 1;" onkeyup="filtrarClientesFactura()" onkeydown="if(event.key==='Enter') buscarClienteParaFactura();">
+                            <input type="text" id="facturaClientPhone" placeholder="Nombre del cliente..." style="flex: 1;" onkeyup="filtrarClientesFactura()" onkeydown="if(event.key==='Enter') buscarClienteParaFactura();">
                             <button type="button" class="btn btn-small" onclick="abrirModalClientesFactura()">Ver Lista</button>
                             <button type="button" class="btn btn-small" onclick="buscarClienteParaFactura()">Buscar</button>
                         </div>
@@ -1075,8 +1075,45 @@
         <div class="modal-content">
             <button class="close-btn" onclick="cerrarModalClientesFactura()"></button>
             <div class="modal-header">Seleccionar Cliente</div>
-            <input type="text" id="clienteModalSearch" placeholder="Buscar por nombre o celular..." style="margin-bottom: 20px;">
+            <input type="text" id="clienteModalSearch" placeholder="Buscar por nombre..." style="margin-bottom: 20px;">
             <div class="modal-list" id="clienteModalList" style="max-height: 400px;"></div>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR CLIENTE -->
+    <div id="editarClienteModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <button class="close-btn" onclick="cerrarEditarCliente()"></button>
+            <div class="modal-header">Editar Cliente</div>
+            <input type="hidden" id="editClientId">
+            <div class="form-group">
+                <label>Nombre</label>
+                <input type="text" id="editClientNombre" required>
+            </div>
+            <div class="form-group">
+                <label>Celular</label>
+                <input type="tel" id="editClientCelular">
+            </div>
+            <div class="form-group">
+                <label>Identificación</label>
+                <input type="text" id="editClientIdentificacion">
+            </div>
+            <div class="form-group">
+                <label>Correo</label>
+                <input type="email" id="editClientEmail">
+            </div>
+            <div class="form-group">
+                <label>Dirección</label>
+                <input type="text" id="editClientDireccion">
+            </div>
+            <div class="form-group">
+                <label>Ciudad</label>
+                <input type="text" id="editClientCiudad">
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button class="btn" onclick="guardarEditarCliente()" style="flex: 1;">Guardar Cambios</button>
+                <button class="btn" onclick="cerrarEditarCliente()" style="flex: 1; background: #999;">Cancelar</button>
+            </div>
         </div>
     </div>
 
@@ -1088,6 +1125,79 @@
             <input type="text" id="productSearch" placeholder="Buscar producto..." style="margin-bottom: 20px;">
             <div class="modal-list" id="productsList" style="max-height: 400px;"></div>
             <button class="btn" style="width: 100%; margin-top: 24px;" onclick="agregarProductosSeleccionados()">Agregar al Carrito</button>
+        </div>
+    </div>
+
+    <!-- MODAL VER FACTURA -->
+    <div id="verFacturaModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+            <button class="close-btn" onclick="cerrarVerFactura()"></button>
+            
+            <!-- ENCABEZADO CON LOGO Y DATOS -->
+            <div style="text-align: center; border-bottom: 2px solid #D4A574; padding-bottom: 20px; margin-bottom: 20px;">
+                <div style="font-size: 24px; margin-bottom: 8px;">☕</div>
+                <h2 style="margin: 5px 0; color: #2C1810; font-size: 24px; font-weight: 700;">HUELLA DE ORIGEN</h2>
+                <p style="margin: 3px 0; color: #D4A574; font-style: italic; font-size: 14px;">Desde su origen, deja huella</p>
+                <div style="margin-top: 12px; font-size: 12px; color: #666;">
+                    <p style="margin: 3px 0;">📱 311 768 2407</p>
+                    <p style="margin: 3px 0;">✉️ comercial@huelladeorigen.com</p>
+                </div>
+            </div>
+            
+            <div class="modal-header">Detalles de Factura</div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; padding: 16px; background: #f9f6f3; border-radius: 6px;">
+                <div>
+                    <small style="color: #999; font-weight: 600;">FACTURA</small>
+                    <p style="margin: 5px 0; font-weight: 700; color: #2C1810; font-size: 16px;" id="verFacturaId">—</p>
+                </div>
+                <div>
+                    <small style="color: #999; font-weight: 600;">CLIENTE</small>
+                    <p style="margin: 5px 0; font-weight: 600; color: #2C1810;" id="verFacturaCliente">—</p>
+                </div>
+                <div>
+                    <small style="color: #999; font-weight: 600;">FECHA</small>
+                    <p style="margin: 5px 0; font-weight: 600; color: #2C1810;" id="verFacturaFecha">—</p>
+                </div>
+                <div>
+                    <small style="color: #999; font-weight: 600;">VENDEDOR</small>
+                    <p style="margin: 5px 0; font-weight: 600; color: #2C1810;" id="verFacturaVendedor">—</p>
+                </div>
+                <div>
+                    <small style="color: #999; font-weight: 600;">ESTADO</small>
+                    <p style="margin: 5px 0; font-weight: 600; color: #2C1810;" id="verFacturaEstado">—</p>
+                </div>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                <thead style="background: #2C1810; color: white;">
+                    <tr>
+                        <th style="padding: 12px; text-align: left;">Producto</th>
+                        <th style="padding: 12px; text-align: center; width: 60px;">Cant.</th>
+                        <th style="padding: 12px; text-align: right; width: 100px;">P. Unit.</th>
+                        <th style="padding: 12px; text-align: right; width: 100px;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody id="verFacturaProductos" style="border-bottom: 2px solid #2C1810;">
+                </tbody>
+            </table>
+
+            <div style="text-align: right; margin-bottom: 24px; padding: 16px; background: #f9f6f3; border-radius: 6px;">
+                <div style="display: flex; justify-content: flex-end; gap: 24px; margin-bottom: 12px; font-size: 13px;">
+                    <span style="color: #666;">Subtotal: <strong id="verFacturaSubtotal">$0</strong></span>
+                    <span style="color: #666;" id="verFacturaDescuentoRow">Descuento: <strong id="verFacturaDescuento">-$0</strong></span>
+                    <span style="color: #666;" id="verFacturaEnvioRow">Envío: <strong id="verFacturaEnvio">+$0</strong></span>
+                </div>
+                <div style="text-align: right; font-size: 20px; color: #D4A574; border-top: 2px solid #D4A574; padding-top: 12px;">
+                    <strong>TOTAL: $<span id="verFacturaTotal">0</span></strong>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+                <button class="btn" onclick="descargarPDFFacturaModal()" style="background: #2C1810; color: white; padding: 10px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">📄 Descargar PDF</button>
+                <button class="btn" onclick="compartirWhatsAppDesdeModal()" style="background: #25D366; color: white; padding: 10px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">📲 Enviar WhatsApp</button>
+                <button class="btn" onclick="cerrarVerFactura()" style="background: #999; color: white; padding: 10px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Cerrar</button>
+            </div>
         </div>
     </div>
 
@@ -1267,26 +1377,74 @@
 
         // VARIABLES
         const productos = [
-            { id: 1, nombre: 'COLIBRI HONEY 454GM MOLIDO/GRANO', precio: 50900 },
-            { id: 2, nombre: 'CHIVITO DE PARAMO 454GM', precio: 46900 },
-            { id: 3, nombre: 'QUETZAL DEL TOLIMA 454GM', precio: 45900 },
-            { id: 4, nombre: 'CAFETERA CUELLO DE CISNE', precio: 40000 },
-            { id: 5, nombre: 'CONTENEDOR VIDRIO', precio: 20000 },
-            { id: 6, nombre: 'CHEMEX 3 TAZAS', precio: 70000 },
-            { id: 7, nombre: 'CHEMEX 6 TAZAS', precio: 95000 },
-            { id: 8, nombre: 'V60 TAMAÑO 01', precio: 95000 },
-            { id: 9, nombre: 'V60 TAMAÑO 02', precio: 130000 },
-            { id: 10, nombre: 'PRENSA FRANCESA 350ML', precio: 45000 },
-            { id: 11, nombre: 'PRENSA FRANCESA 600ML', precio: 60000 },
-            { id: 12, nombre: 'MOLINO ELECTRICO', precio: 65000 },
-            { id: 13, nombre: 'DUO QUETZAL', precio: 88000 },
-            { id: 14, nombre: 'DUO CHIVITO', precio: 90000 },
-            { id: 15, nombre: 'DILOGIA DE ORIGEN', precio: 92000 },
-            { id: 16, nombre: 'TRILOGIA HUELLA', precio: 135000 },
-            { id: 17, nombre: 'CAFE GOURMET ESPECIAL', precio: 55000 },
-            { id: 18, nombre: 'CAFE PREMIUM 250G', precio: 35000 },
-            { id: 19, nombre: 'FILTROS PAPEL V60', precio: 15000 },
-            { id: 20, nombre: 'FILTROS PAPEL CHEMEX', precio: 18000 }
+            // CAFÉS - COLIBRI HONEY
+            { id: 1, nombre: 'COLIBRI HONEY 454GM MOLIDO', precio: 50900 },
+            { id: 2, nombre: 'COLIBRI HONEY 454GM GRANO', precio: 50900 },
+            
+            // CAFÉS - CHIVITO DE PARAMO
+            { id: 3, nombre: 'CHIVITO DE PARAMO 454GM GRANO', precio: 46900 },
+            { id: 4, nombre: 'CHIVITO DE PARAMO 454GM MOLIDO', precio: 46900 },
+            
+            // CAFÉS - QUETZAL DEL TOLIMA
+            { id: 5, nombre: 'QUETZAL DEL TOLIMA 454GM GRANO', precio: 45900 },
+            { id: 6, nombre: 'QUETZAL DEL TOLIMA 454GM MOLIDO', precio: 45900 },
+            
+            // CAFETERAS CUELLO DE CISNE
+            { id: 7, nombre: 'CAFETERA CUELLO DE CISNE 350ml PLATEADA', precio: 40000 },
+            { id: 8, nombre: 'CAFETERA CUELLO DE CISNE 350ml NEGRO', precio: 40000 },
+            
+            // ACCESORIOS
+            { id: 9, nombre: 'CONTENEDOR VIDRIO CAFÉ', precio: 20000 },
+            { id: 10, nombre: 'FILTROS', precio: 20000 },
+            { id: 11, nombre: 'FILTRO POCILLO', precio: 20000 },
+            { id: 12, nombre: 'CUCHARAS CAFÉ', precio: 15000 },
+            
+            // CHEMEX
+            { id: 13, nombre: 'CHEMEX 600ML DELGADA VIDRIO BOROSILICATO', precio: 87000 },
+            { id: 14, nombre: 'CHEMEX 400ml BOROSILICATO', precio: 70000 },
+            { id: 15, nombre: 'CHEMEX 300ml BOROSILICATO', precio: 70000 },
+            { id: 16, nombre: 'CHEMEX 800ML VIDRIO BOROSILICATO', precio: 95000 },
+            
+            // V60
+            { id: 17, nombre: 'V60 FILTRO MADERA 700ml 2p', precio: 100000 },
+            { id: 18, nombre: 'V60 FILTRO MADERA 500ml', precio: 95000 },
+            { id: 19, nombre: 'V60 VIDRIO BOROSILICATO NEGRA 600ml', precio: 130000 },
+            { id: 20, nombre: 'V60 NEGRA BISELADA BOROSILICATO 500ml', precio: 95000 },
+            { id: 21, nombre: 'V60 NEGRA BOROSILICATO 400ml', precio: 100000 },
+            { id: 22, nombre: 'V60 FILTRO PLASTICO VIDRIO COMPLETA 600ml', precio: 100000 },
+            
+            // PRENSA FRANCESA
+            { id: 23, nombre: 'PRENSA FRANCESA 600ml BOROSILICATO', precio: 60000 },
+            { id: 24, nombre: 'PRENSA FRANCESA 800ml VIDRIO', precio: 50000 },
+            { id: 25, nombre: 'PRENSA FRANCESA 350ml', precio: 45000 },
+            { id: 26, nombre: 'PRENSA FRANCESA SENCILLA', precio: 45000 },
+            
+            // COMPLEMENTOS
+            { id: 27, nombre: 'JUEGO SEIS POCILLOS DE VIDRIO', precio: 60000 },
+            { id: 28, nombre: 'GRAMERAS SENCILLAS', precio: 22000 },
+            { id: 29, nombre: 'GRAMERA PROFESIONAL 3000 GRAMOS', precio: 50000 },
+            { id: 30, nombre: 'MOLINO ELECTRICO', precio: 65000 },
+            { id: 31, nombre: 'BOTELLA AISLADORA ACERO INOXIDABLE 1LT', precio: 70000 },
+            
+            // CAJAS SACHET
+            { id: 32, nombre: 'CAJA SACHET QUETZAL x8', precio: 35000 },
+            { id: 33, nombre: 'CAJA SACHET CHIVITO x8', precio: 35000 },
+            
+            // DUO QUETZAL
+            { id: 34, nombre: 'DUO QUETZAL - Grano', precio: 88000 },
+            { id: 35, nombre: 'DUO QUETZAL - Molido', precio: 88000 },
+            
+            // DUO CHIVITO
+            { id: 36, nombre: 'DUO CHIVITO - Grano', precio: 90000 },
+            { id: 37, nombre: 'DUO CHIVITO - Molido', precio: 90000 },
+            
+            // TRILOGIA HUELLA DE ORIGEN
+            { id: 38, nombre: 'TRILOGIA HUELLA DE ORIGEN - Grano', precio: 135000 },
+            { id: 39, nombre: 'TRILOGIA HUELLA DE ORIGEN - Molido', precio: 135000 },
+            
+            // DILOGIA DE ORIGEN
+            { id: 40, nombre: 'DILOGIA DE ORIGEN - Grano', precio: 92000 },
+            { id: 41, nombre: 'DILOGIA DE ORIGEN - Molido', precio: 92000 }
         ];
 
         // VARIABLES
@@ -1298,49 +1456,33 @@
 
         // INICIALIZAR
         function init() {
-            console.log('🚀 INICIANDO APLICACIÓN...');
-            cargarConfigSupabase(); // Cargar config de Supabase si existe
-            cargarDatos(); // Cargar 161 clientes si es primera vez
+            cargarConfigSupabase();
+            cargarDatos();
             
-            console.log('✅ DATOS CARGADOS. Clientes totales:', clientes.length);
-            
-            // Renderizar solo si los elementos existen
+            // Renderizar solo si elementos existen
             if (document.getElementById('productsList')) renderProductos();
             if (document.getElementById('facturasTable')) renderFacturas();
             if (document.getElementById('totalVentas')) renderReportes();
             
-            // Listeners - agregar solo si existen
+            // Listeners
             document.getElementById('clientesSearch')?.addEventListener('input', renderClientesTable);
             document.getElementById('clientesModalSearch')?.addEventListener('input', filtrarClientesModal);
             document.getElementById('clienteModalSearch')?.addEventListener('input', renderClienteListaFactura);
             document.getElementById('productSearch')?.addEventListener('input', renderProductos);
-            
-            console.log('✅ APP LISTA');
         }
 
         function cargarDatos() {
-            console.log('📥 CARGANDO DATOS...');
             const clientesGuardados = localStorage.getItem('clientes_huella');
             const facturasGuardadas = localStorage.getItem('facturas_huella');
             
-            // Si no hay clientes guardados, cargar desde seed (primera ejecución)
             if (!clientesGuardados) {
-                console.log('   Primera ejecución: cargando desde seed...');
-                clientes = JSON.parse(JSON.stringify(clientesSeed)); // Copiar seed
+                clientes = JSON.parse(JSON.stringify(clientesSeed));
                 guardarEnStorage();
-                console.log('✅ Se cargaron ' + clientes.length + ' clientes automáticamente');
             } else {
-                console.log('   Cargando desde localStorage...');
                 clientes = JSON.parse(clientesGuardados);
-                console.log('✅ Se cargaron ' + clientes.length + ' clientes desde localStorage');
             }
             
-            if (facturasGuardadas) {
-                facturas = JSON.parse(facturasGuardadas);
-                console.log('✅ Se cargaron ' + facturas.length + ' facturas');
-            }
-            
-            console.log('PRIMER CLIENTE:', clientes.length > 0 ? clientes[0].nombre : 'NINGUNO');
+            if (facturasGuardadas) facturas = JSON.parse(facturasGuardadas);
         }
 
         function guardarEnStorage() {
@@ -1424,9 +1566,9 @@
             const search = (document.getElementById('clientesModalSearch')?.value || '').toLowerCase();
             const list = document.getElementById('clientesModalList');
 
+            // BÚSQUEDA SOLO POR NOMBRE
             const filtrados = clientes.filter(c => 
-                c.nombre.toLowerCase().includes(search) || 
-                normalizarTelefono(c.celular).includes(search.replace(/\D/g, ''))
+                c.nombre.toLowerCase().includes(search)
             );
 
             if (filtrados.length === 0) {
@@ -1447,7 +1589,10 @@
                             </div>
                             <div style="text-align: right;">
                                 <div style="background: #D4A574; color: white; padding: 8px 12px; border-radius: 4px; font-weight: bold; font-size: 13px; margin-bottom: 8px;">${numFacturas} facturas</div>
-                                <button onclick="irAFacturaConClienteDesdeModal(${c.id})" class="btn" style="padding: 8px 12px; font-size: 12px; background: #2C1810; color: white; border: none; cursor: pointer;">📄 Factura</button>
+                                <div style="display: flex; gap: 8px;">
+                                    <button onclick="abrirEditarCliente(${c.id})" class="btn" style="padding: 8px 12px; font-size: 12px; background: #6B5344; color: white; border: none; cursor: pointer;">✏️ Editar</button>
+                                    <button onclick="irAFacturaConClienteDesdeModal(${c.id})" class="btn" style="padding: 8px 12px; font-size: 12px; background: #2C1810; color: white; border: none; cursor: pointer;">📄 Factura</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1466,9 +1611,9 @@
             }
 
             const search = entrada.toLowerCase();
+            // BÚSQUEDA SOLO POR NOMBRE
             const filtrados = clientes.filter(c => 
-                c.nombre.toLowerCase().includes(search) || 
-                c.celular.includes(entrada)
+                c.nombre.toLowerCase().includes(search)
             );
 
             if (filtrados.length === 0) {
@@ -1477,7 +1622,7 @@
                 dropdown.innerHTML = filtrados.map(c => `
                     <div onclick="seleccionarClienteDeModal(${c.id})" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; background: white;">
                         <strong style="display: block; color: #2C1810;">${c.nombre}</strong>
-                        <small style="color: #999;">📱 ${c.celular} | 🏘️ ${c.ciudad || 'N/A'}</small>
+                        <small style="color: #999;">📍 ${c.ciudad || 'N/A'}</small>
                     </div>
                 `).join('');
             }
@@ -1494,9 +1639,49 @@
             }
         }
 
-        function irAFacturaConClienteDesdeModal(clienteId) {
-            irAFacturaConCliente(clienteId);
-            cerrarModalClientes();
+        // EDITAR CLIENTE
+        let clienteEnEdicion = null;
+        
+        function abrirEditarCliente(clienteId) {
+            clienteEnEdicion = clientes.find(c => c.id === clienteId);
+            if (!clienteEnEdicion) return;
+            
+            // Llenar el modal de edición
+            document.getElementById('editClientId').value = clienteEnEdicion.id;
+            document.getElementById('editClientNombre').value = clienteEnEdicion.nombre;
+            document.getElementById('editClientCelular').value = clienteEnEdicion.celular || '';
+            document.getElementById('editClientIdentificacion').value = clienteEnEdicion.identificacion || '';
+            document.getElementById('editClientEmail').value = clienteEnEdicion.email || '';
+            document.getElementById('editClientCiudad').value = clienteEnEdicion.ciudad || '';
+            document.getElementById('editClientDireccion').value = clienteEnEdicion.direccion || '';
+            
+            const modal = document.getElementById('editarClienteModal');
+            if (modal) modal.style.display = 'block';
+        }
+        
+        function cerrarEditarCliente() {
+            const modal = document.getElementById('editarClienteModal');
+            if (modal) modal.style.display = 'none';
+            clienteEnEdicion = null;
+        }
+        
+        function guardarEditarCliente() {
+            if (!clienteEnEdicion) return;
+            
+            // Actualizar datos del cliente
+            clienteEnEdicion.nombre = document.getElementById('editClientNombre').value.trim();
+            clienteEnEdicion.celular = document.getElementById('editClientCelular').value.trim();
+            clienteEnEdicion.identificacion = document.getElementById('editClientIdentificacion').value.trim();
+            clienteEnEdicion.email = document.getElementById('editClientEmail').value.trim();
+            clienteEnEdicion.ciudad = document.getElementById('editClientCiudad').value.trim();
+            clienteEnEdicion.direccion = document.getElementById('editClientDireccion').value.trim();
+            
+            // Guardar en localStorage
+            guardarEnStorage();
+            
+            alert('✅ Cliente actualizado correctamente');
+            cerrarEditarCliente();
+            renderClienteModalList();
         }
 
         function renderClientesTable() {
@@ -1535,11 +1720,11 @@
         function renderClienteListaFactura() {
             const search = (document.getElementById('clienteModalSearch')?.value || '').toLowerCase();
             const list = document.getElementById('clienteModalList');
-            if (!list) return; // Si no existe, no hacer nada
+            if (!list) return;
 
+            // BÚSQUEDA SOLO POR NOMBRE
             const filtrados = clientes.filter(c => 
-                c.nombre.toLowerCase().includes(search) || 
-                normalizarTelefono(c.celular).includes(search.replace(/\D/g, ''))
+                c.nombre.toLowerCase().includes(search)
             );
 
             if (filtrados.length === 0) {
@@ -1551,7 +1736,7 @@
                 <div class="modal-item" onclick="seleccionarClienteDelModal(${c.id})">
                     <div style="flex: 1;">
                         <strong>${c.nombre}</strong>
-                        <small>${c.celular} | ${c.ciudad || '—'}</small>
+                        <small>${c.ciudad || '—'}</small>
                     </div>
                 </div>
             `).join('');
@@ -1646,211 +1831,137 @@
         }
 
         function buscarClienteParaFactura() {
-            console.log('🔍 INICIANDO buscarClienteParaFactura...');
-            console.log('Total de clientes en memoria:', clientes.length);
-            
             const input = document.getElementById('facturaClientPhone');
-            if (!input) {
-                console.error('❌ Input no encontrado');
-                return;
-            }
+            if (!input) return;
             
             const entrada = input.value.trim();
-            console.log('Entrada del usuario:', entrada);
             
             if (!entrada) {
-                alert('⚠️ Ingresa el nombre o celular del cliente');
+                alert('⚠️ Ingresa el nombre del cliente');
                 return;
             }
             
             if (clientes.length === 0) {
-                console.error('❌ PROBLEMA: clientes está vacío!');
-                alert('❌ ERROR: No hay clientes cargados. Recarga la página.');
+                alert('❌ No hay clientes cargados');
                 return;
             }
             
-            console.log('Primeros 5 clientes:', clientes.slice(0, 5).map(c => c.nombre));
+            const entrada_upper = entrada.toUpperCase();
             
-            // BÚSQUEDA DIRECTA - SIN DROPDOWN
-            const phone = normalizarTelefono(entrada);
-            console.log('Teléfono normalizado:', phone);
-            
-            // 1. Buscar por celular exacto
-            let cliente = clientes.find(c => {
-                const cel = normalizarTelefono(c.celular);
-                if (cel === phone) {
-                    console.log('✅ ENCONTRADO POR CELULAR:', c.nombre);
-                    return true;
-                }
-                return false;
-            });
-            
+            // 1. Buscar por nombre EXACTO
+            let cliente = clientes.find(c => c.nombre.toUpperCase() === entrada_upper);
             if (cliente) {
                 cargarClienteEnFactura(cliente);
                 return;
             }
             
-            // 2. Buscar por nombre EXACTO (uppercase)
-            const entradaUpper = entrada.toUpperCase();
-            cliente = clientes.find(c => {
-                if (c.nombre.toUpperCase() === entradaUpper) {
-                    console.log('✅ ENCONTRADO POR NOMBRE EXACTO:', c.nombre);
-                    return true;
-                }
-                return false;
-            });
-            
-            if (cliente) {
-                cargarClienteEnFactura(cliente);
-                return;
-            }
-            
-            // 3. Buscar por nombre PARCIAL
-            console.log('Buscando coincidencias parciales de:', entradaUpper);
-            const filtrados = clientes.filter(c => {
-                const match = c.nombre.toUpperCase().includes(entradaUpper);
-                if (match) {
-                    console.log('  → Coincidencia:', c.nombre);
-                }
-                return match;
-            });
-            
-            console.log('Encontradas', filtrados.length, 'coincidencias');
+            // 2. Buscar por nombre PARCIAL
+            const filtrados = clientes.filter(c => c.nombre.toUpperCase().includes(entrada_upper));
             
             if (filtrados.length === 0) {
-                alert('❌ Cliente no encontrado\n\nTú escribiste: "' + entrada + '"\n\nIntenta con:\n• Nombre completo: ANGELA MORA\n• Nombre parcial: MORA\n• Celular');
+                alert('❌ No encontrado: ' + entrada);
                 return;
             }
             
             if (filtrados.length === 1) {
-                console.log('✅ Una coincidencia exacta:', filtrados[0].nombre);
                 cargarClienteEnFactura(filtrados[0]);
                 return;
             }
             
-            // Si hay múltiples resultados, cargar el PRIMERO
-            console.log('Múltiples coincidencias. Cargando la primera:', filtrados[0].nombre);
-            alert(`✓ Se encontraron ${filtrados.length} resultados.\n\n${filtrados.map(c => c.nombre).join('\n')}\n\nCargando: ${filtrados[0].nombre}`);
+            // Si hay múltiples, cargar el primero
+            alert('Se encontraron ' + filtrados.length + ' resultados.\nCargando: ' + filtrados[0].nombre);
             cargarClienteEnFactura(filtrados[0]);
         }
 
         function filtrarClientesFactura() {
-            const entrada = document.getElementById('facturaClientPhone')?.value || '';
+            const entrada = document.getElementById('facturaClientPhone')?.value.trim() || '';
             const dropdown = document.getElementById('facturaClientesDropdown');
-            if (!dropdown) {
-                console.warn('⚠️ Dropdown no encontrado');
-                return;
-            }
+            if (!dropdown) return;
 
-            if (entrada.trim().length < 1) {
+            if (entrada.length === 0) {
                 dropdown.style.display = 'none';
                 return;
             }
 
-            console.log('🔎 Filtrando dropdown con entrada:', entrada);
-            console.log('   Clientes disponibles:', clientes.length);
-
-            // Filtrar por nombre O celular
-            const filtrados = clientes.filter(c => {
-                const nombre = c.nombre.toUpperCase();
-                const entrUpper = entrada.toUpperCase();
-                const celNorm = normalizarTelefono(c.celular);
-                const entrNorm = normalizarTelefono(entrada);
-                
-                const match = nombre.includes(entrUpper) || celNorm.includes(entrNorm);
-                return match;
-            });
-
-            console.log('   Resultados encontrados:', filtrados.length);
-            filtrados.forEach((c, i) => console.log(`   ${i + 1}. ${c.nombre}`));
+            // BÚSQUEDA SIMPLE: solo por NOMBRE
+            const filtrados = clientes.filter(c => 
+                c.nombre.toUpperCase().includes(entrada.toUpperCase())
+            );
 
             if (filtrados.length === 0) {
                 dropdown.innerHTML = '<div style="padding: 12px; color: #999; text-align: center;">Sin resultados</div>';
                 dropdown.style.display = 'block';
             } else {
                 dropdown.innerHTML = filtrados.map((c, idx) => `
-                    <div class="modal-item" onclick="seleccionarClienteFacturaDirecto(${c.id})" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; background: ${idx === 0 ? '#f0e8d0' : 'white'}; transition: background 0.2s; font-weight: ${idx === 0 ? '600' : '400'};">
-                        <strong style="display: block; color: #2C1810;">${c.nombre}</strong>
-                        <small style="color: #999;">📱 ${c.celular || 'Sin celular'} | 🏘️ ${c.ciudad || 'N/A'}</small>
+                    <div class="modal-item" onclick="seleccionarClienteDesdeDropdown(${c.id})" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; background: ${idx === 0 ? '#f0e8d0' : 'white'};">
+                        <strong>${c.nombre}</strong>
+                        <small style="display: block; color: #999;">${c.ciudad || 'N/A'}</small>
                     </div>
                 `).join('');
                 dropdown.style.display = 'block';
             }
         }
 
-        function seleccionarClienteFacturaDirecto(clienteId) {
+        function seleccionarClienteDesdeDropdown(clienteId) {
+            // Buscar el cliente exacto con este ID
             const cliente = clientes.find(c => c.id === clienteId);
+            
             if (!cliente) {
-                console.error('Cliente no encontrado:', clienteId);
+                alert('❌ Error: Cliente no encontrado');
                 return;
             }
             
+            // Asignar al input
             const phoneField = document.getElementById('facturaClientPhone');
-            const dropdown = document.getElementById('facturaClientesDropdown');
-            
             if (phoneField) phoneField.value = cliente.nombre;
+            
+            // Cerrar dropdown
+            const dropdown = document.getElementById('facturaClientesDropdown');
             if (dropdown) dropdown.style.display = 'none';
             
+            // CARGAR EL CLIENTE
             cargarClienteEnFactura(cliente);
-            console.log('✅ Cliente cargado desde dropdown:', cliente.nombre);
-        }
-
-        function seleccionarClienteFactura(clienteId) {
-            seleccionarClienteFacturaDirecto(clienteId); // Alias para compatibilidad
         }
 
         function cargarClienteEnFactura(cliente) {
-            if (!cliente) {
-                console.error('❌ Error: cliente es null/undefined');
-                return;
-            }
+            if (!cliente) return;
             
-            console.log('📋 Cargando cliente:', cliente.nombre, '(ID:', cliente.id + ')');
-            
+            // GUARDAR cliente seleccionado
             clienteSeleccionado = cliente;
             itemsTemp = [];
             
-            // Asignar datos con validación de elementos
+            // LIMPIAR todo lo anterior
             const elements = {
-                'facturaClientNombre': cliente.nombre,
+                'facturaClientNombre': cliente.nombre || '',
                 'facturaClientIdentificacion': cliente.identificacion || '—',
-                'facturaClientCelular': cliente.celular || 'Sin registrar',
-                'facturaClientEmail': cliente.email || 'No registrado',
-                'facturaClientDireccion': cliente.direccion || 'No registrada',
-                'facturaClientCiudad': cliente.ciudad || 'No registrada'
+                'facturaClientCelular': cliente.celular || '',
+                'facturaClientEmail': cliente.email || '',
+                'facturaClientDireccion': cliente.direccion || '',
+                'facturaClientCiudad': cliente.ciudad || ''
             };
             
+            // Asignar valores
             Object.entries(elements).forEach(([id, value]) => {
                 const el = document.getElementById(id);
-                if (el) {
-                    el.textContent = value;
-                } else {
-                    console.warn('⚠️ Elemento no encontrado:', id);
-                }
+                if (el) el.textContent = value;
             });
             
             // Mostrar secciones
             const boxCliente = document.getElementById('clienteSeleccionadoBox');
             const boxFormula = document.getElementById('facturaFormBox');
             const itemBody = document.getElementById('itemsBody');
-            const descuento = document.getElementById('descuentoPorcentaje');
-            const envio = document.getElementById('envio');
             
-            if (boxCliente) {
-                boxCliente.style.display = 'block';
-                console.log('✅ Mostrado: clienteSeleccionadoBox');
-            }
-            if (boxFormula) {
-                boxFormula.style.display = 'block';
-                console.log('✅ Mostrado: facturaFormBox');
-            }
+            if (boxCliente) boxCliente.style.display = 'block';
+            if (boxFormula) boxFormula.style.display = 'block';
             if (itemBody) itemBody.innerHTML = '';
-            if (descuento) descuento.value = '0';
-            if (envio) envio.value = '0';
+            
+            // Resetear descuento y envío
+            const descEl = document.getElementById('descuentoPorcentaje');
+            const envEl = document.getElementById('envio');
+            if (descEl) descEl.value = '0';
+            if (envEl) envEl.value = '0';
             
             calcularTotales();
-            
-            console.log('✅✅ Cliente cargado correctamente:', cliente.nombre);
         }
 
         function cambiarCliente() {
@@ -1864,6 +1975,15 @@
             if (phoneField) phoneField.value = '';
             if (boxCliente) boxCliente.style.display = 'none';
             if (boxFormula) boxFormula.style.display = 'none';
+        }
+
+        function irAFacturaConClienteDesdeModal(clienteId) {
+            // Cerrar el modal de clientes
+            const modal = document.getElementById('clientesModal');
+            if (modal) modal.style.display = 'none';
+            
+            // Ir a Nueva Factura con el cliente
+            irAFacturaConCliente(clienteId);
         }
 
         function irAFacturaConCliente(clienteId) {
@@ -2037,81 +2157,107 @@
         function generarPDF(factura) {
             const pdfDiv = document.getElementById('pdf-content');
             pdfDiv.innerHTML = `
-                <div style="font-family: 'Arial', sans-serif; color: #2C1810; max-width: 800px; margin: 0 auto; padding: 0 15px;">
-                    <div style="text-align: center; border-bottom: 2px solid #D4A574; padding-bottom: 20px; margin-bottom: 25px;">
+                <div style="font-family: 'Poppins', Arial, sans-serif; color: #2C1810; width: 800px; margin: 0 auto; padding: 40px 20px; background: white;">
+                    <div style="text-align: center; border-bottom: 2px solid #D4A574; padding-bottom: 25px; margin-bottom: 30px;">
                         <div style="margin-bottom: 15px;">
-                            <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA2ADYAAD/4QCMRXhpZgAATU0AKgAAAAgABQESAAMAAAABAAEAAAEaAAUAAAABAAAASgEbAAUAAAABAAAAUgEoAAMAAAABAAIAAIdpAAQAAAABAAAAWgAAAAAAAADYAAAAAQAAANgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAABQqgAw" style="width: 70px; height: auto;">
+                            <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA2ADYAAD/4QCMRXhpZgAATU0AKgAAAAgABQESAAMAAAABAAEAAAEaAAUAAAABAAAASgEbAAUAAAABAAAAUgEoAAMAAAABAAIAAIdpAAQAAAABAAAAWgAAAAAAAADYAAAAAQAAANgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAABQqgAw" style="width: 80px; height: auto;">
                         </div>
-                        <h1 style="font-size: 1.8em; margin: 0 0 5px 0;">HUELLA DE ORIGEN</h1>
-                        <p style="color: #D4A574; font-style: italic; margin: 0 0 10px 0;">Desde su origen, deja huella</p>
-                        <p style="font-size: 0.9em; margin: 5px 0;">📱 311 768 2407 | ✉️ comercial@huelladeorigen.com</p>
+                        <h1 style="font-size: 24px; margin: 0 0 5px 0; font-weight: 700;">HUELLA DE ORIGEN</h1>
+                        <p style="color: #D4A574; font-style: italic; margin: 0 0 12px 0; font-size: 14px;">Desde su origen, deja huella</p>
+                        <p style="font-size: 12px; margin: 8px 0; color: #666;">📱 311 768 2407 | ✉️ comercial@huelladeorigen.com</p>
                     </div>
 
-                    <h2 style="text-align: center; font-size: 1.5em; margin-bottom: 20px;">FACTURA</h2>
-                    <p style="text-align: center; font-size: 1.2em; color: #D4A574; margin-bottom: 25px;"><strong>${factura.id}</strong></p>
+                    <h2 style="text-align: center; font-size: 22px; margin-bottom: 20px; font-weight: 700;">FACTURA</h2>
+                    <p style="text-align: center; font-size: 18px; color: #D4A574; margin-bottom: 30px; font-weight: 600;">${factura.id}</p>
 
-                    <table style="width: 100%; margin-bottom: 20px; border-collapse: collapse;">
+                    <table style="width: 100%; margin-bottom: 25px; border-collapse: collapse;">
                         <tr style="border-bottom: 1px solid #ddd;">
-                            <td style="padding: 8px 0;"><strong>Fecha:</strong> ${factura.fecha}</td>
-                            <td style="text-align: right; padding: 8px 0;"><strong>Vendedor:</strong> ${factura.vendedor}</td>
+                            <td style="padding: 10px 0; font-weight: 600;">Fecha:</td>
+                            <td style="padding: 10px 0;">${factura.fecha}</td>
+                            <td style="text-align: right; padding: 10px 0; font-weight: 600;">Vendedor:</td>
+                            <td style="text-align: right; padding: 10px 0;">${factura.vendedor}</td>
                         </tr>
                         <tr style="border-bottom: 1px solid #ddd;">
-                            <td style="padding: 8px 0;"><strong>Cliente:</strong> ${factura.cliente.nombre}</td>
-                            <td style="text-align: right; padding: 8px 0;"><strong>Estado:</strong> ${factura.estado}</td>
+                            <td style="padding: 10px 0; font-weight: 600;">Cliente:</td>
+                            <td style="padding: 10px 0;">${factura.cliente.nombre}</td>
+                            <td style="text-align: right; padding: 10px 0; font-weight: 600;">Estado:</td>
+                            <td style="text-align: right; padding: 10px 0;">${factura.estado}</td>
                         </tr>
-                        <tr>
-                            <td style="padding: 8px 0;"><strong>Celular:</strong> ${factura.cliente.celular}</td>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 10px 0; font-weight: 600;">ID/Cédula:</td>
+                            <td style="padding: 10px 0;">${factura.cliente.identificacion || 'N/A'}</td>
+                            <td colspan="2"></td>
                         </tr>
-                        <tr>
-                            <td style="padding: 8px 0;"><strong>Dirección:</strong> ${factura.cliente.direccion || 'N/A'}</td>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 10px 0; font-weight: 600;">Celular:</td>
+                            <td style="padding: 10px 0;">${factura.cliente.celular || 'N/A'}</td>
+                            <td colspan="2"></td>
                         </tr>
-                        <tr>
-                            <td style="padding: 8px 0;"><strong>Ciudad:</strong> ${factura.cliente.ciudad || 'N/A'}</td>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 10px 0; font-weight: 600;">Dirección:</td>
+                            <td style="padding: 10px 0;" colspan="3">${factura.cliente.direccion || 'N/A'}</td>
                         </tr>
-                        <tr>
-                            <td style="padding: 8px 0;"><strong>Email:</strong> ${factura.cliente.email || 'N/A'}</td>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 10px 0; font-weight: 600;">Ciudad:</td>
+                            <td style="padding: 10px 0;">${factura.cliente.ciudad || 'N/A'}</td>
+                            <td style="text-align: right; padding: 10px 0; font-weight: 600;">Email:</td>
+                            <td style="text-align: right; padding: 10px 0; font-size: 12px;">${factura.cliente.email || 'N/A'}</td>
                         </tr>
                     </table>
 
-                    <table style="width: 100%; margin: 25px 0; border-collapse: collapse;">
+                    <table style="width: 100%; margin: 30px 0; border-collapse: collapse;">
                         <thead style="background: #2C1810; color: white;">
                             <tr>
-                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Producto</th>
-                                <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Cant.</th>
-                                <th style="padding: 10px; text-align: right; border: 1px solid #ddd;">P. Unit.</th>
-                                <th style="padding: 10px; text-align: right; border: 1px solid #ddd;">Subtotal</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Producto</th>
+                                <th style="padding: 12px; text-align: center; font-weight: 600; width: 60px;">Cant.</th>
+                                <th style="padding: 12px; text-align: right; font-weight: 600; width: 100px;">P. Unit.</th>
+                                <th style="padding: 12px; text-align: right; font-weight: 600; width: 100px;">Subtotal</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${factura.items.map(item => `<tr>
-                                <td style="padding: 10px; border: 1px solid #ddd; border-left: none; border-right: none;">${item.nombre}</td>
-                                <td style="padding: 10px; text-align: center; border: 1px solid #ddd; border-left: none; border-right: none;">${item.cantidad}</td>
-                                <td style="padding: 10px; text-align: right; border: 1px solid #ddd; border-left: none; border-right: none;">$${item.precio.toLocaleString('es-ES')}</td>
-                                <td style="padding: 10px; text-align: right; border: 1px solid #ddd; border-left: none; border-right: none;">$${Math.round(item.precio * item.cantidad).toLocaleString('es-ES')}</td>
+                            ${factura.items.map(item => `<tr style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 10px; text-align: left;">${item.nombre}</td>
+                                <td style="padding: 10px; text-align: center;">${item.cantidad}</td>
+                                <td style="padding: 10px; text-align: right;">$${item.precio.toLocaleString('es-ES')}</td>
+                                <td style="padding: 10px; text-align: right;">$${Math.round(item.precio * item.cantidad).toLocaleString('es-ES')}</td>
                             </tr>`).join('')}
                         </tbody>
                     </table>
 
-                    <div style="text-align: right; margin: 25px 0; padding: 15px; background: #f9f6f3; border-radius: 6px;">
-                        <p style="margin: 5px 0;"><strong>Subtotal:</strong> $${factura.subtotal.toLocaleString('es-ES')}</p>
-                        ${factura.descuentoMonto > 0 ? `<p style="margin: 5px 0; color: #28a745;"><strong>Descuento (${factura.descuentoPorcentaje}%):</strong> -$${Math.round(factura.descuentoMonto).toLocaleString('es-ES')}</p>` : ''}
-                        ${factura.envio > 0 ? `<p style="margin: 5px 0;"><strong>Envío:</strong> +$${Math.round(factura.envio).toLocaleString('es-ES')}</p>` : ''}
-                        <p style="margin-top: 10px; font-size: 1.2em; color: #D4A574; border-top: 2px solid #D4A574; padding-top: 10px;"><strong>TOTAL: $${Math.round(factura.total).toLocaleString('es-ES')}</strong></p>
+                    <div style="text-align: right; margin: 30px 0; padding: 20px; background: #f9f6f3; border-radius: 8px; border: 1px solid #e8ddd0;">
+                        <table style="width: 100%; text-align: right;">
+                            <tr style="border-bottom: 1px solid #e0d5c7;">
+                                <td style="padding: 8px 0; text-align: right; width: 200px;"><strong>Subtotal:</strong></td>
+                                <td style="padding: 8px 0; text-align: right; width: 150px;">$${factura.subtotal.toLocaleString('es-ES')}</td>
+                            </tr>
+                            ${factura.descuentoMonto > 0 ? `<tr style="border-bottom: 1px solid #e0d5c7;">
+                                <td style="padding: 8px 0; text-align: right; color: #28a745;"><strong>Descuento (${factura.descuentoPorcentaje}%):</strong></td>
+                                <td style="padding: 8px 0; text-align: right; color: #28a745;">-$${Math.round(factura.descuentoMonto).toLocaleString('es-ES')}</td>
+                            </tr>` : ''}
+                            ${factura.envio > 0 ? `<tr style="border-bottom: 1px solid #e0d5c7;">
+                                <td style="padding: 8px 0; text-align: right;"><strong>Envío:</strong></td>
+                                <td style="padding: 8px 0; text-align: right;">+$${Math.round(factura.envio).toLocaleString('es-ES')}</td>
+                            </tr>` : ''}
+                            <tr>
+                                <td style="padding: 12px 0; text-align: right; font-size: 18px; color: #D4A574; border-top: 2px solid #D4A574;"><strong>TOTAL:</strong></td>
+                                <td style="padding: 12px 0; text-align: right; font-size: 18px; color: #D4A574; border-top: 2px solid #D4A574;"><strong>$${Math.round(factura.total).toLocaleString('es-ES')}</strong></td>
+                            </tr>
+                        </table>
                     </div>
 
-                    <div style="text-align: center; padding-top: 20px; border-top: 1px solid #ddd; font-size: 0.85em; color: #999;">
-                        <p>Gracias por tu compra</p>
-                        <p>¡Disfruta nuestro café de especialidad!</p>
+                    <div style="text-align: center; padding-top: 25px; border-top: 1px solid #ddd; font-size: 13px; color: #999;">
+                        <p style="margin: 8px 0;">Gracias por tu compra</p>
+                        <p style="margin: 8px 0;">¡Disfruta nuestro café de especialidad!</p>
                     </div>
                 </div>
             `;
 
-            const element = pdfDiv.innerHTML;
+            const element = pdfDiv.firstChild;
             const opt = {
-                margin: [15, 20, 15, 20],  // top, left, bottom, right (en mm)
+                margin: [10, 10, 10, 10],
                 filename: `Factura_${factura.id}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
                 jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
             };
 
@@ -2133,7 +2279,115 @@
         }
 
         function verFactura(idx) {
-            generarPDF(facturas[idx]);
+            const factura = facturas[idx];
+            if (!factura) return;
+            
+            // Mostrar modal de factura
+            const modal = document.getElementById('verFacturaModal');
+            if (!modal) {
+                generarPDF(factura);
+                return;
+            }
+            
+            // Llenar modal con datos de la factura
+            document.getElementById('verFacturaId').textContent = factura.id;
+            document.getElementById('verFacturaCliente').textContent = factura.cliente.nombre;
+            document.getElementById('verFacturaFecha').textContent = factura.fecha;
+            document.getElementById('verFacturaVendedor').textContent = factura.vendedor;
+            document.getElementById('verFacturaEstado').textContent = factura.estado;
+            
+            // Tabla de productos
+            const productosHTML = factura.items.map(item => `
+                <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.nombre}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.cantidad}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.precio.toLocaleString('es-ES')}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${Math.round(item.precio * item.cantidad).toLocaleString('es-ES')}</td>
+                </tr>
+            `).join('');
+            document.getElementById('verFacturaProductos').innerHTML = productosHTML;
+            
+            // Totales - SIN símbolo de pesos al inicio, solo el número
+            const subtotalNum = Math.round(factura.subtotal);
+            const descuentoNum = Math.round(factura.descuentoMonto || 0);
+            const envioNum = Math.round(factura.envio || 0);
+            const totalNum = Math.round(factura.total);
+            
+            document.getElementById('verFacturaSubtotal').textContent = subtotalNum.toLocaleString('es-ES');
+            
+            // Mostrar/ocultar descuento y envío si son 0
+            const descuentoRow = document.getElementById('verFacturaDescuentoRow');
+            if (descuentoNum > 0) {
+                descuentoRow.style.display = 'inline-block';
+                document.getElementById('verFacturaDescuento').textContent = `-$${descuentoNum.toLocaleString('es-ES')}`;
+            } else {
+                descuentoRow.style.display = 'none';
+            }
+            
+            const envioRow = document.getElementById('verFacturaEnvioRow');
+            if (envioNum > 0) {
+                envioRow.style.display = 'inline-block';
+                document.getElementById('verFacturaEnvio').textContent = `+$${envioNum.toLocaleString('es-ES')}`;
+            } else {
+                envioRow.style.display = 'none';
+            }
+            
+            document.getElementById('verFacturaTotal').textContent = totalNum.toLocaleString('es-ES');
+            
+            // Guardar factura actual para descargar PDF y WhatsApp
+            window.facturaActual = factura;
+            
+            // Mostrar modal
+            modal.style.display = 'block';
+        }
+        
+        function cerrarVerFactura() {
+            const modal = document.getElementById('verFacturaModal');
+            if (modal) modal.style.display = 'none';
+        }
+        
+        function descargarPDFFacturaModal() {
+            if (window.facturaActual) {
+                generarPDF(window.facturaActual);
+            }
+        }
+        
+        function compartirWhatsAppDesdeModal() {
+            if (!window.facturaActual) return;
+            
+            const factura = window.facturaActual;
+            const celular = factura.cliente.celular || '';
+            
+            if (!celular) {
+                alert('❌ El cliente no tiene celular registrado');
+                return;
+            }
+            
+            // Crear mensaje con detalles de la factura
+            const mensaje = `☕ *FACTURA HUELLA DE ORIGEN*\n\n` +
+                `📌 *${factura.id}*\n` +
+                `👤 Cliente: ${factura.cliente.nombre}\n` +
+                `📅 Fecha: ${factura.fecha}\n` +
+                `👨‍💼 Vendedor: ${factura.vendedor}\n` +
+                `💰 *Total: $${Math.round(factura.total).toLocaleString('es-ES')}*\n` +
+                `📊 Estado: ${factura.estado}\n\n` +
+                `_Desde su origen, deja huella._\n` +
+                `📱 311 768 2407\n` +
+                `✉️ comercial@huelladeorigen.com`;
+            
+            // Limpiar número (solo dígitos)
+            const numeroLimpio = celular.replace(/\D/g, '');
+            
+            // Construir URL de WhatsApp (agregar +57 para Colombia)
+            const urlWhatsApp = `https://wa.me/57${numeroLimpio}?text=${encodeURIComponent(mensaje)}`;
+            
+            // Primero generar PDF
+            generarPDF(factura);
+            
+            // Luego abrir WhatsApp con mensaje
+            setTimeout(() => {
+                window.open(urlWhatsApp, '_blank');
+            }, 500);
         }
 
         // SEGUIMIENTO
