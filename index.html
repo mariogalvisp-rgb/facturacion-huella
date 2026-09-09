@@ -93,6 +93,7 @@
             <button class="nav-btn active" data-section="clientes">👥 Clientes</button>
             <button class="nav-btn" data-section="nuevo-cliente">➕ Nuevo Cliente</button>
             <button class="nav-btn" data-section="nueva-factura">📄 Nueva Factura</button>
+            <button class="nav-btn" data-section="seguimiento">📍 Seguimiento</button>
             <button class="nav-btn" data-section="facturas">📋 Historial</button>
             <button class="nav-btn" data-section="reportes">📊 Reportes</button>
         </nav>
@@ -103,9 +104,13 @@
                 <h2>👥 Base de Clientes</h2>
                 <p style="margin-bottom: 15px; color: #666;">Todos tus clientes registrados</p>
                 
-                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                    <input type="text" id="clientesSearch" placeholder="🔍 Busca por nombre o celular..." style="flex: 1; font-size: 1em;">
-                    <button class="btn" onclick="limpiarBuscador()" style="width: auto;">Limpiar</button>
+                <div style="position: relative; margin-bottom: 20px;">
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="clientesSearch" placeholder="🔍 Busca por nombre o celular..." style="flex: 1; font-size: 1em;" onkeyup="filtrarClientesTable()">
+                        <button class="btn" onclick="limpiarBuscador()" style="width: auto;">Limpiar</button>
+                    </div>
+                    <!-- Dropdown para buscar en Clientes -->
+                    <div id="clientesDropdown" class="modal-list" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 6px 6px; max-height: 250px; overflow-y: auto; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-top: -5px;"></div>
                 </div>
 
                 <div id="clientesResultado"></div>
@@ -170,10 +175,14 @@
                 
                 <div class="form-group">
                     <label>Buscar Cliente (por nombre o celular) *</label>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="facturaClientPhone" placeholder="ej: Carlos Pérez o 3117682407" style="flex: 1;">
-                        <button type="button" class="btn" onclick="abrirModalClientes()" style="width: auto;">📋 Ver Lista</button>
-                        <button type="button" class="btn" onclick="buscarClienteParaFactura()" style="width: auto;">🔍 Buscar</button>
+                    <div style="position: relative;">
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="facturaClientPhone" placeholder="ej: Carlos Pérez o 3117682407" style="flex: 1;" onkeyup="filtrarClientesFactura()">
+                            <button type="button" class="btn" onclick="abrirModalClientes()" style="width: auto;">📋 Ver Lista</button>
+                            <button type="button" class="btn" onclick="buscarClienteParaFactura()" style="width: auto;">🔍 Buscar</button>
+                        </div>
+                        <!-- Dropdown para buscar clientes -->
+                        <div id="facturaClientesDropdown" class="modal-list" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 6px 6px; max-height: 250px; overflow-y: auto; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-top: -5px;"></div>
                     </div>
                 </div>
 
@@ -242,6 +251,15 @@
 
                     <button type="button" class="btn" style="width: 100%; margin-top: 20px; font-size: 1.05em; padding: 15px;" onclick="guardarFactura()">✅ Guardar Factura</button>
                 </div>
+            </div>
+        </section>
+
+        <!-- SEGUIMIENTO -->
+        <section id="seguimiento" class="section">
+            <div class="card">
+                <h2>📍 Seguimiento de Pedidos</h2>
+                <p style="margin-bottom: 20px; color: #666;">Actualiza el estado de tus pedidos y envía notificaciones por WhatsApp</p>
+                <div id="seguimientoList"></div>
             </div>
         </section>
 
@@ -388,8 +406,48 @@
             }).join('');
         }
 
+        function filtrarClientesTable() {
+            const entrada = document.getElementById('clientesSearch')?.value || '';
+            const dropdown = document.getElementById('clientesDropdown');
+
+            if (entrada.length < 1) {
+                dropdown.style.display = 'none';
+                renderClientesTable();
+                return;
+            }
+
+            const search = entrada.toLowerCase();
+            const filtrados = clientes.filter(c => 
+                c.nombre.toLowerCase().includes(search) || 
+                c.celular.includes(entrada)
+            );
+
+            if (filtrados.length === 0) {
+                dropdown.innerHTML = '<div style="padding: 12px; color: #999; text-align: center;">Sin resultados</div>';
+            } else {
+                dropdown.innerHTML = filtrados.map(c => `
+                    <div class="modal-item" onclick="seleccionarClienteClientes(${c.id})" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer;">
+                        <strong style="display: block; color: #2C1810;">${c.nombre}</strong>
+                        <small style="color: #999;">📱 ${c.celular} | 🏘️ ${c.ciudad || 'N/A'}</small>
+                    </div>
+                `).join('');
+            }
+            dropdown.style.display = 'block';
+            renderClientesTable();
+        }
+
+        function seleccionarClienteClientes(clienteId) {
+            const cliente = clientes.find(c => c.id === clienteId);
+            if (cliente) {
+                document.getElementById('clientesSearch').value = cliente.nombre;
+                document.getElementById('clientesDropdown').style.display = 'none';
+                renderClientesTable();
+            }
+        }
+
         function limpiarBuscador() {
             document.getElementById('clientesSearch').value = '';
+            document.getElementById('clientesDropdown').style.display = 'none';
             renderClientesTable();
         }
 
@@ -529,6 +587,43 @@
             }
 
             cargarClienteEnFactura(cliente);
+        }
+
+        function filtrarClientesFactura() {
+            const entrada = document.getElementById('facturaClientPhone')?.value || '';
+            const dropdown = document.getElementById('facturaClientesDropdown');
+
+            if (entrada.length < 1) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            const search = entrada.toLowerCase();
+            const filtrados = clientes.filter(c => 
+                c.nombre.toLowerCase().includes(search) || 
+                c.celular.includes(entrada)
+            );
+
+            if (filtrados.length === 0) {
+                dropdown.innerHTML = '<div style="padding: 12px; color: #999; text-align: center;">Sin resultados</div>';
+            } else {
+                dropdown.innerHTML = filtrados.map(c => `
+                    <div class="modal-item" onclick="seleccionarClienteFactura(${c.id})" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; hover-background: #f5f5f5;">
+                        <strong style="display: block; color: #2C1810;">${c.nombre}</strong>
+                        <small style="color: #999;">📱 ${c.celular} | 🏘️ ${c.ciudad || 'N/A'}</small>
+                    </div>
+                `).join('');
+            }
+            dropdown.style.display = 'block';
+        }
+
+        function seleccionarClienteFactura(clienteId) {
+            const cliente = clientes.find(c => c.id === clienteId);
+            if (cliente) {
+                document.getElementById('facturaClientPhone').value = cliente.nombre;
+                document.getElementById('facturaClientesDropdown').style.display = 'none';
+                cargarClienteEnFactura(cliente);
+            }
         }
 
         function cargarClienteEnFactura(cliente) {
@@ -789,6 +884,81 @@
             generarPDF(facturas[idx]);
         }
 
+        // SEGUIMIENTO
+        function renderSeguimiento() {
+            const container = document.getElementById('seguimientoList');
+            if (facturas.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No hay facturas para hacer seguimiento</p>';
+                return;
+            }
+
+            container.innerHTML = facturas.map((f, idx) => {
+                const estados = ['Pedido en preparación', 'Enviado', 'Entregado', 'Completado'];
+                const estadoActual = f.seguimiento || 'Pedido en preparación';
+                const indexEstado = estados.indexOf(estadoActual);
+                
+                return `
+                    <div class="card" style="margin-bottom: 15px; border-left: 4px solid #2C1810;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div>
+                                <p style="margin: 5px 0;"><strong>📌 ${f.id}</strong> - ${f.cliente.nombre}</p>
+                                <p style="margin: 5px 0; color: #666; font-size: 14px;">Celular: <strong>${f.cliente.celular}</strong></p>
+                                <p style="margin: 5px 0; color: #999; font-size: 12px;">${f.fecha}</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <p style="margin: 0; font-weight: bold; color: #2C1810;">Total: $${Math.round(f.total).toLocaleString('es-ES')}</p>
+                                <p style="margin: 5px 0; padding: 5px 10px; background: #f0f0f0; border-radius: 4px; font-weight: bold; font-size: 13px;">Estado: ${estadoActual}</p>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 12px;">
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                ${estados.map((estado, i) => `
+                                    <button class="btn-small" style="background: ${i <= indexEstado ? '#2C1810' : '#ddd'}; color: ${i <= indexEstado ? 'white' : '#666'};" 
+                                            onclick="actualizarSeguimiento(${idx}, '${estado}')">
+                                        ${estado}
+                                    </button>
+                                `).join('')}
+                            </div>
+                            <button class="btn" style="margin-top: 10px; width: 100%; background: #25D366; border: none; color: white; cursor: pointer;" 
+                                    onclick="enviarWhatsAppSeguimiento(${idx})">
+                                📱 Enviar por WhatsApp
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function actualizarSeguimiento(idx, nuevoEstado) {
+            if (facturas[idx]) {
+                facturas[idx].seguimiento = nuevoEstado;
+                guardarEnStorage();
+                renderSeguimiento();
+            }
+        }
+
+        function enviarWhatsAppSeguimiento(idx) {
+            const factura = facturas[idx];
+            if (!factura) return;
+            
+            const estado = factura.seguimiento || 'Pedido en preparación';
+            let mensaje = '';
+            
+            if (estado === 'Pedido en preparación') {
+                mensaje = `¡Hola ${factura.cliente.nombre}! 👋\n\nTu pedido ${factura.id} está en preparación.\n\nTotal: $${Math.round(factura.total).toLocaleString('es-ES')}\n\nRealiza el pago:\n🔑 Bre-B # 0090417769\n\n¡Gracias por tu confianza en Huella de Origen! ☕`;
+            } else if (estado === 'Enviado') {
+                mensaje = `¡Hola ${factura.cliente.nombre}! 📦\n\nTu pedido ${factura.id} ha sido enviado.\n\nEspera la entrega en los próximos días.\n\n¡Gracias por tu compra en Huella de Origen! ☕`;
+            } else if (estado === 'Entregado') {
+                mensaje = `¡Hola ${factura.cliente.nombre}! 📍\n\nTu pedido ${factura.id} ha sido entregado.\n\nPor favor confirma la entrega:\nRecibe: _______\n\n¡Esperamos que disfrutes tu café! ☕`;
+            } else if (estado === 'Completado') {
+                mensaje = `¡Hola ${factura.cliente.nombre}! ✅\n\nTu pedido ${factura.id} está completado.\n\nNos encantaría conocer tu experiencia. ¡Comparte con nosotros!\n\n¡Gracias por ser parte de Huella de Origen! ☕`;
+            }
+
+            const urlWA = `https://wa.me/${factura.cliente.celular.replace(/\D/g, '')}?text=${encodeURIComponent(mensaje)}`;
+            window.open(urlWA, '_blank');
+        }
+
         // REPORTES
         function renderReportes() {
             const tot = facturas.reduce((s, f) => s + f.total, 0);
@@ -844,9 +1014,30 @@
                 const sec = e.target.dataset.section;
                 document.getElementById(sec).classList.add('active');
                 if (sec === 'clientes') renderClientesTable();
+                if (sec === 'seguimiento') renderSeguimiento();
                 if (sec === 'facturas') renderFacturas();
                 if (sec === 'reportes') renderReportes();
+                // Cerrar dropdowns al cambiar sección
+                const dropdown1 = document.getElementById('clientesDropdown');
+                const dropdown2 = document.getElementById('facturaClientesDropdown');
+                if (dropdown1) dropdown1.style.display = 'none';
+                if (dropdown2) dropdown2.style.display = 'none';
             });
+        });
+
+        // Cerrar dropdowns al hacer click fuera
+        document.addEventListener('click', function(event) {
+            const dropdown1 = document.getElementById('clientesDropdown');
+            const dropdown2 = document.getElementById('facturaClientesDropdown');
+            const clientesSearch = document.getElementById('clientesSearch');
+            const facturaClientPhone = document.getElementById('facturaClientPhone');
+
+            if (clientesSearch && !clientesSearch.contains(event.target) && dropdown1 && !dropdown1.contains(event.target)) {
+                dropdown1.style.display = 'none';
+            }
+            if (facturaClientPhone && !facturaClientPhone.contains(event.target) && dropdown2 && !dropdown2.contains(event.target)) {
+                dropdown2.style.display = 'none';
+            }
         });
 
         // INICIAR
