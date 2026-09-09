@@ -636,24 +636,41 @@
 
         function closeInvoiceModal() { document.getElementById('invoiceModal').classList.remove('active'); }
         function enviarWhatsApp() { 
-            if (!facturaActual || !clienteSeleccionado) {
-                alert('❌ Selecciona un cliente primero');
+            if (!facturaActual) {
+                alert('❌ Abre una factura primero');
                 return;
             }
             
-            const telefono = document.getElementById('telefonoCliente').value;
-            if (!telefono) {
-                alert('⚠️ Ingresa el número de WhatsApp del cliente');
+            // El cliente ya está en facturaActual, no necesita estar en clienteSeleccionado
+            const telefonoGuardado = localStorage.getItem(`telefono_${facturaActual.cliente.id}`);
+            
+            if (!telefonoGuardado) {
+                alert('⚠️ Primero guarda el número de WhatsApp del cliente');
+                // Volver a Nueva Factura para agregar teléfono
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                document.querySelector('[data-section="nueva-factura"]').classList.add('active');
+                document.getElementById('nueva-factura').classList.add('active');
+                
+                // Seleccionar el cliente de nuevo
+                clienteSeleccionado = facturaActual.cliente;
+                document.getElementById('clienteSeleccionadoText').textContent = facturaActual.cliente.nombre;
+                document.getElementById('datosCiente').style.display = 'block';
+                document.getElementById('infoNombre').textContent = facturaActual.cliente.nombre;
+                document.getElementById('infoComercial').textContent = facturaActual.cliente.comercial;
+                document.getElementById('telefonoCliente').value = '';
+                
+                closeInvoiceModal();
                 return;
             }
 
-            const mensaje = `*☕ HUELLA DE ORIGEN*\n\n📄 *Factura:* ${facturaActual.id}\n📅 *Fecha:* ${facturaActual.fecha}\n👤 *Cliente:* ${facturaActual.cliente.nombre}\n\n💰 *Total:* $${Math.round(facturaActual.total).toLocaleString('es-ES')}\n\n📦 *Estado:* Pedido en preparación\n\n¡Tu pedido está siendo preparado! Te notificaremos cuando esté listo.\n\n*DESDE EL ORIGEN, DEJA HUELLA* 🌿`;
+            const mensaje = `*☕ HUELLA DE ORIGEN*\n\n📄 *Factura:* ${facturaActual.id}\n📅 *Fecha:* ${facturaActual.fecha}\n👤 *Cliente:* ${facturaActual.cliente.nombre}\n\n💰 *Total:* $${Math.round(facturaActual.total).toLocaleString('es-ES')}\n\n📦 *Estado:* ${facturaActual.estado}\n\n${facturaActual.estado === 'Pedido en preparación' ? '¡Tu pedido está siendo preparado! Te notificaremos cuando esté listo.' : 'Gracias por tu compra'}\n\n*DESDE EL ORIGEN, DEJA HUELLA* 🌿`;
 
             // Crear diálogo para elegir WhatsApp o WhatsApp Business
             const tipo = confirm('¿Usar WhatsApp Business?\n\nOK = WhatsApp Business\nCancel = WhatsApp Normal');
             
             // Formatear número sin símbolos para URL
-            const numeroLimpio = telefono.replace(/\D/g, '');
+            const numeroLimpio = telefonoGuardado.replace(/\D/g, '');
             
             if (tipo) {
                 // WhatsApp Business
