@@ -2405,84 +2405,44 @@
 
         // PDF
         // ========== FUNCIÓN PARA GENERAR MENSAJE WHATSAPP SEGÚN ESTADO ==========
-        // ========== MAPEO DE PRODUCTOS A IMÁGENES ==========
-        const productosImagenes = {
-            'QUETZAL DEL TOLIMA': 'https://via.placeholder.com/400?text=Quetzal+del+Tolima',
-            'CHIVITO DE PÁRAMO': 'https://via.placeholder.com/400?text=Chivito+de+Paramo',
-            'COLIBRÍ AMAZILIA': 'https://via.placeholder.com/400?text=Colibri+Amazilia',
-            'DÚO HUELLA DE ORIGEN': 'https://via.placeholder.com/400?text=Duo+Huella',
-            'TRILOGÍA HUELLA DE ORIGEN': 'https://via.placeholder.com/400?text=Trilogia+Huella'
-        };
-
-        // Función para obtener imágenes de productos
-        function obtenerImagenesProductos(factura) {
-            const imagenes = [];
-            if (factura.items && factura.items.length > 0) {
-                factura.items.forEach(item => {
-                    for (const [producto, url] of Object.entries(productosImagenes)) {
-                        if (item.nombre.toUpperCase().includes(producto.toUpperCase()) || 
-                            producto.toUpperCase().includes(item.nombre.toUpperCase())) {
-                            imagenes.push({ nombre: item.nombre, url: url });
-                            break;
-                        }
-                    }
-                });
-            }
-            return imagenes;
-        }
-
         function generarMensajeWhatsAppPorEstado(factura, estado) {
             const nombreCliente = factura.cliente.nombre;
             const numeroOrden = factura.id;
             const fecha = factura.fecha;
             const total = Math.round(factura.total).toLocaleString('es-ES');
 
-            // Generar lista de productos CON PRECIOS
+            // Generar lista de productos con cantidades
             let productoTexto = '';
-            let detalleProductos = '';
-            
             if (factura.items && factura.items.length > 0) {
                 if (factura.items.length === 1) {
                     // Un solo producto
                     const item = factura.items[0];
-                    const subtotal = Math.round(item.precio * item.cantidad).toLocaleString('es-ES');
-                    const precioUnit = Math.round(item.precio).toLocaleString('es-ES');
                     productoTexto = `${item.nombre} (${item.cantidad} unidad${item.cantidad > 1 ? 'es' : ''})`;
-                    detalleProductos = `• ${item.nombre}\n  💰 Precio: $${precioUnit} x ${item.cantidad} = $${subtotal}`;
                 } else {
                     // Múltiples productos
                     productoTexto = factura.items
                         .map(item => `• ${item.nombre} (${item.cantidad} unidad${item.cantidad > 1 ? 'es' : ''})`)
                         .join('\n');
-                    
-                    detalleProductos = factura.items
-                        .map(item => {
-                            const subtotal = Math.round(item.precio * item.cantidad).toLocaleString('es-ES');
-                            const precioUnit = Math.round(item.precio).toLocaleString('es-ES');
-                            return `• ${item.nombre}\n  💰 $${precioUnit} x ${item.cantidad} = $${subtotal}`;
-                        })
-                        .join('\n');
                 }
             } else {
                 productoTexto = 'Pedido personalizado';
-                detalleProductos = 'Pedido personalizado';
             }
 
             const mensajes = {
-                'Pedido recibido': `Hola, *${nombreCliente}*. ¡Qué alegría que llegues a Huella de Origen! ☕️✨\nGracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n\n☕ *PRODUCTOS:*\n${detalleProductos}\n\n💰 *Total: $${total}*\n\nTe notificaremos cuando esté listo.`,
+                'Pedido recibido': `Hola, *${nombreCliente}*. ¡Qué alegría que llegues a Huella de Origen! ☕️✨\nGracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.\n🧾 *Orden N.º:* ${numeroOrden}\n☕ *Productos:*\n${productoTexto}\n📅 *Fecha:* ${fecha}\n*Total: $${total}*\nTe notificaremos cuando esté listo.`,
                 
-                'Solicitud de pago': `💳 Puedes realizar el pago con **Bre-B** a la llave: **0090417769**\n\n🧾 *Orden:* ${numeroOrden}\n☕ *Productos:*\n${productoTexto}\n\n💰 *Total a pagar: $${total}*`,
+                'Solicitud de pago': `💳 Puedes realizar el pago con **Bre-B** a la llave: **0090417769**\n🧾 *Orden:* ${numeroOrden}\n💰 *Total:* $${total}`,
                 
-                'Pago recibido': `💳 *¡Tu pago ha sido recibido con éxito!*\n\n🧾 *Orden:* ${numeroOrden}\n☕ *Productos:*\n${productoTexto}\n\n💰 *Total pagado: $${total}*\n\n✅ Tu pedido está siendo preparado.`,
+                'Pago recibido': `💳 *¡Tu pago ha sido recibido con éxito!*\n🧾 *Orden:* ${numeroOrden}\n💰 *Total:* $${total}`,
                 
-                'Pedido entregado': `🎉 *¡Tu pedido ha llegado!*\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n\n☕ *PRODUCTOS ENTREGADOS:*\n${detalleProductos}\n\n💰 *Total: $${total}*\n\n¡Gracias por tu compra! Disfruta nuestro café. 😊`,
+                'Pedido entregado': `🎉 *¡Tu pedido ha llegado!*\n🧾 *Orden N.º:* ${numeroOrden}\n☕ *Productos:*\n${productoTexto}\n📅 *Fecha:* ${fecha}\nRecibido :`,
                 
-                'Orden completada': `🎉 *Tu orden ha sido completada.*\n\n🧾 *Orden N.º:* ${numeroOrden}\n💰 *Total: $${total}*\n\nGracias por tu compra, te esperamos pronto en Huella de Origen para que pruebes nuevas experiencias. ☕️✨`,
+                'Orden completada': `🎉 *Tu orden ha sido completada.*\nGracias por tu compra, te esperamos pronto en Huella de Origen para que pruebes nuevas experiencias. ☕️✨`,
                 
-                'Orden cancelada': `💳 *¡Tu orden ha sido cancelada con éxito!*\n\n*Orden:* ${numeroOrden}\n☕ *Productos:*\n${productoTexto}\n\n💰 *Total cancelado: $${total}*`
+                'Orden cancelada': `💳 *¡Tu orden ha sido cancelada con éxito!*\n*Orden:* ${numeroOrden}\n☕ *Productos:*\n${productoTexto}\n💰 *Total:* $${total}`
             };
 
-            return mensajes[estado] || `☕ *FACTURA HUELLA DE ORIGEN*\n\n📌 *${numeroOrden}*\n👤 Cliente: ${nombreCliente}\n📅 Fecha: ${fecha}\n\n☕ *Productos:*\n${detalleProductos}\n\n💰 *Total: $${total}*\n\n_Desde su origen, deja huella._`;
+            return mensajes[estado] || `☕ *FACTURA HUELLA DE ORIGEN*\n\n📌 *${numeroOrden}*\n👤 Cliente: ${nombreCliente}\n📅 Fecha: ${fecha}\n☕ *Productos:*\n${productoTexto}\n💰 *Total: $${total}*\n\n_Desde su origen, deja huella._`;
         }
 
         function generarPDF(factura) {
