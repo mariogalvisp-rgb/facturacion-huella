@@ -2404,6 +2404,53 @@
         }
 
         // PDF
+        // ========== MAPEO DE PRODUCTOS A IMÁGENES ==========
+        const productosImagenes = {
+            'QUETZAL DEL TOLIMA': '/productos/quetzal.jpg',
+            'CHIVITO DE PÁRAMO': '/productos/chivito.jpg',
+            'COLIBRÍ AMAZILIA': '/productos/colibri.jpg',
+            'DUO HUELLA DE ORIGEN': '/productos/duo.jpg',
+            'TRILOGÍA HUELLA DE ORIGEN': '/productos/trilogia.jpg'
+        };
+
+        // Función para obtener la imagen de un producto
+        function obtenerImagenProducto(nombreProducto) {
+            // Buscar coincidencia exacta
+            if (productosImagenes[nombreProducto]) {
+                return productosImagenes[nombreProducto];
+            }
+            
+            // Buscar coincidencia parcial
+            for (const [producto, imagen] of Object.entries(productosImagenes)) {
+                if (nombreProducto.toUpperCase().includes(producto.toUpperCase()) || 
+                    producto.toUpperCase().includes(nombreProducto.toUpperCase())) {
+                    return imagen;
+                }
+            }
+            
+            return null;
+        }
+
+        // Función para generar HTML de preview con imagen
+        function generarPreviewProducto(factura) {
+            let htmlImagenes = '<div style="margin: 20px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">';
+            
+            factura.items.forEach(item => {
+                const imagenUrl = obtenerImagenProducto(item.nombre);
+                if (imagenUrl) {
+                    htmlImagenes += `
+                        <div style="text-align: center;">
+                            <img src="${imagenUrl}" style="width: 150px; height: auto; border-radius: 8px; border: 2px solid #D4A574;">
+                            <p style="margin: 8px 0; font-size: 12px; color: #666; font-weight: 600;">${item.nombre}</p>
+                        </div>
+                    `;
+                }
+            });
+            
+            htmlImagenes += '</div>';
+            return htmlImagenes;
+        }
+
         // ========== FUNCIÓN PARA GENERAR MENSAJE WHATSAPP SEGÚN ESTADO ==========
         function generarMensajeWhatsAppPorEstado(factura, estado) {
             const nombreCliente = factura.cliente.nombre;
