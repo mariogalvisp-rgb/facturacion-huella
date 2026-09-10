@@ -8,197 +8,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* ========== LOGIN STYLES ========== */
-        #loginScreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #8B6F47 0%, #D4A574 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-        }
-
-        #loginScreen.hidden {
-            display: none;
-        }
-
-        .login-container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            width: 100%;
-            max-width: 400px;
-            padding: 40px;
-            margin: 20px;
-        }
-
-        .login-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .login-logo {
-            width: 80px;
-            height: auto;
-            margin: 0 auto 15px;
-            display: block;
-        }
-
-        .login-header h1 {
-            color: #2C1810;
-            font-size: 24px;
-            margin-bottom: 5px;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        .login-header p {
-            color: #999;
-            font-size: 14px;
-        }
-
-        .login-form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-
-        .login-form-group label {
-            color: #2C1810;
-            font-weight: 600;
-            font-size: 14px;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        .login-form-group input {
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        .login-form-group input:focus {
-            outline: none;
-            border-color: #D4A574;
-            box-shadow: 0 0 5px rgba(212, 165, 116, 0.3);
-        }
-
-        .login-buttons {
-            display: flex;
-            gap: 10px;
-            margin: 20px 0;
-        }
-
-        .btn-login, .btn-register {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        .btn-login {
-            background: #8B6F47;
-            color: white;
-        }
-
-        .btn-login:hover {
-            background: #2C1810;
-        }
-
-        .btn-register {
-            background: #D4A574;
-            color: white;
-        }
-
-        .btn-register:hover {
-            background: #8B6F47;
-        }
-
-        .login-message {
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            display: none;
-            font-size: 13px;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        .login-message.error {
-            background: #FFE5E5;
-            color: #E74C3C;
-            display: block;
-        }
-
-        .login-message.success {
-            background: #E5FFE5;
-            color: #27AE60;
-            display: block;
-        }
-
-        .login-toggle-text {
-            text-align: center;
-            color: #999;
-            font-size: 13px;
-            margin-top: 15px;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        .login-toggle-text button {
-            background: none;
-            border: none;
-            color: #8B6F47;
-            cursor: pointer;
-            font-weight: 600;
-            text-decoration: underline;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        .user-badge {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            background: white;
-            padding: 10px 15px;
-            border-radius: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            display: none;
-            gap: 10px;
-            align-items: center;
-            font-size: 13px;
-            z-index: 999;
-        }
-
-        .user-badge.active {
-            display: flex;
-        }
-
-        .user-badge span {
-            color: #2C1810;
-            font-weight: 600;
-        }
-
-        .btn-logout {
-            background: #E74C3C;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-            font-family: 'Poppins', sans-serif;
-        }
-
         /* ========== VARIABLES DE DISEÑO ========== */
         :root {
             --cafe-principal: #8B6F47;
@@ -924,66 +733,7 @@
     </style>
 </head>
 <body>
-    <!-- LOGIN SCREEN -->
-    <div id="loginScreen">
-        <div class="login-container">
-            <div class="login-header">
-                <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA2ADYAAD/4QCMRXhpZgAATU0AKgAAAAgABQESAAMAAAABAAEAAAEaAAUAAAABAAAASgEbAAUAAAABAAAAUgEoAAMAAAABAAIAAIdpAAQAAAABAAAAWgAAAAAAAADYAAAAAQAAANgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAABQqgAw" alt="Logo" class="login-logo">
-                <h1>HUELLA DE ORIGEN</h1>
-                <p>Facturación Multi-Usuario</p>
-            </div>
-
-            <div id="loginMessage" class="login-message"></div>
-
-            <!-- LOGIN FORM -->
-            <div id="loginForm">
-                <div class="login-form-group">
-                    <label>📧 Correo</label>
-                    <input type="email" id="loginEmail" placeholder="tu@email.com">
-                </div>
-                <div class="login-form-group">
-                    <label>🔐 Contraseña</label>
-                    <input type="password" id="loginPassword" placeholder="Tu contraseña">
-                </div>
-                <div class="login-buttons">
-                    <button class="btn-login" onclick="loginUser()">🔓 Ingresar</button>
-                    <button class="btn-register" onclick="toggleLoginForm('register')">✨ Crear Cuenta</button>
-                </div>
-            </div>
-
-            <!-- REGISTER FORM -->
-            <div id="registerForm" style="display:none;">
-                <div class="login-form-group">
-                    <label>👤 Nombre Completo</label>
-                    <input type="text" id="regName" placeholder="Tu nombre">
-                </div>
-                <div class="login-form-group">
-                    <label>📧 Correo</label>
-                    <input type="email" id="regEmail" placeholder="tu@email.com">
-                </div>
-                <div class="login-form-group">
-                    <label>🔐 Contraseña</label>
-                    <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres">
-                </div>
-                <div class="login-buttons">
-                    <button class="btn-register" onclick="registerUser()">✨ Crear Cuenta</button>
-                    <button class="btn-login" style="background:#999;" onclick="toggleLoginForm('login')">← Volver</button>
-                </div>
-            </div>
-
-            <div class="login-toggle-text">
-                ¿Problemas? Probablemente no existe tu cuenta.
-            </div>
-        </div>
-    </div>
-
-    <!-- USER BADGE -->
-    <div class="user-badge" id="userBadge">
-        <span id="userEmail">usuario@email.com</span>
-        <button class="btn-logout" onclick="logoutUser()">Salir</button>
-    </div>
-
-    <div class="container" id="appContainer" style="display:none;">
+    <div class="container">
         <header>
             <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA2ADYAAD/4QCMRXhpZgAATU0AKgAAAAgABQESAAMAAAABAAEAAAEaAAUAAAABAAAASgEbAAUAAAABAAAAUgEoAAMAAAABAAIAAIdpAAQAAAABAAAAWgAAAAAAAADYAAAAAQAAANgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAABQqgAw" alt="Huella de Origen" class="logo">
             <h1>HUELLA DE ORIGEN</h1>
@@ -2404,94 +2154,6 @@
         }
 
         // PDF
-        // ========== MAPEO DE PRODUCTOS A IMÁGENES ==========
-        const productosImagenes = {
-            'QUETZAL DEL TOLIMA': '/productos/quetzal.jpg',
-            'CHIVITO DE PÁRAMO': '/productos/chivito.jpg',
-            'COLIBRÍ AMAZILIA': '/productos/colibri.jpg',
-            'DUO HUELLA DE ORIGEN': '/productos/duo.jpg',
-            'TRILOGÍA HUELLA DE ORIGEN': '/productos/trilogia.jpg'
-        };
-
-        // Función para obtener la imagen de un producto
-        function obtenerImagenProducto(nombreProducto) {
-            // Buscar coincidencia exacta
-            if (productosImagenes[nombreProducto]) {
-                return productosImagenes[nombreProducto];
-            }
-            
-            // Buscar coincidencia parcial
-            for (const [producto, imagen] of Object.entries(productosImagenes)) {
-                if (nombreProducto.toUpperCase().includes(producto.toUpperCase()) || 
-                    producto.toUpperCase().includes(nombreProducto.toUpperCase())) {
-                    return imagen;
-                }
-            }
-            
-            return null;
-        }
-
-        // Función para generar HTML de preview con imagen
-        function generarPreviewProducto(factura) {
-            let htmlImagenes = '<div style="margin: 20px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">';
-            
-            factura.items.forEach(item => {
-                const imagenUrl = obtenerImagenProducto(item.nombre);
-                if (imagenUrl) {
-                    htmlImagenes += `
-                        <div style="text-align: center;">
-                            <img src="${imagenUrl}" style="width: 150px; height: auto; border-radius: 8px; border: 2px solid #D4A574;">
-                            <p style="margin: 8px 0; font-size: 12px; color: #666; font-weight: 600;">${item.nombre}</p>
-                        </div>
-                    `;
-                }
-            });
-            
-            htmlImagenes += '</div>';
-            return htmlImagenes;
-        }
-
-        // ========== FUNCIÓN PARA GENERAR MENSAJE WHATSAPP SEGÚN ESTADO ==========
-        function generarMensajeWhatsAppPorEstado(factura, estado) {
-            const nombreCliente = factura.cliente.nombre;
-            const numeroOrden = factura.id;
-            const fecha = factura.fecha;
-            const total = Math.round(factura.total).toLocaleString('es-ES');
-
-            // Generar lista de productos con cantidades
-            let productoTexto = '';
-            if (factura.items && factura.items.length > 0) {
-                if (factura.items.length === 1) {
-                    // Un solo producto
-                    const item = factura.items[0];
-                    productoTexto = `${item.nombre} (${item.cantidad} unidad${item.cantidad > 1 ? 'es' : ''})`;
-                } else {
-                    // Múltiples productos
-                    productoTexto = factura.items
-                        .map(item => `• ${item.nombre} (${item.cantidad} unidad${item.cantidad > 1 ? 'es' : ''})`)
-                        .join('\n');
-                }
-            } else {
-                productoTexto = 'Pedido personalizado';
-            }
-
-            const mensajes = {
-                'Pedido recibido': `Hola, *${nombreCliente}*. ¡Qué alegría que llegues a Huella de Origen! ☕️✨\nGracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.\n🧾 *Orden N.º:* ${numeroOrden}\n☕ *Productos:*\n${productoTexto}\n📅 *Fecha:* ${fecha}\n*Total: $${total}*\nTe notificaremos cuando esté listo.`,
-                
-                'Solicitud de pago': `💳 Puedes realizar el pago con **Bre-B** a la llave: **0090417769**\n🧾 *Orden:* ${numeroOrden}\n💰 *Total:* $${total}`,
-                
-                'Pago recibido': `💳 *¡Tu pago ha sido recibido con éxito!*\n🧾 *Orden:* ${numeroOrden}\n💰 *Total:* $${total}`,
-                
-                'Pedido entregado': `🎉 *¡Tu pedido ha llegado!*\n🧾 *Orden N.º:* ${numeroOrden}\n☕ *Productos:*\n${productoTexto}\n📅 *Fecha:* ${fecha}\nRecibido :`,
-                
-                'Orden completada': `🎉 *Tu orden ha sido completada.*\nGracias por tu compra, te esperamos pronto en Huella de Origen para que pruebes nuevas experiencias. ☕️✨`,
-                
-                'Orden cancelada': `💳 *¡Tu orden ha sido cancelada con éxito!*\n*Orden:* ${numeroOrden}\n☕ *Productos:*\n${productoTexto}\n💰 *Total:* $${total}`
-            };
-
-            return mensajes[estado] || `☕ *FACTURA HUELLA DE ORIGEN*\n\n📌 *${numeroOrden}*\n👤 Cliente: ${nombreCliente}\n📅 Fecha: ${fecha}\n☕ *Productos:*\n${productoTexto}\n💰 *Total: $${total}*\n\n_Desde su origen, deja huella._`;
-        }
-
         function generarPDF(factura) {
             const pdfDiv = document.getElementById('pdf-content');
             pdfDiv.innerHTML = `
@@ -2593,7 +2255,7 @@
             const element = pdfDiv.firstChild;
             const opt = {
                 margin: [10, 10, 10, 10],
-                filename: `FACTURA-${factura.id}-HUELLA-DE-ORIGEN.pdf`,
+                filename: `Factura_${factura.id}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2, useCORS: true, logging: false },
                 jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
@@ -2695,31 +2357,29 @@
             
             const factura = window.facturaActual;
             const celular = factura.cliente.celular || '';
-            const estado = factura.estado || 'Pendiente';
             
             if (!celular) {
                 alert('❌ El cliente no tiene celular registrado');
                 return;
             }
             
-            // Generar mensaje según el estado actual de la factura
-            const mensaje = generarMensajeWhatsAppPorEstado(factura, estado);
+            // Crear mensaje con detalles de la factura
+            const mensaje = `☕ *FACTURA HUELLA DE ORIGEN*\n\n` +
+                `📌 *${factura.id}*\n` +
+                `👤 Cliente: ${factura.cliente.nombre}\n` +
+                `📅 Fecha: ${factura.fecha}\n` +
+                `👨‍💼 Vendedor: ${factura.vendedor}\n` +
+                `💰 *Total: $${Math.round(factura.total).toLocaleString('es-ES')}*\n` +
+                `📊 Estado: ${factura.estado}\n\n` +
+                `_Desde su origen, deja huella._\n` +
+                `📱 311 768 2407\n` +
+                `✉️ comercial@huelladeorigen.com`;
             
             // Limpiar número (solo dígitos)
             const numeroLimpio = celular.replace(/\D/g, '');
             
-            // Verificar que el número sea válido
-            if (numeroLimpio.length < 7) {
-                alert('❌ El número de celular no es válido');
-                return;
-            }
-            
-            // Construir URL de WhatsApp (agregar +57 para Colombia si no lo tiene)
-            let numeroFinal = numeroLimpio;
-            if (!numeroFinal.startsWith('57')) {
-                numeroFinal = '57' + numeroFinal;
-            }
-            const urlWhatsApp = `https://wa.me/${numeroFinal}?text=${encodeURIComponent(mensaje)}`;
+            // Construir URL de WhatsApp (agregar +57 para Colombia)
+            const urlWhatsApp = `https://wa.me/57${numeroLimpio}?text=${encodeURIComponent(mensaje)}`;
             
             // Primero generar PDF
             generarPDF(factura);
@@ -2739,8 +2399,9 @@
             }
 
             container.innerHTML = facturas.map((f, idx) => {
-                const estados = ['Pedido recibido', 'Solicitud de pago', 'Pago recibido', 'Pedido entregado', 'Orden completada'];
-                const estadoActual = f.estado || 'Pedido recibido';
+                const estados = ['Pedido en preparación', 'Enviado', 'Entregado', 'Completado'];
+                const estadoActual = f.seguimiento || 'Pedido en preparación';
+                const indexEstado = estados.indexOf(estadoActual);
                 
                 return `
                     <div class="card" style="margin-bottom: 15px; border-left: 4px solid #2C1810;">
@@ -2758,20 +2419,20 @@
                         
                         <div style="margin-top: 12px;">
                             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                ${estados.map((estado) => `
-                                    <button class="btn-small" style="background: ${estado === estadoActual ? '#2C1810' : '#ddd'}; color: ${estado === estadoActual ? 'white' : '#666'};" 
+                                ${estados.map((estado, i) => `
+                                    <button class="btn-small" style="background: ${i <= indexEstado ? '#2C1810' : '#ddd'}; color: ${i <= indexEstado ? 'white' : '#666'};" 
                                             onclick="actualizarSeguimiento(${idx}, '${estado}')">
                                         ${estado}
                                     </button>
                                 `).join('')}
-                                <button class="btn-small" style="background: #E74C3C; color: white;" 
-                                        onclick="actualizarSeguimiento(${idx}, 'Orden cancelada')">
-                                    ❌ Cancelada
-                                </button>
                             </div>
-                            <button class="btn" style="margin-top: 10px; width: 100%; background: #25D366; border: none; color: white; cursor: pointer; font-weight: 600;" 
+                            <button class="btn" style="margin-top: 10px; width: 100%; background: #25D366; border: none; color: white; cursor: pointer;" 
                                     onclick="enviarWhatsAppSeguimiento(${idx})">
-                                📱 Enviar Mensaje WhatsApp
+                                📱 Enviar por WhatsApp
+                            </button>
+                            <button class="btn" style="margin-top: 8px; width: 100%; background: #128C7E; border: none; color: white; cursor: pointer;" 
+                                    onclick="enviarWhatsAppActualizacionPago(${idx})">
+                                💳 Enviar Actualización de Pago
                             </button>
                         </div>
                     </div>
@@ -2781,12 +2442,9 @@
 
         function actualizarSeguimiento(idx, nuevoEstado) {
             if (facturas[idx]) {
-                facturas[idx].estado = nuevoEstado;
+                facturas[idx].seguimiento = nuevoEstado;
                 guardarEnStorage();
                 renderSeguimiento();
-                // Mostrar confirmación
-                const nombreEstado = nuevoEstado;
-                alert(`✅ Estado actualizado a: ${nombreEstado}`);
             }
         }
 
@@ -2794,32 +2452,22 @@
             const factura = facturas[idx];
             if (!factura) return;
             
-            const celular = factura.cliente.celular || '';
-            if (!celular) {
-                alert('❌ El cliente no tiene celular registrado');
-                return;
+            const estado = factura.seguimiento || 'Pedido en preparación';
+            let mensaje = '';
+            
+            if (estado === 'Pedido en preparación') {
+                mensaje = `¡Hola ${factura.cliente.nombre}! 👋\n\n¡Tu pedido está siendo preparado! 🎉\n\nNúmero: ${factura.id}\nTotal: $${Math.round(factura.total).toLocaleString('es-ES')}\n\nTe notificaremos cuando esté lista.\n\n¡Gracias por tu confianza en Huella de Origen! ☕`;
+            } else if (estado === 'Enviado') {
+                mensaje = `¡Hola ${factura.cliente.nombre}! 📦\n\n¡Gracias por tu compra! 🙌\n\nTu pedido ${factura.id} ya está en camino.\n\nEsperamos que disfrutes tu café Huella de Origen.\n\n¡Nos vemos pronto! ☕`;
+            } else if (estado === 'Entregado') {
+                mensaje = `¡Hola ${factura.cliente.nombre}! 📍\n\n¡Tu pedido ha llegado! 🎉\n\nPedido: ${factura.id}\n\n¡Gracias por tu compra! ☕`;
+            } else if (estado === 'Completado') {
+                mensaje = `¡Hola ${factura.cliente.nombre}! ✨\n\n¡Gracias por tu compra! 🙏\n\nTe esperamos para nuevas experiencias con Huella de Origen.\n\nSigue disfrutando del mejor café especializado colombiano.\n\n"Desde su origen, deja huella" ☕`;
             }
-            
-            // Generar mensaje según el estado actual
-            const estado = factura.estado || 'Pedido recibido';
-            const mensaje = generarMensajeWhatsAppPorEstado(factura, estado);
-            
-            // Limpiar número (solo dígitos)
-            const numeroLimpio = celular.replace(/\D/g, '');
-            
-            // Verificar que el número sea válido
-            if (numeroLimpio.length < 7) {
-                alert('❌ El número de celular no es válido');
-                return;
-            }
-            
-            // Construir URL de WhatsApp (agregar +57 para Colombia si no lo tiene)
-            let numeroFinal = numeroLimpio;
-            if (!numeroFinal.startsWith('57')) {
-                numeroFinal = '57' + numeroFinal;
-            }
-            const urlWA = `https://wa.me/${numeroFinal}?text=${encodeURIComponent(mensaje)}`;
-            
+
+            // Enviar directamente a WhatsApp sin buscar contactos
+            const numeroLimpio = factura.cliente.celular.replace(/\D/g, '');
+            const urlWA = `https://wa.me/57${numeroLimpio.replace(/^57/, '')}?text=${encodeURIComponent(mensaje)}`;
             window.open(urlWA, '_blank');
         }
 
@@ -2931,96 +2579,10 @@
             }
         }
 
-        // ========== LOGIN FUNCTIONS ==========
-        let currentUser = null;
-
-        function checkAuth() {
-            const session = localStorage.getItem('user_session_huella');
-            if (session) {
-                try {
-                    currentUser = JSON.parse(session);
-                    showApp();
-                } catch (e) {
-                    showLoginScreen();
-                }
-            } else {
-                showLoginScreen();
-            }
-        }
-
-        function loginUser() {
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
-
-            if (!email || !password) {
-                showLoginMessage('Completa email y contraseña', 'error');
-                return;
-            }
-
-            currentUser = { email: email, name: email.split('@')[0] };
-            localStorage.setItem('user_session_huella', JSON.stringify(currentUser));
-            showLoginMessage('✅ Sesión iniciada', 'success');
-            setTimeout(showApp, 800);
-        }
-
-        function registerUser() {
-            const name = document.getElementById('regName').value.trim();
-            const email = document.getElementById('regEmail').value.trim();
-            const password = document.getElementById('regPassword').value.trim();
-
-            if (!name || !email || !password || password.length < 6) {
-                showLoginMessage('Completa todos - contraseña mínimo 6 caracteres', 'error');
-                return;
-            }
-
-            currentUser = { name: name, email: email };
-            localStorage.setItem('user_session_huella', JSON.stringify(currentUser));
-            showLoginMessage('✅ Cuenta creada', 'success');
-            setTimeout(showApp, 800);
-        }
-
-        function logoutUser() {
-            localStorage.removeItem('user_session_huella');
-            currentUser = null;
-            showLoginScreen();
-        }
-
-        function toggleLoginForm(form) {
-            if (form === 'register') {
-                document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('registerForm').style.display = 'block';
-            } else {
-                document.getElementById('loginForm').style.display = 'block';
-                document.getElementById('registerForm').style.display = 'none';
-            }
-        }
-
-        function showLoginScreen() {
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('appContainer').style.display = 'none';
-            document.getElementById('userBadge').classList.remove('active');
-            toggleLoginForm('login');
-        }
-
-        function showApp() {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('appContainer').style.display = 'block';
-            document.getElementById('userBadge').classList.add('active');
-            document.getElementById('userEmail').textContent = currentUser.email;
-            init();
-            actualizarStatusSupabase();
-        }
-
-        function showLoginMessage(msg, type) {
-            const msgBox = document.getElementById('loginMessage');
-            msgBox.textContent = msg;
-            msgBox.className = `login-message ${type}`;
-            setTimeout(() => msgBox.className = 'login-message', 3000);
-        }
-
         // INICIAR
         window.addEventListener('DOMContentLoaded', function() {
-            checkAuth();
+            init();
+            actualizarStatusSupabase();
         });
     </script>
 </body>
