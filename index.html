@@ -8,6 +8,197 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
+        /* ========== LOGIN STYLES ========== */
+        #loginScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #8B6F47 0%, #D4A574 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        #loginScreen.hidden {
+            display: none;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+            margin: 20px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-logo {
+            width: 80px;
+            height: auto;
+            margin: 0 auto 15px;
+            display: block;
+        }
+
+        .login-header h1 {
+            color: #2C1810;
+            font-size: 24px;
+            margin-bottom: 5px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .login-header p {
+            color: #999;
+            font-size: 14px;
+        }
+
+        .login-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .login-form-group label {
+            color: #2C1810;
+            font-weight: 600;
+            font-size: 14px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .login-form-group input {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .login-form-group input:focus {
+            outline: none;
+            border-color: #D4A574;
+            box-shadow: 0 0 5px rgba(212, 165, 116, 0.3);
+        }
+
+        .login-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .btn-login, .btn-register {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .btn-login {
+            background: #8B6F47;
+            color: white;
+        }
+
+        .btn-login:hover {
+            background: #2C1810;
+        }
+
+        .btn-register {
+            background: #D4A574;
+            color: white;
+        }
+
+        .btn-register:hover {
+            background: #8B6F47;
+        }
+
+        .login-message {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+            font-size: 13px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .login-message.error {
+            background: #FFE5E5;
+            color: #E74C3C;
+            display: block;
+        }
+
+        .login-message.success {
+            background: #E5FFE5;
+            color: #27AE60;
+            display: block;
+        }
+
+        .login-toggle-text {
+            text-align: center;
+            color: #999;
+            font-size: 13px;
+            margin-top: 15px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .login-toggle-text button {
+            background: none;
+            border: none;
+            color: #8B6F47;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: underline;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .user-badge {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            display: none;
+            gap: 10px;
+            align-items: center;
+            font-size: 13px;
+            z-index: 999;
+        }
+
+        .user-badge.active {
+            display: flex;
+        }
+
+        .user-badge span {
+            color: #2C1810;
+            font-weight: 600;
+        }
+
+        .btn-logout {
+            background: #E74C3C;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+        }
+
         /* ========== VARIABLES DE DISEÑO ========== */
         :root {
             --cafe-principal: #8B6F47;
@@ -733,7 +924,66 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen">
+        <div class="login-container">
+            <div class="login-header">
+                <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA2ADYAAD/4QCMRXhpZgAATU0AKgAAAAgABQESAAMAAAABAAEAAAEaAAUAAAABAAAASgEbAAUAAAABAAAAUgEoAAMAAAABAAIAAIdpAAQAAAABAAAAWgAAAAAAAADYAAAAAQAAANgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAABQqgAw" alt="Logo" class="login-logo">
+                <h1>HUELLA DE ORIGEN</h1>
+                <p>Facturación Multi-Usuario</p>
+            </div>
+
+            <div id="loginMessage" class="login-message"></div>
+
+            <!-- LOGIN FORM -->
+            <div id="loginForm">
+                <div class="login-form-group">
+                    <label>📧 Correo</label>
+                    <input type="email" id="loginEmail" placeholder="tu@email.com">
+                </div>
+                <div class="login-form-group">
+                    <label>🔐 Contraseña</label>
+                    <input type="password" id="loginPassword" placeholder="Tu contraseña">
+                </div>
+                <div class="login-buttons">
+                    <button class="btn-login" onclick="loginUser()">🔓 Ingresar</button>
+                    <button class="btn-register" onclick="toggleLoginForm('register')">✨ Crear Cuenta</button>
+                </div>
+            </div>
+
+            <!-- REGISTER FORM -->
+            <div id="registerForm" style="display:none;">
+                <div class="login-form-group">
+                    <label>👤 Nombre Completo</label>
+                    <input type="text" id="regName" placeholder="Tu nombre">
+                </div>
+                <div class="login-form-group">
+                    <label>📧 Correo</label>
+                    <input type="email" id="regEmail" placeholder="tu@email.com">
+                </div>
+                <div class="login-form-group">
+                    <label>🔐 Contraseña</label>
+                    <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="login-buttons">
+                    <button class="btn-register" onclick="registerUser()">✨ Crear Cuenta</button>
+                    <button class="btn-login" style="background:#999;" onclick="toggleLoginForm('login')">← Volver</button>
+                </div>
+            </div>
+
+            <div class="login-toggle-text">
+                ¿Problemas? Probablemente no existe tu cuenta.
+            </div>
+        </div>
+    </div>
+
+    <!-- USER BADGE -->
+    <div class="user-badge" id="userBadge">
+        <span id="userEmail">usuario@email.com</span>
+        <button class="btn-logout" onclick="logoutUser()">Salir</button>
+    </div>
+
+    <div class="container" id="appContainer" style="display:none;">
         <header>
             <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA2ADYAAD/4QCMRXhpZgAATU0AKgAAAAgABQESAAMAAAABAAEAAAEaAAUAAAABAAAASgEbAAUAAAABAAAAUgEoAAMAAAABAAIAAIdpAAQAAAABAAAAWgAAAAAAAADYAAAAAQAAANgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAABQqgAw" alt="Huella de Origen" class="logo">
             <h1>HUELLA DE ORIGEN</h1>
@@ -2579,10 +2829,96 @@
             }
         }
 
-        // INICIAR
-        window.addEventListener('DOMContentLoaded', function() {
+        // ========== LOGIN FUNCTIONS ==========
+        let currentUser = null;
+
+        function checkAuth() {
+            const session = localStorage.getItem('user_session_huella');
+            if (session) {
+                try {
+                    currentUser = JSON.parse(session);
+                    showApp();
+                } catch (e) {
+                    showLoginScreen();
+                }
+            } else {
+                showLoginScreen();
+            }
+        }
+
+        function loginUser() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            if (!email || !password) {
+                showLoginMessage('Completa email y contraseña', 'error');
+                return;
+            }
+
+            currentUser = { email: email, name: email.split('@')[0] };
+            localStorage.setItem('user_session_huella', JSON.stringify(currentUser));
+            showLoginMessage('✅ Sesión iniciada', 'success');
+            setTimeout(showApp, 800);
+        }
+
+        function registerUser() {
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+
+            if (!name || !email || !password || password.length < 6) {
+                showLoginMessage('Completa todos - contraseña mínimo 6 caracteres', 'error');
+                return;
+            }
+
+            currentUser = { name: name, email: email };
+            localStorage.setItem('user_session_huella', JSON.stringify(currentUser));
+            showLoginMessage('✅ Cuenta creada', 'success');
+            setTimeout(showApp, 800);
+        }
+
+        function logoutUser() {
+            localStorage.removeItem('user_session_huella');
+            currentUser = null;
+            showLoginScreen();
+        }
+
+        function toggleLoginForm(form) {
+            if (form === 'register') {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('registerForm').style.display = 'block';
+            } else {
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('registerForm').style.display = 'none';
+            }
+        }
+
+        function showLoginScreen() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('userBadge').classList.remove('active');
+            toggleLoginForm('login');
+        }
+
+        function showApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appContainer').style.display = 'block';
+            document.getElementById('userBadge').classList.add('active');
+            document.getElementById('userEmail').textContent = currentUser.email;
             init();
             actualizarStatusSupabase();
+        }
+
+        function showLoginMessage(msg, type) {
+            const msgBox = document.getElementById('loginMessage');
+            msgBox.textContent = msg;
+            msgBox.className = `login-message ${type}`;
+            setTimeout(() => msgBox.className = 'login-message', 3000);
+        }
+
+        // INICIAR
+        window.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
         });
     </script>
 </body>
