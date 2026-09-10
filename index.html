@@ -2404,6 +2404,31 @@
         }
 
         // PDF
+        // ========== FUNCIÓN PARA GENERAR MENSAJE WHATSAPP SEGÚN ESTADO ==========
+        function generarMensajeWhatsAppPorEstado(factura, estado) {
+            const nombreCliente = factura.cliente.nombre;
+            const numeroOrden = factura.id;
+            const producto = factura.items.map(i => i.nombre).join(', ');
+            const fecha = factura.fecha;
+            const total = Math.round(factura.total).toLocaleString('es-ES');
+
+            const mensajes = {
+                'Pedido recibido': `Hola, *${nombreCliente}*. ¡Qué alegría que llegues a Huella de Origen! ☕️✨\nGracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.\n🧾 *Orden N.º:* ${numeroOrden}\n☕ *Producto:* ${producto}\n📅 *Fecha:* ${fecha}\n*Total: $${total}*\nTe notificaremos cuando esté listo.`,
+                
+                'Solicitud de pago': `💳 Puedes realizar el pago con **Bre-B** a la llave: **0090417769**\n🧾 *Orden:* ${numeroOrden}\n💰 *Total:* $${total}`,
+                
+                'Pago recibido': `💳 *¡Tu pago ha sido recibido con éxito!*\n🧾 *Orden:* ${numeroOrden}\n💰 *Total:* $${total}`,
+                
+                'Pedido entregado': `🎉 *¡Tu pedido ha llegado!*\n🧾 *Orden N.º:* ${numeroOrden}\n☕ *Producto:* ${producto}\n📅 *Fecha:* ${fecha}\nRecibido :`,
+                
+                'Orden completada': `🎉 *Tu orden ha sido completada.*\nGracias por tu compra, te esperamos pronto en Huella de Origen para que pruebes nuevas experiencias. ☕️✨`,
+                
+                'Orden cancelada': `💳 *¡Tu orden ha sido cancelada con éxito!*\n*Orden:* ${numeroOrden}\n💰 *Total:* $${total}`
+            };
+
+            return mensajes[estado] || `☕ *FACTURA HUELLA DE ORIGEN*\n\n📌 *${numeroOrden}*\n👤 Cliente: ${nombreCliente}\n📅 Fecha: ${fecha}\n💰 *Total: $${total}*\n\n_Desde su origen, deja huella._`;
+        }
+
         function generarPDF(factura) {
             const pdfDiv = document.getElementById('pdf-content');
             pdfDiv.innerHTML = `
@@ -2505,7 +2530,7 @@
             const element = pdfDiv.firstChild;
             const opt = {
                 margin: [10, 10, 10, 10],
-                filename: `Factura_${factura.id}.pdf`,
+                filename: `FACTURA-${factura.id}-HUELLA-DE-ORIGEN.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2, useCORS: true, logging: false },
                 jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
@@ -2607,29 +2632,31 @@
             
             const factura = window.facturaActual;
             const celular = factura.cliente.celular || '';
+            const estado = factura.estado || 'Pendiente';
             
             if (!celular) {
                 alert('❌ El cliente no tiene celular registrado');
                 return;
             }
             
-            // Crear mensaje con detalles de la factura
-            const mensaje = `☕ *FACTURA HUELLA DE ORIGEN*\n\n` +
-                `📌 *${factura.id}*\n` +
-                `👤 Cliente: ${factura.cliente.nombre}\n` +
-                `📅 Fecha: ${factura.fecha}\n` +
-                `👨‍💼 Vendedor: ${factura.vendedor}\n` +
-                `💰 *Total: $${Math.round(factura.total).toLocaleString('es-ES')}*\n` +
-                `📊 Estado: ${factura.estado}\n\n` +
-                `_Desde su origen, deja huella._\n` +
-                `📱 311 768 2407\n` +
-                `✉️ comercial@huelladeorigen.com`;
+            // Generar mensaje según el estado actual de la factura
+            const mensaje = generarMensajeWhatsAppPorEstado(factura, estado);
             
             // Limpiar número (solo dígitos)
             const numeroLimpio = celular.replace(/\D/g, '');
             
-            // Construir URL de WhatsApp (agregar +57 para Colombia)
-            const urlWhatsApp = `https://wa.me/57${numeroLimpio}?text=${encodeURIComponent(mensaje)}`;
+            // Verificar que el número sea válido
+            if (numeroLimpio.length < 7) {
+                alert('❌ El número de celular no es válido');
+                return;
+            }
+            
+            // Construir URL de WhatsApp (agregar +57 para Colombia si no lo tiene)
+            let numeroFinal = numeroLimpio;
+            if (!numeroFinal.startsWith('57')) {
+                numeroFinal = '57' + numeroFinal;
+            }
+            const urlWhatsApp = `https://wa.me/${numeroFinal}?text=${encodeURIComponent(mensaje)}`;
             
             // Primero generar PDF
             generarPDF(factura);
@@ -2649,9 +2676,8 @@
             }
 
             container.innerHTML = facturas.map((f, idx) => {
-                const estados = ['Pedido en preparación', 'Enviado', 'Entregado', 'Completado'];
-                const estadoActual = f.seguimiento || 'Pedido en preparación';
-                const indexEstado = estados.indexOf(estadoActual);
+                const estados = ['Pedido recibido', 'Solicitud de pago', 'Pago recibido', 'Pedido entregado', 'Orden completada'];
+                const estadoActual = f.estado || 'Pedido recibido';
                 
                 return `
                     <div class="card" style="margin-bottom: 15px; border-left: 4px solid #2C1810;">
@@ -2669,20 +2695,20 @@
                         
                         <div style="margin-top: 12px;">
                             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                ${estados.map((estado, i) => `
-                                    <button class="btn-small" style="background: ${i <= indexEstado ? '#2C1810' : '#ddd'}; color: ${i <= indexEstado ? 'white' : '#666'};" 
+                                ${estados.map((estado) => `
+                                    <button class="btn-small" style="background: ${estado === estadoActual ? '#2C1810' : '#ddd'}; color: ${estado === estadoActual ? 'white' : '#666'};" 
                                             onclick="actualizarSeguimiento(${idx}, '${estado}')">
                                         ${estado}
                                     </button>
                                 `).join('')}
+                                <button class="btn-small" style="background: #E74C3C; color: white;" 
+                                        onclick="actualizarSeguimiento(${idx}, 'Orden cancelada')">
+                                    ❌ Cancelada
+                                </button>
                             </div>
-                            <button class="btn" style="margin-top: 10px; width: 100%; background: #25D366; border: none; color: white; cursor: pointer;" 
+                            <button class="btn" style="margin-top: 10px; width: 100%; background: #25D366; border: none; color: white; cursor: pointer; font-weight: 600;" 
                                     onclick="enviarWhatsAppSeguimiento(${idx})">
-                                📱 Enviar por WhatsApp
-                            </button>
-                            <button class="btn" style="margin-top: 8px; width: 100%; background: #128C7E; border: none; color: white; cursor: pointer;" 
-                                    onclick="enviarWhatsAppActualizacionPago(${idx})">
-                                💳 Enviar Actualización de Pago
+                                📱 Enviar Mensaje WhatsApp
                             </button>
                         </div>
                     </div>
@@ -2692,9 +2718,12 @@
 
         function actualizarSeguimiento(idx, nuevoEstado) {
             if (facturas[idx]) {
-                facturas[idx].seguimiento = nuevoEstado;
+                facturas[idx].estado = nuevoEstado;
                 guardarEnStorage();
                 renderSeguimiento();
+                // Mostrar confirmación
+                const nombreEstado = nuevoEstado;
+                alert(`✅ Estado actualizado a: ${nombreEstado}`);
             }
         }
 
@@ -2702,22 +2731,32 @@
             const factura = facturas[idx];
             if (!factura) return;
             
-            const estado = factura.seguimiento || 'Pedido en preparación';
-            let mensaje = '';
-            
-            if (estado === 'Pedido en preparación') {
-                mensaje = `¡Hola ${factura.cliente.nombre}! 👋\n\n¡Tu pedido está siendo preparado! 🎉\n\nNúmero: ${factura.id}\nTotal: $${Math.round(factura.total).toLocaleString('es-ES')}\n\nTe notificaremos cuando esté lista.\n\n¡Gracias por tu confianza en Huella de Origen! ☕`;
-            } else if (estado === 'Enviado') {
-                mensaje = `¡Hola ${factura.cliente.nombre}! 📦\n\n¡Gracias por tu compra! 🙌\n\nTu pedido ${factura.id} ya está en camino.\n\nEsperamos que disfrutes tu café Huella de Origen.\n\n¡Nos vemos pronto! ☕`;
-            } else if (estado === 'Entregado') {
-                mensaje = `¡Hola ${factura.cliente.nombre}! 📍\n\n¡Tu pedido ha llegado! 🎉\n\nPedido: ${factura.id}\n\n¡Gracias por tu compra! ☕`;
-            } else if (estado === 'Completado') {
-                mensaje = `¡Hola ${factura.cliente.nombre}! ✨\n\n¡Gracias por tu compra! 🙏\n\nTe esperamos para nuevas experiencias con Huella de Origen.\n\nSigue disfrutando del mejor café especializado colombiano.\n\n"Desde su origen, deja huella" ☕`;
+            const celular = factura.cliente.celular || '';
+            if (!celular) {
+                alert('❌ El cliente no tiene celular registrado');
+                return;
             }
-
-            // Enviar directamente a WhatsApp sin buscar contactos
-            const numeroLimpio = factura.cliente.celular.replace(/\D/g, '');
-            const urlWA = `https://wa.me/57${numeroLimpio.replace(/^57/, '')}?text=${encodeURIComponent(mensaje)}`;
+            
+            // Generar mensaje según el estado actual
+            const estado = factura.estado || 'Pedido recibido';
+            const mensaje = generarMensajeWhatsAppPorEstado(factura, estado);
+            
+            // Limpiar número (solo dígitos)
+            const numeroLimpio = celular.replace(/\D/g, '');
+            
+            // Verificar que el número sea válido
+            if (numeroLimpio.length < 7) {
+                alert('❌ El número de celular no es válido');
+                return;
+            }
+            
+            // Construir URL de WhatsApp (agregar +57 para Colombia si no lo tiene)
+            let numeroFinal = numeroLimpio;
+            if (!numeroFinal.startsWith('57')) {
+                numeroFinal = '57' + numeroFinal;
+            }
+            const urlWA = `https://wa.me/${numeroFinal}?text=${encodeURIComponent(mensaje)}`;
+            
             window.open(urlWA, '_blank');
         }
 
