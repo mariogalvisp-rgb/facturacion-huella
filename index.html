@@ -8,7 +8,182 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* ========== LOGIN STYLES ========== */
+        /* ========== WHATSAPP PREVIEW STYLES ========== */
+        #whatsappPreviewContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9998;
+        }
+
+        .whatsapp-window {
+            width: 400px;
+            height: 600px;
+            background: #ECE5DD;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .whatsapp-header {
+            background: #075E54;
+            color: white;
+            padding: 15px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .whatsapp-header h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .whatsapp-header-info {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .whatsapp-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .whatsapp-message {
+            background: white;
+            border-radius: 8px;
+            padding: 10px 12px;
+            max-width: 85%;
+            word-wrap: break-word;
+            font-size: 13px;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        .whatsapp-message p {
+            margin: 5px 0;
+        }
+
+        .whatsapp-message strong {
+            color: #075E54;
+        }
+
+        .whatsapp-product-item {
+            background: white;
+            border-radius: 8px;
+            padding: 8px;
+            max-width: 85%;
+            margin-bottom: 8px;
+        }
+
+        .whatsapp-product-text {
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .whatsapp-product-image {
+            width: 100%;
+            height: 120px;
+            background: #f0f0f0;
+            border-radius: 6px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .whatsapp-product-image:hover {
+            transform: scale(1.05);
+        }
+
+        .whatsapp-product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .whatsapp-footer {
+            background: white;
+            padding: 12px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        .btn-estado-cambiar {
+            flex: 1;
+            padding: 10px;
+            background: #075E54;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .btn-estado-cambiar:hover {
+            background: #064E48;
+        }
+
+        .btn-cerrar-preview {
+            flex: 0;
+            padding: 10px 15px;
+            background: #ccc;
+            color: #333;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .estado-selector {
+            position: absolute;
+            background: white;
+            border: 2px solid #075E54;
+            border-radius: 8px;
+            z-index: 9999;
+            min-width: 200px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .estado-option {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .estado-option:hover {
+            background: #f0f0f0;
+        }
+
+        .estado-option:last-child {
+            border-bottom: none;
+        }
+
+        .estado-option.active {
+            background: #075E54;
+            color: white;
+            font-weight: 600;
+        }
+    
         #loginScreen {
             position: fixed;
             top: 0;
@@ -1445,6 +1620,7 @@
 
             <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
                 <button class="btn" onclick="descargarPDFFacturaModal()" style="background: #2C1810; color: white; padding: 10px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">📄 Descargar PDF</button>
+                <button class="btn" onclick="mostrarPreviewWhatsAppConFotos()" style="background: #0084FF; color: white; padding: 10px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">👁️ Vista Previa WhatsApp</button>
                 <button class="btn" onclick="compartirWhatsAppDesdeModal()" style="background: #25D366; color: white; padding: 10px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">📲 Enviar WhatsApp</button>
                 <button class="btn" onclick="cerrarVerFactura()" style="background: #999; color: white; padding: 10px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Cerrar</button>
             </div>
@@ -2791,33 +2967,143 @@
             document.body.appendChild(previewModal);
         }
 
-        function abrirWhatsAppConFotos(celular, estado) {
+        function mostrarPreviewWhatsAppConFotos() {
             if (!window.facturaActual) return;
             
             const factura = window.facturaActual;
-            const mensaje = generarMensajeWhatsAppPorEstado(factura, estado);
-            
-            // Limpiar número (solo dígitos)
-            const numeroLimpio = celular.replace(/\D/g, '');
-            
-            // Construir URL de WhatsApp
-            let numeroFinal = numeroLimpio;
-            if (!numeroFinal.startsWith('57')) {
-                numeroFinal = '57' + numeroLimpio;
+            const nombreCliente = factura.cliente.nombre;
+            const numeroOrden = factura.id;
+            const fecha = factura.fecha;
+            const estado = factura.estado || 'Pedido recibido';
+            const total = Math.round(factura.total).toLocaleString('es-ES');
+
+            // Generar HTML del preview
+            let mensajeHTML = `
+                <div class="whatsapp-message">
+                    <p>Hola, <strong>${nombreCliente}</strong>. ¡Qué alegría que llegues a Huella de Origen! ☕️✨</p>
+                    <p>Gracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.</p>
+                </div>
+                
+                <div class="whatsapp-message">
+                    <p>🧾 <strong>Orden N.º:</strong> ${numeroOrden}</p>
+                    <p>📅 <strong>Fecha:</strong> ${fecha}</p>
+                </div>
+                
+                <div class="whatsapp-message">
+                    <p><strong>PRODUCTOS:</strong></p>
+                </div>
+            `;
+
+            // Agregar cada producto con su foto
+            if (factura.items && factura.items.length > 0) {
+                factura.items.forEach(item => {
+                    const datosProducto = obtenerDatosProducto(item.nombre);
+                    const precio = datosProducto ? datosProducto.precio : Math.round(item.precio || 0);
+                    const precioFormato = precio.toLocaleString('es-ES');
+                    const cantidad = item.cantidad || 1;
+                    const subtotal = Math.round(precio * cantidad).toLocaleString('es-ES');
+                    const urlImagen = datosProducto ? datosProducto.urlImagen : '';
+
+                    mensajeHTML += `
+                        <div class="whatsapp-product-item">
+                            <div class="whatsapp-product-text">
+                                • ${item.nombre} — $${precioFormato}<br>
+                                x${cantidad} = $${subtotal}
+                            </div>
+                            ${urlImagen ? `
+                                <div class="whatsapp-product-image">
+                                    <img src="${urlImagen}" alt="${item.nombre}" title="Click para descargar">
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
             }
-            const urlWhatsApp = `https://wa.me/${numeroFinal}?text=${encodeURIComponent(mensaje)}`;
+
+            // Agregar total
+            mensajeHTML += `
+                <div class="whatsapp-message">
+                    <p><strong>💰 Total: $${total}</strong></p>
+                    <p>Te notificaremos cuando esté listo.</p>
+                </div>
+            `;
+
+            // Crear container del preview
+            const container = document.createElement('div');
+            container.id = 'whatsappPreviewContainer';
+            container.innerHTML = `
+                <div class="whatsapp-window">
+                    <div class="whatsapp-header">
+                        <div>
+                            <h3>${nombreCliente}</h3>
+                            <div class="whatsapp-header-info">Estado: ${estado}</div>
+                        </div>
+                        <div style="font-size: 20px; cursor: pointer;" onclick="cerrarPreviewWhatsApp()">✕</div>
+                    </div>
+                    
+                    <div class="whatsapp-body">
+                        ${mensajeHTML}
+                    </div>
+                    
+                    <div class="whatsapp-footer">
+                        <button class="btn-estado-cambiar" onclick="mostrarSelectorEstados()">📊 Cambiar Estado</button>
+                        <button class="btn-cerrar-preview" onclick="cerrarPreviewWhatsApp()">Cerrar</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(container);
+
+            // Agregar event listeners a las imágenes para descargar
+            const imagenes = container.querySelectorAll('.whatsapp-product-image img');
+            imagenes.forEach((img, idx) => {
+                img.addEventListener('click', function() {
+                    const link = document.createElement('a');
+                    link.href = this.src;
+                    link.download = `producto-${idx + 1}.jpg`;
+                    link.click();
+                });
+            });
+        }
+
+        function cerrarPreviewWhatsApp() {
+            const container = document.getElementById('whatsappPreviewContainer');
+            if (container) container.remove();
+        }
+
+        function mostrarSelectorEstados() {
+            const estados = ['Pedido recibido', 'Solicitud de pago', 'Pago recibido', 'Pedido entregado', 'Orden completada'];
+            const container = document.getElementById('whatsappPreviewContainer');
             
-            // Generar PDF
-            generarPDF(factura);
-            
-            // Cerrar modal
-            const modal = document.getElementById('whatsappPreviewModal');
-            if (modal) modal.remove();
-            
-            // Abrir WhatsApp
-            setTimeout(() => {
-                window.open(urlWhatsApp, '_blank');
-            }, 500);
+            if (!container) return;
+
+            // Remover selector anterior si existe
+            const selectorAnterior = document.querySelector('.estado-selector');
+            if (selectorAnterior) selectorAnterior.remove();
+
+            // Crear selector
+            const selector = document.createElement('div');
+            selector.className = 'estado-selector';
+            selector.style.top = '250px';
+            selector.style.left = '50px';
+
+            estados.forEach(estado => {
+                const option = document.createElement('div');
+                option.className = 'estado-option';
+                if (estado === (window.facturaActual.estado || 'Pedido recibido')) {
+                    option.classList.add('active');
+                }
+                option.textContent = estado;
+                option.onclick = () => {
+                    window.facturaActual.estado = estado;
+                    selector.remove();
+                    cerrarPreviewWhatsApp();
+                    mostrarPreviewWhatsAppConFotos();
+                };
+                selector.appendChild(option);
+            });
+
+            document.body.appendChild(selector);
         }
 
         // SEGUIMIENTO
