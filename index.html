@@ -3109,12 +3109,20 @@
         // SEGUIMIENTO
         function renderSeguimiento() {
             const container = document.getElementById('seguimientoList');
-            if (facturas.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No hay facturas para hacer seguimiento</p>';
+            
+            // Filtrar solo facturas que NO estén completadas
+            const facturasActivas = facturas
+                .map((f, idx) => ({ factura: f, idx: idx }))
+                .filter(item => item.factura.estado !== 'Orden completada');
+            
+            if (facturasActivas.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">✅ ¡Todos los pedidos están completados!</p>';
                 return;
             }
 
-            container.innerHTML = facturas.map((f, idx) => {
+            container.innerHTML = facturasActivas.map(item => {
+                const f = item.factura;
+                const idx = item.idx;
                 const estados = ['Pedido recibido', 'Solicitud de pago', 'Pago recibido', 'Pedido entregado', 'Orden completada'];
                 const estadoActual = f.estado || 'Pedido recibido';
                 
