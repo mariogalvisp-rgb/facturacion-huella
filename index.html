@@ -2404,51 +2404,44 @@
         }
 
         // PDF
-        // ========== MAPEO DE PRODUCTOS A IMÁGENES ==========
-        const productosImagenes = {
-            'QUETZAL DEL TOLIMA': '/productos/quetzal.jpg',
-            'CHIVITO DE PÁRAMO': '/productos/chivito.jpg',
-            'COLIBRÍ AMAZILIA': '/productos/colibri.jpg',
-            'DUO HUELLA DE ORIGEN': '/productos/duo.jpg',
-            'TRILOGÍA HUELLA DE ORIGEN': '/productos/trilogia.jpg'
+        // ========== MAPEO COMPLETO: PRODUCTO + PRECIO + FOTO ==========
+        const productosCompleto = {
+            'QUETZAL DEL TOLIMA': {
+                precio: 25000,
+                imagen: 'quetzal_del_tolima.jpeg'
+            },
+            'CHIVITO DE PÁRAMO': {
+                precio: 22000,
+                imagen: 'chivito_de_paramo.jpeg'
+            },
+            'COLIBRÍ AMAZILIA': {
+                precio: 24000,
+                imagen: 'Colibri_amazillia.jpeg'
+            },
+            'DÚO HUELLA DE ORIGEN': {
+                precio: 45000,
+                imagen: 'duo_huella_de_origen.jpeg'
+            },
+            'TRILOGÍA HUELLA DE ORIGEN': {
+                precio: 68000,
+                imagen: 'trilogia_huella_de_origen.jpeg'
+            }
         };
 
-        // Función para obtener la imagen de un producto
-        function obtenerImagenProducto(nombreProducto) {
-            // Buscar coincidencia exacta
-            if (productosImagenes[nombreProducto]) {
-                return productosImagenes[nombreProducto];
-            }
-            
-            // Buscar coincidencia parcial
-            for (const [producto, imagen] of Object.entries(productosImagenes)) {
+        // Función para obtener datos del producto
+        function obtenerDatosProducto(nombreProducto) {
+            for (const [producto, datos] of Object.entries(productosCompleto)) {
                 if (nombreProducto.toUpperCase().includes(producto.toUpperCase()) || 
                     producto.toUpperCase().includes(nombreProducto.toUpperCase())) {
-                    return imagen;
+                    return {
+                        nombre: producto,
+                        precio: datos.precio,
+                        imagen: datos.imagen,
+                        urlImagen: `https://raw.githubusercontent.com/mariogalvisp-rgb/facturacion-huella/main/productos/${datos.imagen}`
+                    };
                 }
             }
-            
             return null;
-        }
-
-        // Función para generar HTML de preview con imagen
-        function generarPreviewProducto(factura) {
-            let htmlImagenes = '<div style="margin: 20px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">';
-            
-            factura.items.forEach(item => {
-                const imagenUrl = obtenerImagenProducto(item.nombre);
-                if (imagenUrl) {
-                    htmlImagenes += `
-                        <div style="text-align: center;">
-                            <img src="${imagenUrl}" style="width: 150px; height: auto; border-radius: 8px; border: 2px solid #D4A574;">
-                            <p style="margin: 8px 0; font-size: 12px; color: #666; font-weight: 600;">${item.nombre}</p>
-                        </div>
-                    `;
-                }
-            });
-            
-            htmlImagenes += '</div>';
-            return htmlImagenes;
         }
 
         // ========== FUNCIÓN PARA GENERAR MENSAJE WHATSAPP SEGÚN ESTADO ==========
@@ -2458,38 +2451,42 @@
             const fecha = factura.fecha;
             const total = Math.round(factura.total).toLocaleString('es-ES');
 
-            // Generar lista de productos con cantidades
+            // Generar lista de productos CON PRECIOS
             let productoTexto = '';
+            let productosConPrecio = [];
+            
             if (factura.items && factura.items.length > 0) {
-                if (factura.items.length === 1) {
-                    // Un solo producto
-                    const item = factura.items[0];
-                    productoTexto = `${item.nombre} (${item.cantidad} unidad${item.cantidad > 1 ? 'es' : ''})`;
-                } else {
-                    // Múltiples productos
-                    productoTexto = factura.items
-                        .map(item => `• ${item.nombre} (${item.cantidad} unidad${item.cantidad > 1 ? 'es' : ''})`)
-                        .join('\n');
-                }
+                factura.items.forEach(item => {
+                    const datosProducto = obtenerDatosProducto(item.nombre);
+                    const precio = datosProducto ? datosProducto.precio : Math.round(item.precio || 0);
+                    const precioFormato = precio.toLocaleString('es-ES');
+                    const cantidad = item.cantidad || 1;
+                    const subtotal = Math.round(precio * cantidad).toLocaleString('es-ES');
+                    
+                    const linea = `☕ Producto: ${item.nombre} — $${precioFormato}\n   Cantidad: ${cantidad} | Subtotal: $${subtotal}`;
+                    productosConPrecio.push(linea);
+                });
+                
+                productoTexto = productosConPrecio.join('\n\n');
             } else {
                 productoTexto = 'Pedido personalizado';
             }
 
             const mensajes = {
-                'Pedido recibido': `Hola, *${nombreCliente}*. ¡Qué alegría que llegues a Huella de Origen! ☕️✨\nGracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.\n🧾 *Orden N.º:* ${numeroOrden}\n☕ *Productos:*\n${productoTexto}\n📅 *Fecha:* ${fecha}\n*Total: $${total}*\nTe notificaremos cuando esté listo.`,
+                'Pedido recibido': `Hola, *${nombreCliente}*. ¡Qué alegría que llegues a Huella de Origen! ☕️✨\nGracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total: $${total}*\n\nTe notificaremos cuando esté listo.`,
                 
-                'Solicitud de pago': `💳 Puedes realizar el pago con **Bre-B** a la llave: **0090417769**\n🧾 *Orden:* ${numeroOrden}\n💰 *Total:* $${total}`,
+                'Solicitud de pago': `💳 Puedes realizar el pago con **Bre-B** a la llave: **0090417769**\n\n🧾 *Orden:* ${numeroOrden}\n\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total a pagar: $${total}*`,
                 
-                'Pago recibido': `💳 *¡Tu pago ha sido recibido con éxito!*\n🧾 *Orden:* ${numeroOrden}\n💰 *Total:* $${total}`,
+                'Pago recibido': `💳 *¡Tu pago ha sido recibido con éxito!*\n\n🧾 *Orden:* ${numeroOrden}\n💰 *Total pagado: $${total}*\n\n✅ Tu pedido está siendo preparado.`,
                 
-                'Pedido entregado': `🎉 *¡Tu pedido ha llegado!*\n🧾 *Orden N.º:* ${numeroOrden}\n☕ *Productos:*\n${productoTexto}\n📅 *Fecha:* ${fecha}\nRecibido :`,
+                'Pedido entregado': `🎉 *¡Tu pedido ha llegado!*\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n\n*PRODUCTOS ENTREGADOS:*\n${productoTexto}\n\n💰 *Total: $${total}*\n\n¡Gracias por tu compra! Disfruta nuestro café. 😊`,
                 
-                'Orden completada': `🎉 *Tu orden ha sido completada.*\nGracias por tu compra, te esperamos pronto en Huella de Origen para que pruebes nuevas experiencias. ☕️✨`,
+                'Orden completada': `🎉 *Tu orden ha sido completada.*\n\n🧾 *Orden N.º:* ${numeroOrden}\n💰 *Total: $${total}*\n\nGracias por tu compra, te esperamos pronto en Huella de Origen para que pruebes nuevas experiencias. ☕️✨`,
                 
-                'Orden cancelada': `💳 *¡Tu orden ha sido cancelada con éxito!*\n*Orden:* ${numeroOrden}\n☕ *Productos:*\n${productoTexto}\n💰 *Total:* $${total}`
+                'Orden cancelada': `💳 *¡Tu orden ha sido cancelada con éxito!*\n\n*Orden:* ${numeroOrden}\n\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total cancelado: $${total}*`
             };
 
-            return mensajes[estado] || `☕ *FACTURA HUELLA DE ORIGEN*\n\n📌 *${numeroOrden}*\n👤 Cliente: ${nombreCliente}\n📅 Fecha: ${fecha}\n☕ *Productos:*\n${productoTexto}\n💰 *Total: $${total}*\n\n_Desde su origen, deja huella._`;
+            return mensajes[estado] || `☕ *FACTURA HUELLA DE ORIGEN*\n\n📌 *${numeroOrden}*\n👤 Cliente: ${nombreCliente}\n📅 Fecha: ${fecha}\n\n*Productos:*\n${productoTexto}\n\n💰 *Total: $${total}*\n\n_Desde su origen, deja huella._`;
         }
 
         function generarPDF(factura) {
@@ -2714,17 +2711,98 @@
                 return;
             }
             
-            // Construir URL de WhatsApp (agregar +57 para Colombia si no lo tiene)
+            // Obtener fotos de los productos
+            let fotosHTML = '';
+            
+            if (factura.items && factura.items.length > 0) {
+                fotosHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin: 20px 0;">';
+                
+                factura.items.forEach(item => {
+                    const datosProducto = obtenerDatosProducto(item.nombre);
+                    if (datosProducto) {
+                        const precio = datosProducto.precio.toLocaleString('es-ES');
+                        const subtotal = Math.round(datosProducto.precio * item.cantidad).toLocaleString('es-ES');
+                        fotosHTML += `
+                            <div style="text-align: center; padding: 15px; background: white; border-radius: 8px; border: 3px solid #D4A574;">
+                                <h4 style="color: #2C1810; margin: 0 0 8px 0; font-size: 13px; font-weight: 700;">☕ ${datosProducto.nombre}</h4>
+                                <p style="color: #D4A574; font-weight: bold; margin: 5px 0; font-size: 14px;">$${precio}</p>
+                                <p style="color: #666; font-size: 11px; margin: 3px 0;">× ${item.cantidad} = <strong>$${subtotal}</strong></p>
+                                <a href="${datosProducto.urlImagen}" target="_blank" style="display: inline-block; margin-top: 10px; padding: 8px 12px; background: #8B6F47; color: white; text-decoration: none; border-radius: 4px; font-size: 11px; font-weight: 600;">📥 Descargar</a>
+                            </div>
+                        `;
+                    }
+                });
+                
+                fotosHTML += '</div>';
+            }
+            
+            // Crear modal de preview
+            const previewModal = document.createElement('div');
+            previewModal.id = 'whatsappPreviewModal';
+            previewModal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.75);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 9999;
+            `;
+            
+            previewModal.innerHTML = `
+                <div style="background: white; border-radius: 12px; max-width: 700px; width: 95%; max-height: 85vh; overflow-y: auto; padding: 25px;">
+                    <h2 style="color: #2C1810; margin: 0 0 15px 0; font-size: 20px; text-align: center;">📸 PRODUCTOS CON FOTOS</h2>
+                    
+                    ${fotosHTML}
+                    
+                    <div style="background: #FFF8E5; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 5px solid #D4A574;">
+                        <p style="color: #2C1810; font-weight: bold; margin: 0 0 10px 0; font-size: 14px;">📱 CÓMO ENVIAR A WHATSAPP:</p>
+                        <ol style="color: #555; margin: 0; padding-left: 20px; font-size: 12px; line-height: 1.6;">
+                            <li><strong>Haz clic</strong> en "Enviar a WhatsApp" abajo</li>
+                            <li><strong>Se abrirá</strong> WhatsApp automáticamente con tu mensaje</li>
+                            <li><strong>Descarga las fotos</strong> usando los botones "📥 Descargar" arriba</li>
+                            <li><strong>En WhatsApp</strong>, adjunta las fotos que descargaste</li>
+                            <li><strong>¡Envía</strong> el mensaje! 😊</li>
+                        </ol>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button onclick="document.getElementById('whatsappPreviewModal').remove()" style="padding: 10px 20px; background: #ddd; color: #333; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">✕ Cerrar</button>
+                        <button onclick="abrirWhatsAppConFotos('${celular}', '${estado}')" style="padding: 10px 20px; background: #25D366; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">📲 Enviar a WhatsApp</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(previewModal);
+        }
+
+        function abrirWhatsAppConFotos(celular, estado) {
+            if (!window.facturaActual) return;
+            
+            const factura = window.facturaActual;
+            const mensaje = generarMensajeWhatsAppPorEstado(factura, estado);
+            
+            // Limpiar número (solo dígitos)
+            const numeroLimpio = celular.replace(/\D/g, '');
+            
+            // Construir URL de WhatsApp
             let numeroFinal = numeroLimpio;
             if (!numeroFinal.startsWith('57')) {
-                numeroFinal = '57' + numeroFinal;
+                numeroFinal = '57' + numeroLimpio;
             }
             const urlWhatsApp = `https://wa.me/${numeroFinal}?text=${encodeURIComponent(mensaje)}`;
             
-            // Primero generar PDF
+            // Generar PDF
             generarPDF(factura);
             
-            // Luego abrir WhatsApp con mensaje
+            // Cerrar modal
+            const modal = document.getElementById('whatsappPreviewModal');
+            if (modal) modal.remove();
+            
+            // Abrir WhatsApp
             setTimeout(() => {
                 window.open(urlWhatsApp, '_blank');
             }, 500);
