@@ -2487,15 +2487,15 @@
             const mensajes = {
                 'Pedido recibido': `Hola, *${nombreCliente}*. ¡Qué alegría que llegues a Huella de Origen! ☕️✨\nGracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total: $${total}*\n\nTe notificaremos cuando esté listo.`,
                 
-                'Solicitud de pago': `💳 Puedes realizar el pago con **Bre-B** a la llave: **0090417769**\n\n🧾 *Orden:* ${numeroOrden}\n\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total a pagar: $${total}*`,
+                'Solicitud de pago': `💳 Puedes realizar el pago con **Bre-B** a la llave: **0090417769**\n\n🧾 *Orden:* ${numeroOrden}\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total a pagar: $${total}*`,
                 
-                'Pago recibido': `💳 *¡Tu pago ha sido recibido con éxito!*\n\n🧾 *Orden:* ${numeroOrden}\n💰 *Total pagado: $${total}*\n\n✅ Tu pedido está siendo preparado.`,
+                'Pago recibido': `💳 *¡Tu pago ha sido recibido con éxito!*\n\n🧾 *Orden:* ${numeroOrden}\n💰 *Total pagado: $${total}*\n✅ Tu pedido está siendo preparado.`,
                 
-                'Pedido entregado': `🎉 *¡Tu pedido ha llegado!*\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n\n*PRODUCTOS ENTREGADOS:*\n${productoTexto}\n\n💰 *Total: $${total}*\n\n¡Gracias por tu compra! Disfruta nuestro café. 😊`,
+                'Pedido entregado': `🎉 *¡Tu pedido ha llegado!*\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n\n*PRODUCTOS ENTREGADOS:*\n${productoTexto}\n\n💰 *Total: $${total}*\n¡Gracias por tu compra! Disfruta nuestro café. 😊`,
                 
                 'Orden completada': `🎉 *Tu orden ha sido completada.*\n\n🧾 *Orden N.º:* ${numeroOrden}\n💰 *Total: $${total}*\n\nGracias por tu compra, te esperamos pronto en Huella de Origen para que pruebes nuevas experiencias. ☕️✨`,
                 
-                'Orden cancelada': `💳 *¡Tu orden ha sido cancelada con éxito!*\n\n*Orden:* ${numeroOrden}\n\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total cancelado: $${total}*`
+                'Orden cancelada': `💳 *¡Tu orden ha sido cancelada con éxito!*\n\n*Orden:* ${numeroOrden}\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total cancelado: $${total}*`
             };
 
             return mensajes[estado] || `☕ *FACTURA HUELLA DE ORIGEN*\n\n📌 *${numeroOrden}*\n👤 Cliente: ${nombreCliente}\n📅 Fecha: ${fecha}\n\n*Productos:*\n${productoTexto}\n\n💰 *Total: $${total}*\n\n_Desde su origen, deja huella._`;
