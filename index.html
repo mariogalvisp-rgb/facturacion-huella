@@ -1940,29 +1940,10 @@
                 
                 if (facturas && facturas.length > 0) {
                     for (const factura of facturas) {
-                        await fetch(`${SUPABASE_URL}/rest/v1/facturas?id=eq.${encodeURIComponent(factura.id)}`, {
-                            method: 'PATCH',
-                            headers: {
-                                'apikey': SUPABASE_KEY,
-                                'Content-Type': 'application/json',
-                                'Prefer': 'return=minimal'
-                            },
-                            body: JSON.stringify({
-                                id: factura.id,
-                                numero_orden: factura.numero_orden || factura.id,
-                                cliente_nombre: factura.cliente?.nombre || 'Cliente',
-                                fecha: factura.fecha,
-                                estado: factura.estado || 'Pedido recibido',
-                                total: factura.total,
-                                descuento: factura.descuento || 0,
-                                envio: factura.envio || 0,
-                                vendedor: factura.vendedor || '',
-                                items: JSON.stringify(factura.items || [])
-                            })
-                        }).catch(e => {
-                            // Si PATCH falla, intenta INSERT
-                            fetch(`${SUPABASE_URL}/rest/v1/facturas`, {
-                                method: 'POST',
+                        try {
+                            // Intenta actualizar con PATCH
+                            const patchResp = await fetch(`${SUPABASE_URL}/rest/v1/facturas?id=eq.${encodeURIComponent(factura.id)}`, {
+                                method: 'PATCH',
                                 headers: {
                                     'apikey': SUPABASE_KEY,
                                     'Content-Type': 'application/json',
@@ -1980,14 +1961,50 @@
                                     vendedor: factura.vendedor || '',
                                     items: JSON.stringify(factura.items || [])
                                 })
-                            }).catch(err => console.log('Error guardando en Supabase:', err.message));
-                        });
+                            });
+                            
+                            if (!patchResp.ok) {
+                                // Si PATCH falla, intenta INSERT
+                                console.log(`PATCH falló para ${factura.id}, intentando INSERT...`);
+                                const postResp = await fetch(`${SUPABASE_URL}/rest/v1/facturas`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'apikey': SUPABASE_KEY,
+                                        'Content-Type': 'application/json',
+                                        'Prefer': 'return=minimal'
+                                    },
+                                    body: JSON.stringify({
+                                        id: factura.id,
+                                        numero_orden: factura.numero_orden || factura.id,
+                                        cliente_nombre: factura.cliente?.nombre || 'Cliente',
+                                        fecha: factura.fecha,
+                                        estado: factura.estado || 'Pedido recibido',
+                                        total: factura.total,
+                                        descuento: factura.descuento || 0,
+                                        envio: factura.envio || 0,
+                                        vendedor: factura.vendedor || '',
+                                        items: JSON.stringify(factura.items || [])
+                                    })
+                                });
+                                
+                                if (postResp.ok) {
+                                    console.log(`✅ Factura ${factura.id} insertada en Supabase`);
+                                } else {
+                                    const errorText = await postResp.text();
+                                    console.error(`❌ Error insertando ${factura.id}:`, errorText);
+                                }
+                            } else {
+                                console.log(`✅ Factura ${factura.id} actualizada en Supabase`);
+                            }
+                        } catch (err) {
+                            console.error(`❌ Error procesando factura ${factura.id}:`, err.message);
+                        }
                     }
                 }
 
                 console.log('✅ Sincronización con Supabase completada');
             } catch (error) {
-                console.error('❌ Error en sincronización:', error);
+                console.error('❌ Error general en sincronización:', error);
             }
         }
 
@@ -2602,8 +2619,11 @@
             const descMonto = subtotal * (desc / 100);
             const total = subtotal - descMonto + env;
 
+            const facturasEnStorage = JSON.parse(localStorage.getItem('facturas_huella') || '[]');
+            const nuevoNumero = facturasEnStorage.length + 1;
+            
             const factura = {
-                id: 'HO-' + Date.now().toString().slice(-8) + '-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0'),
+                id: 'HO-' + String(nuevoNumero).padStart(5, '0'),
                 cliente: clienteSeleccionado,
                 items: itemsTemp,
                 subtotal: subtotal,
