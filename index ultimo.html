@@ -1,0 +1,3498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facturación Huella de Origen</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        /* ========== WHATSAPP PREVIEW STYLES ========== */
+        #whatsappPreviewContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9998;
+        }
+
+        .whatsapp-window {
+            width: 400px;
+            height: 600px;
+            background: #ECE5DD;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .whatsapp-header {
+            background: #075E54;
+            color: white;
+            padding: 15px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .whatsapp-header h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .whatsapp-header-info {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .whatsapp-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .whatsapp-message {
+            background: white;
+            border-radius: 8px;
+            padding: 10px 12px;
+            max-width: 85%;
+            word-wrap: break-word;
+            font-size: 13px;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        .whatsapp-message p {
+            margin: 5px 0;
+        }
+
+        .whatsapp-message strong {
+            color: #075E54;
+        }
+
+        .whatsapp-product-item {
+            background: white;
+            border-radius: 8px;
+            padding: 8px;
+            max-width: 85%;
+            margin-bottom: 8px;
+        }
+
+        .whatsapp-product-text {
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .whatsapp-product-image {
+            width: 100%;
+            height: 120px;
+            background: #f0f0f0;
+            border-radius: 6px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .whatsapp-product-image:hover {
+            transform: scale(1.05);
+        }
+
+        .whatsapp-product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .whatsapp-footer {
+            background: white;
+            padding: 12px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        .btn-estado-cambiar {
+            flex: 1;
+            padding: 10px;
+            background: #075E54;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .btn-estado-cambiar:hover {
+            background: #064E48;
+        }
+
+        .btn-cerrar-preview {
+            flex: 0;
+            padding: 10px 15px;
+            background: #ccc;
+            color: #333;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .estado-selector {
+            position: absolute;
+            background: white;
+            border: 2px solid #075E54;
+            border-radius: 8px;
+            z-index: 9999;
+            min-width: 200px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .estado-option {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .estado-option:hover {
+            background: #f0f0f0;
+        }
+
+        .estado-option:last-child {
+            border-bottom: none;
+        }
+
+        .estado-option.active {
+            background: #075E54;
+            color: white;
+            font-weight: 600;
+        }
+    
+        #loginScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #8B6F47 0%, #D4A574 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        #loginScreen.hidden {
+            display: none;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+            margin: 20px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-logo {
+            width: 80px;
+            height: auto;
+            margin: 0 auto 15px;
+            display: block;
+        }
+
+        .login-header h1 {
+            color: #2C1810;
+            font-size: 24px;
+            margin-bottom: 5px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .login-header p {
+            color: #999;
+            font-size: 14px;
+        }
+
+        .login-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .login-form-group label {
+            color: #2C1810;
+            font-weight: 600;
+            font-size: 14px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .login-form-group input {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .login-form-group input:focus {
+            outline: none;
+            border-color: #D4A574;
+            box-shadow: 0 0 5px rgba(212, 165, 116, 0.3);
+        }
+
+        .login-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .btn-login, .btn-register {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .btn-login {
+            background: #8B6F47;
+            color: white;
+        }
+
+        .btn-login:hover {
+            background: #2C1810;
+        }
+
+        .btn-register {
+            background: #D4A574;
+            color: white;
+        }
+
+        .btn-register:hover {
+            background: #8B6F47;
+        }
+
+        .login-message {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+            font-size: 13px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .login-message.error {
+            background: #FFE5E5;
+            color: #E74C3C;
+            display: block;
+        }
+
+        .login-message.success {
+            background: #E5FFE5;
+            color: #27AE60;
+            display: block;
+        }
+
+        .login-toggle-text {
+            text-align: center;
+            color: #999;
+            font-size: 13px;
+            margin-top: 15px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .login-toggle-text button {
+            background: none;
+            border: none;
+            color: #8B6F47;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: underline;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .user-badge {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            display: none;
+            gap: 10px;
+            align-items: center;
+            font-size: 13px;
+            z-index: 999;
+        }
+
+        .user-badge.active {
+            display: flex;
+        }
+
+        .user-badge span {
+            color: #2C1810;
+            font-weight: 600;
+        }
+
+        .btn-logout {
+            background: #E74C3C;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* ========== VARIABLES DE DISEÑO ========== */
+        :root {
+            --cafe-principal: #8B6F47;
+            --cafe-oscuro: #2C1810;
+            --cafe-secundario: #6B5344;
+            --dorado: #D4A574;
+            --crema: #F5EDD6;
+            --fondo: #FEFDFB;
+            --borde: #E8DDD0;
+            --exito: #27AE60;
+            --advertencia: #F39C12;
+            --error: #E74C3C;
+            --info: #3498DB;
+            --gris-claro: #ECE8E3;
+            --gris-medio: #A9A9A9;
+            --gris-oscuro: #5A5A5A;
+            --espaciado: 8px;
+            --radio: 8px;
+            --sombra-ligera: 0 2px 8px rgba(44, 24, 16, 0.08);
+            --sombra-media: 0 4px 16px rgba(44, 24, 16, 0.12);
+            --sombra-fuerte: 0 8px 32px rgba(44, 24, 16, 0.16);
+        }
+
+        /* ========== RESET ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* ========== TIPOGRAFÍA ========== */
+        html { font-size: 16px; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--fondo);
+            color: var(--cafe-oscuro);
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; color: var(--cafe-oscuro); }
+        h2 { font-size: 1.5rem; font-weight: 600; line-height: 1.3; color: var(--cafe-oscuro); }
+        h3 { font-size: 1.25rem; font-weight: 600; line-height: 1.3; color: var(--cafe-oscuro); }
+        h4 { font-size: 1rem; font-weight: 600; color: var(--cafe-oscuro); }
+        p { font-size: 0.95rem; color: var(--cafe-secundario); margin-bottom: calc(var(--espaciado) * 2); }
+        small { font-size: 0.85rem; color: var(--gris-medio); }
+
+        /* ========== LAYOUT ========== */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: calc(var(--espaciado) * 3);
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: calc(var(--espaciado) * 2); }
+            html { font-size: 14px; }
+        }
+
+        /* ========== HEADER ========== */
+        header {
+            background: linear-gradient(135deg, var(--cafe-oscuro) 0%, var(--cafe-secundario) 100%);
+            color: white;
+            padding: calc(var(--espaciado) * 4);
+            border-radius: var(--radio);
+            margin-bottom: calc(var(--espaciado) * 4);
+            text-align: center;
+            box-shadow: var(--sombra-media);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 200px;
+            background: rgba(212, 165, 116, 0.1);
+            border-radius: 50%;
+            transform: translate(50%, -50%);
+        }
+
+        header .logo {
+            width: 80px;
+            height: auto;
+            margin: 0 auto calc(var(--espaciado) * 2);
+            position: relative;
+            z-index: 1;
+        }
+
+        header h1 {
+            color: white;
+            margin-bottom: var(--espaciado);
+            letter-spacing: 0.5px;
+            font-size: 2.25rem;
+        }
+
+        header .slogan {
+            font-size: 0.95rem;
+            opacity: 0.95;
+            letter-spacing: 1px;
+            font-weight: 500;
+            color: var(--dorado);
+        }
+
+        /* ========== NAVEGACIÓN ========== */
+        nav {
+            display: flex;
+            gap: var(--espaciado);
+            margin-bottom: calc(var(--espaciado) * 4);
+            flex-wrap: wrap;
+            justify-content: center;
+            background: white;
+            padding: calc(var(--espaciado) * 2);
+            border-radius: var(--radio);
+            box-shadow: var(--sombra-ligera);
+            border: 1px solid var(--borde);
+        }
+
+        nav button {
+            flex: 1;
+            min-width: 140px;
+            padding: calc(var(--espaciado) * 1.5) calc(var(--espaciado) * 2);
+            background: var(--gris-claro);
+            color: var(--cafe-oscuro);
+            border: 2px solid transparent;
+            border-radius: calc(var(--radio) - 2px);
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        nav button:hover {
+            background: var(--borde);
+            border-color: var(--dorado);
+            transform: translateY(-2px);
+        }
+
+        nav button.active {
+            background: var(--cafe-principal);
+            color: white;
+            border-color: var(--cafe-principal);
+            box-shadow: 0 4px 12px rgba(139, 111, 71, 0.3);
+        }
+
+        /* ========== SECCIONES ========== */
+        .section {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ========== TARJETAS ========== */
+        .card {
+            background: white;
+            border-radius: var(--radio);
+            padding: calc(var(--espaciado) * 3);
+            box-shadow: var(--sombra-ligera);
+            border: 1px solid var(--borde);
+            margin-bottom: calc(var(--espaciado) * 3);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: var(--sombra-media);
+            border-color: var(--dorado);
+        }
+
+        .card h2,
+        .card h3,
+        .card h4 {
+            margin-top: 0;
+            margin-bottom: calc(var(--espaciado) * 2);
+            padding-bottom: calc(var(--espaciado) * 1.5);
+            border-bottom: 2px solid var(--borde);
+        }
+
+        .card h2 {
+            color: var(--cafe-oscuro);
+            display: flex;
+            align-items: center;
+            gap: calc(var(--espaciado) * 1.5);
+        }
+
+        /* ========== FORMULARIOS ========== */
+        .form-group {
+            margin-bottom: calc(var(--espaciado) * 2.5);
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: calc(var(--espaciado) * 0.75);
+            color: var(--cafe-oscuro);
+            font-weight: 600;
+            font-size: 0.9rem;
+            letter-spacing: 0.3px;
+        }
+
+        label::after {
+            content: attr(data-required);
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: calc(var(--espaciado) * 1.25);
+            border: 1.5px solid var(--borde);
+            border-radius: calc(var(--radio) - 2px);
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            color: var(--cafe-oscuro);
+            background-color: white;
+            transition: all 0.3s ease;
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+            color: var(--gris-medio);
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--cafe-principal);
+            background-color: var(--crema);
+            box-shadow: 0 0 0 3px rgba(139, 111, 71, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* ========== GRID FORMULARIO ========== */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: calc(var(--espaciado) * 2);
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ========== BOTONES ========== */
+        button {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .btn {
+            padding: calc(var(--espaciado) * 1.5) calc(var(--espaciado) * 3);
+            background: var(--cafe-principal);
+            color: white;
+            border: none;
+            border-radius: calc(var(--radio) - 2px);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: var(--sombra-ligera);
+        }
+
+        .btn:hover {
+            background: var(--cafe-oscuro);
+            box-shadow: var(--sombra-media);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-small {
+            padding: calc(var(--espaciado) * 0.75) calc(var(--espaciado) * 1.5);
+            font-size: 0.85rem;
+            text-transform: none;
+        }
+
+        .btn-secondary {
+            background: var(--gris-claro);
+            color: var(--cafe-oscuro);
+            border: 1.5px solid var(--borde);
+        }
+
+        .btn-secondary:hover {
+            background: var(--borde);
+            border-color: var(--cafe-principal);
+        }
+
+        .btn-delete {
+            background: var(--error);
+        }
+
+        .btn-delete:hover {
+            background: #c0392b;
+        }
+
+        .btn-success {
+            background: var(--exito);
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        /* ========== TABLAS ========== */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            margin-top: calc(var(--espaciado) * 2);
+            font-size: 0.9rem;
+        }
+
+        thead {
+            background: linear-gradient(135deg, var(--cafe-oscuro) 0%, var(--cafe-secundario) 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        th {
+            padding: calc(var(--espaciado) * 1.5) calc(var(--espaciado) * 2);
+            text-align: left;
+            letter-spacing: 0.3px;
+            border: none;
+        }
+
+        td {
+            padding: calc(var(--espaciado) * 1.5) calc(var(--espaciado) * 2);
+            text-align: left;
+            border-bottom: 1px solid var(--borde);
+            color: var(--cafe-secundario);
+        }
+
+        tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: var(--crema);
+        }
+
+        tbody tr:nth-child(even) {
+            background: var(--gris-claro);
+        }
+
+        tbody tr:nth-child(even):hover {
+            background: var(--crema);
+        }
+
+        /* ========== BADGES ========== */
+        .badge {
+            display: inline-block;
+            padding: calc(var(--espaciado) * 0.5) calc(var(--espaciado) * 1.5);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-success {
+            background: rgba(39, 174, 96, 0.15);
+            color: var(--exito);
+        }
+
+        .badge-warning {
+            background: rgba(243, 156, 18, 0.15);
+            color: var(--advertencia);
+        }
+
+        .badge-danger {
+            background: rgba(231, 76, 60, 0.15);
+            color: var(--error);
+        }
+
+        .badge-info {
+            background: rgba(52, 152, 219, 0.15);
+            color: var(--info);
+        }
+
+        /* ========== MODALES ========== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(44, 24, 16, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+            padding: calc(var(--espaciado) * 2);
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: calc(var(--espaciado) * 3);
+            border-radius: var(--radio);
+            max-width: 90%;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            margin: auto;
+            position: relative;
+            box-shadow: var(--sombra-fuerte);
+            border: 1px solid var(--borde);
+        }
+
+        @media (max-width: 768px) {
+            .modal-content {
+                max-width: 95%;
+                max-height: 90vh;
+            }
+        }
+
+        .close-btn {
+            position: absolute;
+            top: calc(var(--espaciado) * 2);
+            right: calc(var(--espaciado) * 2);
+            background: none;
+            border: none;
+            font-size: 1.75rem;
+            cursor: pointer;
+            color: var(--gris-medio);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: calc(var(--radio) - 4px);
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: var(--gris-claro);
+            color: var(--cafe-oscuro);
+        }
+
+        .modal-header {
+            font-size: 1.5rem;
+            color: var(--cafe-oscuro);
+            margin-bottom: calc(var(--espaciado) * 2);
+            border-bottom: 2px solid var(--dorado);
+            padding-bottom: calc(var(--espaciado) * 1.5);
+            font-weight: 600;
+        }
+
+        .modal-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .modal-item {
+            padding: calc(var(--espaciado) * 1.5);
+            border-bottom: 1px solid var(--borde);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .modal-item:hover {
+            background: var(--crema);
+            border-left-color: var(--dorado);
+        }
+
+        .modal-item strong {
+            display: block;
+            color: var(--cafe-oscuro);
+            margin-bottom: calc(var(--espaciado) * 0.5);
+            font-weight: 600;
+        }
+
+        .modal-item small {
+            color: var(--gris-medio);
+            font-size: 0.85rem;
+        }
+
+        /* ========== CAJAS DE INFORMACIÓN ========== */
+        .info-box,
+        .success-msg,
+        .error-msg,
+        .warning-msg,
+        .info-msg {
+            padding: calc(var(--espaciado) * 2);
+            border-radius: calc(var(--radio) - 2px);
+            margin-bottom: calc(var(--espaciado) * 2);
+            border-left: 4px solid;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .info-box {
+            background: var(--crema);
+            border-left-color: var(--dorado);
+            color: var(--cafe-oscuro);
+        }
+
+        .success-msg {
+            background: rgba(39, 174, 96, 0.1);
+            border-left-color: var(--exito);
+            color: #1e5631;
+        }
+
+        .error-msg {
+            background: rgba(231, 76, 60, 0.1);
+            border-left-color: var(--error);
+            color: #78281f;
+        }
+
+        .warning-msg {
+            background: rgba(243, 156, 18, 0.1);
+            border-left-color: var(--advertencia);
+            color: #7d6608;
+        }
+
+        .info-msg {
+            background: rgba(52, 152, 219, 0.1);
+            border-left-color: var(--info);
+            color: #1b3a6b;
+        }
+
+        .info-box p,
+        .success-msg p,
+        .error-msg p,
+        .warning-msg p,
+        .info-msg p {
+            margin-bottom: calc(var(--espaciado) * 0.75);
+        }
+
+        .info-box p:last-child,
+        .success-msg p:last-child,
+        .error-msg p:last-child,
+        .warning-msg p:last-child,
+        .info-msg p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* ========== GRID ========== */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: calc(var(--espaciado) * 3);
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ========== PDF ========== */
+        @media print {
+            body { background: white; }
+            .container { max-width: 100%; padding: 0; }
+            nav, header, button, .modal, .close-btn { display: none !important; }
+            .section { display: none; }
+            #pdf-content { display: block !important; margin: 0; padding: 40px; }
+        }
+
+        #pdf-content {
+            display: none;
+            background: white;
+            padding: 40px;
+        }
+
+        .pdf-header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid var(--dorado);
+            padding-bottom: 30px;
+        }
+
+        .pdf-header img {
+            width: 70px;
+            margin-bottom: 20px;
+        }
+
+        .pdf-header h1 {
+            color: var(--cafe-oscuro);
+            margin-bottom: 8px;
+            font-size: 1.8em;
+        }
+
+        .pdf-tagline {
+            color: var(--dorado);
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+
+        .pdf-contact {
+            font-size: 0.9em;
+            color: var(--cafe-secundario);
+            margin-top: 12px;
+        }
+
+        .pdf-section {
+            margin-bottom: 30px;
+        }
+
+        .pdf-section h3 {
+            border-bottom: 1px solid var(--borde);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            color: var(--cafe-oscuro);
+            font-size: 1.1em;
+        }
+
+        .pdf-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .pdf-table thead {
+            background: var(--cafe-oscuro);
+            color: white;
+        }
+
+        .pdf-table th,
+        .pdf-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--borde);
+            font-size: 0.9em;
+        }
+
+        .pdf-table tbody tr:nth-child(even) {
+            background: var(--gris-claro);
+        }
+
+        .pdf-total {
+            text-align: right;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid var(--dorado);
+        }
+
+        .pdf-total p {
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .pdf-total h2 {
+            color: var(--dorado);
+            font-size: 1.5em;
+            margin-top: 15px;
+        }
+
+        .pdf-footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid var(--borde);
+            text-align: center;
+            font-size: 0.85em;
+            color: var(--gris-medio);
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 1024px) {
+            h1 { font-size: 1.75rem; }
+            h2 { font-size: 1.25rem; }
+            h3 { font-size: 1.05rem; }
+            header h1 { font-size: 1.75rem; }
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: calc(var(--espaciado) * 2); }
+            nav { flex-direction: column; }
+            nav button { min-width: 100%; }
+            header { padding: calc(var(--espaciado) * 2); }
+            .card { padding: calc(var(--espaciado) * 2); }
+            table { font-size: 0.85rem; }
+            th, td { padding: calc(var(--espaciado) * 1) calc(var(--espaciado) * 1.5); }
+        }
+
+        /* ========== UTILIDADES ========== */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-left { text-align: left; }
+        .mt-1 { margin-top: calc(var(--espaciado) * 1); }
+        .mt-2 { margin-top: calc(var(--espaciado) * 2); }
+        .mt-3 { margin-top: calc(var(--espaciado) * 3); }
+        .mb-1 { margin-bottom: calc(var(--espaciado) * 1); }
+        .mb-2 { margin-bottom: calc(var(--espaciado) * 2); }
+        .mb-3 { margin-bottom: calc(var(--espaciado) * 3); }
+    </style>
+</head>
+<body>
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen">
+        <div class="login-container">
+            <div class="login-header">
+                <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA2ADYAAD/4QCMRXhpZgAATU0AKgAAAAgABQESAAMAAAABAAEAAAEaAAUAAAABAAAASgEbAAUAAAABAAAAUgEoAAMAAAABAAIAAIdpAAQAAAABAAAAWgAAAAAAAADYAAAAAQAAANgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAABQqgAw" alt="Logo" class="login-logo">
+                <h1>HUELLA DE ORIGEN</h1>
+                <p>Facturación Multi-Usuario</p>
+            </div>
+
+            <div id="loginMessage" class="login-message"></div>
+
+            <!-- LOGIN FORM -->
+            <div id="loginForm">
+                <div class="login-form-group">
+                    <label>📧 Correo</label>
+                    <input type="email" id="loginEmail" placeholder="tu@email.com">
+                </div>
+                <div class="login-form-group">
+                    <label>🔐 Contraseña</label>
+                    <input type="password" id="loginPassword" placeholder="Tu contraseña">
+                </div>
+                <div class="login-buttons">
+                    <button class="btn-login" onclick="loginUser()">🔓 Ingresar</button>
+                    <button class="btn-register" onclick="toggleLoginForm('register')">✨ Crear Cuenta</button>
+                </div>
+            </div>
+
+            <!-- REGISTER FORM -->
+            <div id="registerForm" style="display:none;">
+                <div class="login-form-group">
+                    <label>👤 Nombre Completo</label>
+                    <input type="text" id="regName" placeholder="Tu nombre">
+                </div>
+                <div class="login-form-group">
+                    <label>📧 Correo</label>
+                    <input type="email" id="regEmail" placeholder="tu@email.com">
+                </div>
+                <div class="login-form-group">
+                    <label>🔐 Contraseña</label>
+                    <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="login-buttons">
+                    <button class="btn-register" onclick="registerUser()">✨ Crear Cuenta</button>
+                    <button class="btn-login" style="background:#999;" onclick="toggleLoginForm('login')">← Volver</button>
+                </div>
+            </div>
+
+            <div class="login-toggle-text">
+                ¿Problemas? Probablemente no existe tu cuenta.
+            </div>
+        </div>
+    </div>
+
+    <!-- USER BADGE -->
+    <div class="user-badge" id="userBadge">
+        <span id="userEmail">usuario@email.com</span>
+        <button class="btn-logout" onclick="logoutUser()">Salir</button>
+    </div>
+
+    <div class="container" id="appContainer" style="display:none;">
+        <header>
+            <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA2ADYAAD/4QCMRXhpZgAATU0AKgAAAAgABQESAAMAAAABAAEAAAEaAAUAAAABAAAASgEbAAUAAAABAAAAUgEoAAMAAAABAAIAAIdpAAQAAAABAAAAWgAAAAAAAADYAAAAAQAAANgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAABQqgAw" alt="Huella de Origen" class="logo">
+            <h1>HUELLA DE ORIGEN</h1>
+            <div class="slogan">Desde su origen, deja huella</div>
+        </header>
+
+        <nav>
+            <button class="nav-btn active" data-section="clientes">Clientes</button>
+            <button class="nav-btn" data-section="nuevo-cliente">Nuevo Cliente</button>
+            <button class="nav-btn" data-section="nueva-factura">Nueva Factura</button>
+            <button class="nav-btn" data-section="seguimiento">Seguimiento</button>
+            <button class="nav-btn" data-section="facturas">Historial</button>
+            <button class="nav-btn" data-section="reportes">Reportes</button>
+        </nav>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 24px;">
+            <div style="display: flex; align-items: center; gap: 8px; background: white; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--borde); box-shadow: var(--sombra-ligera);">
+                <span id="supabaseStatus" style="font-size: 0.85rem; color: var(--gris-medio); font-weight: 500;">💾 Local Storage</span>
+                <button class="btn btn-small" onclick="configurarSupabase()">⚙️ Supabase</button>
+            </div>
+        </div>
+
+        <!-- CLIENTES -->
+        <section id="clientes" class="section active">
+            <div class="card">
+                <h2>Gestión de Clientes</h2>
+                <p>Administra tu base de clientes y crea nuevas facturas rápidamente.</p>
+
+                <div class="grid-2" style="margin-top: 32px;">
+                    <!-- Card: Ver Todos -->
+                    <div onclick="abrirModalClientes()" style="cursor: pointer; padding: 32px; background: linear-gradient(135deg, var(--crema) 0%, white 100%); border: 2px solid var(--dorado); border-radius: var(--radio); text-align: center; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div style="width: 64px; height: 64px; background: linear-gradient(135deg, var(--cafe-principal) 0%, var(--cafe-secundario) 100%); border-radius: calc(var(--radio) - 2px); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; color: white; font-size: 28px;">👥</div>
+                        <h3 style="margin: 0 0 8px 0;">Ver Todos</h3>
+                        <p style="margin: 0 0 16px 0; color: var(--gris-medio);">161 clientes disponibles</p>
+                        <button class="btn" style="width: 100%;">Abrir Lista</button>
+                    </div>
+
+                    <!-- Card: Crear Nuevo -->
+                    <div onclick="irANuevoCliente()" style="cursor: pointer; padding: 32px; background: linear-gradient(135deg, var(--crema) 0%, white 100%); border: 2px solid var(--dorado); border-radius: var(--radio); text-align: center; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div style="width: 64px; height: 64px; background: linear-gradient(135deg, var(--exito) 0%, #229954 100%); border-radius: calc(var(--radio) - 2px); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; color: white; font-size: 28px;">➕</div>
+                        <h3 style="margin: 0 0 8px 0;">Crear Nuevo</h3>
+                        <p style="margin: 0 0 16px 0; color: var(--gris-medio);">Agregar cliente</p>
+                        <button class="btn btn-success" style="width: 100%;">Crear</button>
+                    </div>
+                </div>
+
+                <div class="info-box" style="margin-top: 32px;">
+                    <strong>Consejo:</strong> Tienes 161 clientes precargados. Haz clic en "Ver Todos" para buscar, ver detalles y crear nuevas facturas de forma rápida y sencilla.
+                </div>
+            </div>
+        </section>
+
+        <!-- MODAL: VER TODOS LOS CLIENTES -->
+        <div id="clientesModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(44, 24, 16, 0.5); backdrop-filter: blur(4px); z-index: 1000; padding: 24px;">
+            <div style="background: white; border-radius: var(--radio); width: 90%; max-width: 700px; max-height: 90vh; margin: auto; display: flex; flex-direction: column; box-shadow: var(--sombra-fuerte); border: 1px solid var(--borde);">
+                <!-- Header del Modal -->
+                <div style="padding: 24px; border-bottom: 2px solid var(--dorado); display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h2 style="margin: 0 0 8px 0; font-size: 1.5rem;">Base de Clientes</h2>
+                        <p style="margin: 0; color: var(--gris-medio); font-size: 0.9rem;">Gestiona y busca tus clientes</p>
+                    </div>
+                    <button onclick="cerrarModalClientes()" class="close-btn"></button>
+                </div>
+
+                <!-- Búsqueda en Modal -->
+                <div style="padding: 20px; border-bottom: 1px solid var(--borde);">
+                    <div style="position: relative;">
+                        <input type="text" id="clientesModalSearch" placeholder="Buscar por nombre..." style="width: 100%;" onkeyup="filtrarClientesModal()">
+                        <!-- Dropdown búsqueda -->
+                        <div id="clientesModalDropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--borde); border-top: none; border-radius: 0 0 calc(var(--radio) - 2px) calc(var(--radio) - 2px); max-height: 300px; overflow-y: auto; z-index: 100; box-shadow: var(--sombra-media); margin-top: -5px;"></div>
+                    </div>
+                </div>
+
+                <!-- Lista de Clientes -->
+                <div id="clientesModalList" style="flex: 1; overflow-y: auto; padding: 20px;"></div>
+
+                <!-- Footer -->
+                <div style="padding: 20px; border-top: 1px solid var(--borde); text-align: right;">
+                    <button onclick="cerrarModalClientes()" class="btn btn-secondary">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BUSCAR CLIENTE -->
+        <section id="buscar-cliente" class="section" style="display: none;">
+            <div class="card">
+                <h2>🔍 Buscar Cliente</h2>
+                <p style="margin-bottom: 15px; color: #666;">Ingresa el número de celular para encontrar un cliente existente</p>
+                <div class="form-group">
+                    <label>Número de Celular</label>
+                    <input type="tel" id="searchPhone" placeholder="ej: 3117682407 o +57 311 768 2407" onkeyup="buscarClientePorCelular()">
+                </div>
+                <div id="searchResult"></div>
+            </div>
+        </section>
+
+        <!-- NUEVO CLIENTE -->
+        <section id="nuevo-cliente" class="section">
+            <div class="card">
+                <h2>Crear Nuevo Cliente</h2>
+                <p>Completa los datos para registrar un nuevo cliente en la base de datos.</p>
+                
+                <form id="newClientForm" style="margin-top: 32px;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Nombre Completo <span style="color: var(--error);">*</span></label>
+                            <input type="text" id="clientNombre" placeholder="ej: Juan García" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Celular <span style="color: var(--error);">*</span></label>
+                            <input type="tel" id="clientCelular" placeholder="3117682407" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Identificación (CC/NIT)</label>
+                            <input type="text" id="clientIdentificacion" placeholder="ej: 1234567890 o 901234567-8">
+                        </div>
+                        <div class="form-group">
+                            <label>Correo Electrónico</label>
+                            <input type="email" id="clientEmail" placeholder="ejemplo@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Ciudad</label>
+                            <input type="text" id="clientCiudad" placeholder="ej: Bogotá">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Dirección</label>
+                        <textarea id="clientDireccion" placeholder="Calle 123 #45-67, Apto 201"></textarea>
+                    </div>
+                    <button type="submit" class="btn" style="width: 100%; margin-top: 24px; padding: 16px;">Guardar Cliente</button>
+                </form>
+                <div id="clientFormMessage" style="margin-top: 16px;"></div>
+            </div>
+        </section>
+
+        <!-- NUEVA FACTURA -->
+        <section id="nueva-factura" class="section">
+            <div class="card">
+                <h2>Nueva Factura</h2>
+                <p>Crea una nueva factura seleccionando un cliente y agregando productos.</p>
+
+                <!-- PASO 1: SELECCIONAR CLIENTE -->
+                <div style="margin-top: 32px; padding: 24px; background: var(--crema); border-radius: var(--radio); border: 1px solid var(--dorado);">
+                    <h4 style="margin: 0 0 16px 0;">Paso 1: Seleccionar Cliente</h4>
+                    <div class="form-group">
+                        <label>Buscar Cliente <span style="color: var(--error);">*</span></label>
+                        <div style="position: relative; display: flex; gap: 12px;">
+                            <input type="text" id="facturaClientPhone" placeholder="Nombre del cliente..." style="flex: 1;" onkeyup="filtrarClientesFactura()" onkeydown="if(event.key==='Enter') buscarClienteParaFactura();">
+                            <button type="button" class="btn btn-small" onclick="abrirModalClientesFactura()">Ver Lista</button>
+                            <button type="button" class="btn btn-small" onclick="buscarClienteParaFactura()">Buscar</button>
+                        </div>
+                        <div id="facturaClientesDropdown" style="display: none; position: absolute; top: 100%; left: 0; width: calc(100% - 140px); background: white; border: 1px solid var(--borde); border-top: none; border-radius: 0 0 calc(var(--radio) - 2px) calc(var(--radio) - 2px); max-height: 250px; overflow-y: auto; z-index: 100; box-shadow: var(--sombra-media); margin-top: -5px;"></div>
+                    </div>
+                </div>
+
+                <!-- CLIENTE SELECCIONADO -->
+                <div id="clienteSeleccionadoBox" style="display: none; margin-top: 24px;">
+                    <div class="info-box">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                            <div>
+                                <small style="color: var(--gris-medio);">CLIENTE</small>
+                                <p style="margin: 4px 0; font-weight: 600; color: var(--cafe-oscuro);"><span id="facturaClientNombre"></span></p>
+                            </div>
+                            <div>
+                                <small style="color: var(--gris-medio);">IDENTIFICACIÓN</small>
+                                <p style="margin: 4px 0; font-weight: 600; color: var(--cafe-oscuro);"><span id="facturaClientIdentificacion">—</span></p>
+                            </div>
+                            <div>
+                                <small style="color: var(--gris-medio);">CELULAR</small>
+                                <p style="margin: 4px 0; font-weight: 600; color: var(--cafe-oscuro);"><span id="facturaClientCelular"></span></p>
+                            </div>
+                            <div>
+                                <small style="color: var(--gris-medio);">CIUDAD</small>
+                                <p style="margin: 4px 0; font-weight: 600; color: var(--cafe-oscuro);"><span id="facturaClientCiudad"></span></p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-small" onclick="cambiarCliente()">Cambiar Cliente</button>
+                    </div>
+                </div>
+
+                <!-- PASO 2: AGREGAR PRODUCTOS Y DETALLES -->
+                <div id="facturaFormBox" style="display: none; margin-top: 32px;">
+                    
+                    <div style="padding: 24px; background: var(--crema); border-radius: var(--radio); border: 1px solid var(--dorado); margin-bottom: 24px;">
+                        <h4 style="margin: 0 0 16px 0;">Paso 2: Detalles de la Factura</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Vendedor / Canal <span style="color: var(--error);">*</span></label>
+                                <select id="vendedor" required>
+                                    <option value="">-- Seleccionar --</option>
+                                    <option value="Felipe">Felipe</option>
+                                    <option value="Mario">Mario</option>
+                                    <option value="Juana">Juana</option>
+                                    <option value="Angela">Angela</option>
+                                    <option value="Página web">Página web</option>
+                                    <option value="MercadoLibre">MercadoLibre</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Estado de Pago <span style="color: var(--error);">*</span></label>
+                                <select id="estadoPago" required>
+                                    <option value="Pendiente">Pendiente</option>
+                                    <option value="Pagada">Pagada</option>
+                                    <option value="Parcial">Parcial</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="padding: 24px; background: var(--crema); border-radius: var(--radio); border: 1px solid var(--dorado); margin-bottom: 24px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h4 style="margin: 0;">Paso 3: Productos</h4>
+                            <button type="button" class="btn btn-small" onclick="openProductModal()">Agregar Productos</button>
+                        </div>
+                        <table id="itemsTable">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th style="width: 80px;">Cantidad</th>
+                                    <th style="width: 100px;">Precio Unit.</th>
+                                    <th style="width: 100px;">Subtotal</th>
+                                    <th style="width: 50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div style="padding: 24px; background: var(--crema); border-radius: var(--radio); border: 1px solid var(--dorado); margin-bottom: 24px;">
+                        <h4 style="margin: 0 0 16px 0;">Paso 4: Ajustes Finales</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Descuento (%)</label>
+                                <input type="number" id="descuentoPorcentaje" value="0" min="0" max="100" onchange="calcularTotales()">
+                            </div>
+                            <div class="form-group">
+                                <label>Envío ($)</label>
+                                <input type="number" id="envio" value="0" min="0" onchange="calcularTotales()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RESUMEN TOTAL -->
+                    <div style="padding: 24px; background: linear-gradient(135deg, var(--cafe-principal) 0%, var(--cafe-secundario) 100%); border-radius: var(--radio); color: white; margin-bottom: 24px;">
+                        <h4 style="margin: 0 0 16px 0; color: white;">Resumen de Factura</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                            <div>
+                                <small style="opacity: 0.9;">Subtotal</small>
+                                <p style="margin: 4px 0; font-size: 1.25rem; font-weight: 600;">$<span id="subtotalDisplay">0</span></p>
+                            </div>
+                            <div id="descuentoDisplay"></div>
+                            <div id="envioDisplay"></div>
+                        </div>
+                        <div style="border-top: 2px solid rgba(255, 255, 255, 0.3); padding-top: 16px;">
+                            <small style="opacity: 0.9;">TOTAL A PAGAR</small>
+                            <p style="margin: 8px 0 0 0; font-size: 1.75rem; font-weight: 700;">$<span id="totalDisplay">0</span></p>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn" style="width: 100%; padding: 16px; font-size: 1rem;" onclick="guardarFactura()">Guardar Factura</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEGUIMIENTO -->
+        <section id="seguimiento" class="section">
+            <div class="card">
+                <h2>Seguimiento de Pedidos</h2>
+                <p>Actualiza el estado de tus pedidos y envía notificaciones automáticas por WhatsApp a tus clientes.</p>
+                <div id="seguimientoList" style="margin-top: 24px;"></div>
+            </div>
+        </section>
+
+        <!-- FACTURAS -->
+        <section id="facturas" class="section">
+            <div class="card">
+                <h2>Historial de Facturas</h2>
+                <p>Consulta todas tus facturas generadas y su estado de pago.</p>
+                <table style="margin-top: 24px;">
+                    <thead>
+                        <tr>
+                            <th>Factura</th>
+                            <th>Cliente</th>
+                            <th>Fecha</th>
+                            <th>Vendedor</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="facturasTable"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- REPORTES -->
+        <section id="reportes" class="section">
+            <div class="card">
+                <h2>Reportes y Análisis</h2>
+                <p>Consulta tus métricas de ventas y desempeño por vendedor.</p>
+            </div>
+
+            <div class="grid-2" style="margin-top: 24px;">
+                <div class="card">
+                    <h3>Resumen de Ventas</h3>
+                    <div style="margin-top: 20px;">
+                        <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--borde);">
+                            <small style="color: var(--gris-medio);">TOTAL VENTAS</small>
+                            <p style="margin: 8px 0 0 0; font-size: 1.75rem; font-weight: 700; color: var(--cafe-principal);">$<span id="totalVentas">0</span></p>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div>
+                                <small style="color: var(--gris-medio);">FACTURAS</small>
+                                <p style="margin: 4px 0; font-size: 1.5rem; font-weight: 600;"><span id="totalFacturas">0</span></p>
+                            </div>
+                            <div>
+                                <small style="color: var(--gris-medio);">PAGADAS</small>
+                                <p style="margin: 4px 0; font-size: 1.25rem; font-weight: 600; color: var(--exito);">$<span id="totalPagadas">0</span></p>
+                            </div>
+                            <div>
+                                <small style="color: var(--gris-medio);">PENDIENTES</small>
+                                <p style="margin: 4px 0; font-size: 1.25rem; font-weight: 600; color: var(--advertencia);">$<span id="totalPendientes">0</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn" style="width: 100%; margin-top: 24px;" onclick="descargarReporte()">Descargar Excel</button>
+                </div>
+
+                <div class="card">
+                    <h3>Vendedores / Canales</h3>
+                    <div id="ventasPorVendedor" style="margin-top: 20px;"></div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- MODAL SELECCIONAR CLIENTE -->
+    <div id="clienteModalFactura" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="cerrarModalClientesFactura()"></button>
+            <div class="modal-header">Seleccionar Cliente</div>
+            <input type="text" id="clienteModalSearch" placeholder="Buscar por nombre..." style="margin-bottom: 20px;">
+            <div class="modal-list" id="clienteModalList" style="max-height: 400px;"></div>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR CLIENTE -->
+    <div id="editarClienteModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <button class="close-btn" onclick="cerrarEditarCliente()"></button>
+            <div class="modal-header">Editar Cliente</div>
+            <input type="hidden" id="editClientId">
+            <div class="form-group">
+                <label>Nombre</label>
+                <input type="text" id="editClientNombre" required>
+            </div>
+            <div class="form-group">
+                <label>Celular</label>
+                <input type="tel" id="editClientCelular">
+            </div>
+            <div class="form-group">
+                <label>Identificación</label>
+                <input type="text" id="editClientIdentificacion">
+            </div>
+            <div class="form-group">
+                <label>Correo</label>
+                <input type="email" id="editClientEmail">
+            </div>
+            <div class="form-group">
+                <label>Dirección</label>
+                <input type="text" id="editClientDireccion">
+            </div>
+            <div class="form-group">
+                <label>Ciudad</label>
+                <input type="text" id="editClientCiudad">
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button class="btn" onclick="guardarEditarCliente()" style="flex: 1;">Guardar Cambios</button>
+                <button class="btn" onclick="cerrarEditarCliente()" style="flex: 1; background: #999;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PRODUCTOS -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeProductModal()"></button>
+            <div class="modal-header">Seleccionar Productos</div>
+            <input type="text" id="productSearch" placeholder="Buscar producto..." style="margin-bottom: 20px;">
+            <div class="modal-list" id="productsList" style="max-height: 400px;"></div>
+            <button class="btn" style="width: 100%; margin-top: 24px;" onclick="agregarProductosSeleccionados()">Agregar al Carrito</button>
+        </div>
+    </div>
+
+    <!-- MODAL VER FACTURA -->
+    <div id="verFacturaModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+            <button class="close-btn" onclick="cerrarVerFactura()"></button>
+            
+            <!-- ENCABEZADO CON LOGO Y DATOS -->
+            <div style="text-align: center; border-bottom: 2px solid #D4A574; padding-bottom: 20px; margin-bottom: 20px;">
+                <div style="font-size: 24px; margin-bottom: 8px;">☕</div>
+                <h2 style="margin: 5px 0; color: #2C1810; font-size: 24px; font-weight: 700;">HUELLA DE ORIGEN</h2>
+                <p style="margin: 3px 0; color: #D4A574; font-style: italic; font-size: 14px;">Desde su origen, deja huella</p>
+                <div style="margin-top: 12px; font-size: 12px; color: #666;">
+                    <p style="margin: 3px 0;">📱 311 768 2407</p>
+                    <p style="margin: 3px 0;">✉️ comercial@huelladeorigen.com</p>
+                </div>
+            </div>
+            
+            <div class="modal-header">Detalles de Factura</div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; padding: 16px; background: #f9f6f3; border-radius: 6px;">
+                <div>
+                    <small style="color: #999; font-weight: 600;">FACTURA</small>
+                    <p style="margin: 5px 0; font-weight: 700; color: #2C1810; font-size: 16px;" id="verFacturaId">—</p>
+                </div>
+                <div>
+                    <small style="color: #999; font-weight: 600;">CLIENTE</small>
+                    <p style="margin: 5px 0; font-weight: 600; color: #2C1810;" id="verFacturaCliente">—</p>
+                </div>
+                <div>
+                    <small style="color: #999; font-weight: 600;">FECHA</small>
+                    <p style="margin: 5px 0; font-weight: 600; color: #2C1810;" id="verFacturaFecha">—</p>
+                </div>
+                <div>
+                    <small style="color: #999; font-weight: 600;">VENDEDOR</small>
+                    <p style="margin: 5px 0; font-weight: 600; color: #2C1810;" id="verFacturaVendedor">—</p>
+                </div>
+                <div>
+                    <small style="color: #999; font-weight: 600;">ESTADO</small>
+                    <p style="margin: 5px 0; font-weight: 600; color: #2C1810;" id="verFacturaEstado">—</p>
+                </div>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                <thead style="background: #2C1810; color: white;">
+                    <tr>
+                        <th style="padding: 12px; text-align: left;">Producto</th>
+                        <th style="padding: 12px; text-align: center; width: 60px;">Cant.</th>
+                        <th style="padding: 12px; text-align: right; width: 100px;">P. Unit.</th>
+                        <th style="padding: 12px; text-align: right; width: 100px;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody id="verFacturaProductos" style="border-bottom: 2px solid #2C1810;">
+                </tbody>
+            </table>
+
+            <div style="text-align: right; margin-bottom: 24px; padding: 16px; background: #f9f6f3; border-radius: 6px;">
+                <div style="display: flex; justify-content: flex-end; gap: 24px; margin-bottom: 12px; font-size: 13px;">
+                    <span style="color: #666;">Subtotal: <strong id="verFacturaSubtotal">$0</strong></span>
+                    <span style="color: #666;" id="verFacturaDescuentoRow">Descuento: <strong id="verFacturaDescuento">-$0</strong></span>
+                    <span style="color: #666;" id="verFacturaEnvioRow">Envío: <strong id="verFacturaEnvio">+$0</strong></span>
+                </div>
+                <div style="text-align: right; font-size: 20px; color: #D4A574; border-top: 2px solid #D4A574; padding-top: 12px;">
+                    <strong>TOTAL: $<span id="verFacturaTotal">0</span></strong>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+                <button class="btn" onclick="descargarPDFFacturaModal()" style="background: #2C1810; color: white; padding: 10px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">📄 Descargar PDF</button>
+                <button class="btn" onclick="mostrarPreviewWhatsAppConFotos()" style="background: #0084FF; color: white; padding: 10px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">👁️ Vista Previa WhatsApp</button>
+                <button class="btn" onclick="compartirWhatsAppDesdeModal()" style="background: #25D366; color: white; padding: 10px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">📲 Enviar WhatsApp</button>
+                <button class="btn" onclick="cerrarVerFactura()" style="background: #999; color: white; padding: 10px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTENEDOR PDF OCULTO -->
+    <div id="pdf-content"></div>
+
+    <script>
+        // ☁️ CONFIGURACIÓN SUPABASE
+        const SUPABASE_URL = 'https://szjxvgkqtrqstegejmta.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_7bSb3TvYnxBizjyUn5kD6A_QxK-2Vci';
+        let supabaseConfigured = true; // Ya tiene la key configurada
+
+        // CLIENTES - 161 CLIENTES PRECARGADOS (DEL EXCEL)
+        const clientesSeed = [
+            {"id": 1, "nombre": "SANDRA DONCEL", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 2, "nombre": "VIVIAN JARAMILLO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 3, "nombre": "FRANCISCO MEDINA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 4, "nombre": "PAOLA FIERRO GONZALEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 5, "nombre": "JUAN DAVID CHACON", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 6, "nombre": "DIANA ALMEIDA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 7, "nombre": "YOLANDA LOPEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 8, "nombre": "CLAUDE MAKSOUD", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 9, "nombre": "JOSE BAYONA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 10, "nombre": "FERNANDO HERRERA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 11, "nombre": "VICTOR POSADA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 12, "nombre": "ANGELA LOZANO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 13, "nombre": "ANGELA MORA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 14, "nombre": "MERCADO LIBRE", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 15, "nombre": "MAYRA MONTES", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 16, "nombre": "MONICA GALVIS", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 17, "nombre": "MONICA OSORNO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 18, "nombre": "NANCY OCACIONES", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 19, "nombre": "NATHALIA LAMPREA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 20, "nombre": "NOHORA MUÑOZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 21, "nombre": "OSCAR MARIN", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 22, "nombre": "PAOLA FIERRO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 23, "nombre": "PATRICIA GARCIA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 24, "nombre": "PAULA ACERO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 25, "nombre": "PAULA BRAVO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 26, "nombre": "PAULA LOZANO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 27, "nombre": "PILAR GALVIS", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 28, "nombre": "RAFAEL ZULUAGA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 29, "nombre": "RAMIRO EMPANADAS", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 30, "nombre": "RICARDO TORRES", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 31, "nombre": "SANDRA BELTRAN", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 32, "nombre": "SANDRA MORA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 33, "nombre": "SANTIAGO AMIGO DE EDUARD", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 34, "nombre": "SANTIAGO MESA DE DINERO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 35, "nombre": "SANTIAGO PEÑA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 36, "nombre": "SANTIAGO PUENTES", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 37, "nombre": "SARA MENDEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 38, "nombre": "SERGIO ROMERO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 39, "nombre": "TATIAN CRISTANCHO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 40, "nombre": "TERESA EMPANADAS", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 41, "nombre": "WILLIAM ALVAREZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 42, "nombre": "XIMENA FRAGA SOTO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 43, "nombre": "YENEIRE ACEVEDO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 44, "nombre": "YESID CARDONA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 45, "nombre": "ALIRIO HUACA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 46, "nombre": "CARLOS SANCHEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 47, "nombre": "DANIEL RODRIGUEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 48, "nombre": "GABRIELA OTERO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 49, "nombre": "GLORIA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 50, "nombre": "MARIA FERNANDA SARDI", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 51, "nombre": "LAURA ALVARES", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 52, "nombre": "ANDREA IGLESIA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 53, "nombre": "DIEGO LESMES", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 54, "nombre": "LUIS AGUILAR FRONT", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 55, "nombre": "MARCELA BEDOYA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 56, "nombre": "NATALIA HERNANDEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 57, "nombre": "MILENA SIERRA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 58, "nombre": "MELISA AFANADOR", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 59, "nombre": "PATRICIA GARCIA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 60, "nombre": "PAOLA ARIAS", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 61, "nombre": "RAMON GONZALEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 62, "nombre": "RODRIGO MIRANDA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 63, "nombre": "ROSA HELENA RODRIGUEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 64, "nombre": "ROSA MARIA CABALLERO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 65, "nombre": "ROXANA REYES", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 66, "nombre": "RUBEN DARIO QUINTERO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 67, "nombre": "SILVIA RODRIGUEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 68, "nombre": "SOFIA MEDINA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 69, "nombre": "SOLEDAD GARCIA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 70, "nombre": "CARLOS ANGARITA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 71, "nombre": "JUAN CAMILO FERNANDEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 72, "nombre": "JOHN TABI", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 73, "nombre": "JORGE LEON", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 74, "nombre": "JAVIER MERCHAN", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 75, "nombre": "NICOLAS MEDINA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 76, "nombre": "CARLOS SANCHEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 77, "nombre": "JAVIER LOMBARDIA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 78, "nombre": "JUAN PABLO PINILLA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 79, "nombre": "JUANA VALENTINA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 80, "nombre": "JULIANA GUTIERREZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 81, "nombre": "LAURA CHACON", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 82, "nombre": "LAURA CORREA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 83, "nombre": "LAURA SALGAR", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 84, "nombre": "LEONARDO GOMES", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 85, "nombre": "LILIA HERNANDEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 86, "nombre": "LINA ANDREA HERNANDEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 87, "nombre": "LINA APONTE", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 88, "nombre": "LINA PALACIOS", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 89, "nombre": "LUIS CARLOS SERRANO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 90, "nombre": "LUIS EDUARDO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 91, "nombre": "LUIS GARAY", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 92, "nombre": "LUIS MIGUEL CORREA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 93, "nombre": "LUISA AGUILAR", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 94, "nombre": "LUISA CARDONA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 95, "nombre": "LUISA SANDOVAL", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 96, "nombre": "MADELINE BALISEIRO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 97, "nombre": "MARCELA SANCHEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 98, "nombre": "MARGARITA FAYAT", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 99, "nombre": "MARIA FERNANDA SARMIENTO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 100, "nombre": "MARIA PAULA MESA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 101, "nombre": "MARIA TERESA RODRIGUEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 102, "nombre": "MAYRA MONTES", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 103, "nombre": "ADRIAN LEVRAN", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 104, "nombre": "ADRIANA PEREZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 105, "nombre": "ALBA MORALES", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 106, "nombre": "ALEJANDRA PEÑA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 107, "nombre": "ALEJANDRO CORTEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 108, "nombre": "ANA JIMENEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 109, "nombre": "ANA MARIA ARCINIEGAS", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 110, "nombre": "ANA MARIA OSPINA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 111, "nombre": "ANA MARIA RODRIGUEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 112, "nombre": "ANA SOLER", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 113, "nombre": "ANAYIBE QUEVEDO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 114, "nombre": "ANDRES SUAREZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 115, "nombre": "ANGIE", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 116, "nombre": "ANGIE BLANCO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 117, "nombre": "ANGIE NATALIA HERNANDEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 118, "nombre": "ANGIE VELEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 119, "nombre": "ARTURO LOPEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 120, "nombre": "BETTY SALAZAR", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 121, "nombre": "CAMILO GUTIERREZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 122, "nombre": "CAMILO NIÑO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 123, "nombre": "CAROLINA BECERRA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 124, "nombre": "CAROLINA GOMEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 125, "nombre": "CAROLINA PEÑA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 126, "nombre": "CAROLINA SANABRIA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 127, "nombre": "CLAUDIA CHICA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 128, "nombre": "CLAUDIA RODRIGUEZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 129, "nombre": "CRISTINA REYES", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 130, "nombre": "DANIEL MEDINA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 131, "nombre": "DAVID MONROY", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 132, "nombre": "DIANA PIÑEROS", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 133, "nombre": "EDUARDO MILKES", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 134, "nombre": "EDWARD CASTELLANO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 135, "nombre": "ERICA FORERO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 136, "nombre": "EUGENIA RAZO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 137, "nombre": "EUTIQUIO LEMUS", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 138, "nombre": "FERNDO HERRERA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 139, "nombre": "FRANCISCO ODONTOLOGO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 140, "nombre": "GABRIEL BUYA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 141, "nombre": "GABRIEL MONTERROSA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 142, "nombre": "GINA CASTIBLANCO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 143, "nombre": "GIORGIO DE LUCA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 144, "nombre": "GIOVANNY BARON", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 145, "nombre": "GIOVANNY JARAMILLO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 146, "nombre": "GUILLERMO ALVAREZ", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 147, "nombre": "GUILLERMO ARISTIZABAL", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 148, "nombre": "HELBERT HEREDIA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 149, "nombre": "HENRY SUAZA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 150, "nombre": "HUGO ORTEGA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 151, "nombre": "INGRID", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 152, "nombre": "IRMA CAICEDO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 153, "nombre": "ISABELLA ABELLA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 154, "nombre": "IVONNE PINTO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 155, "nombre": "JAMES MONTENEGRO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 156, "nombre": "JAVIER LOMBANA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 157, "nombre": "JEISON PINEDA", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 158, "nombre": "JHON MOGOLLON", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 159, "nombre": "JHON TABI", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 160, "nombre": "JOHANNA SAMBRANO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""},
+            {"id": 161, "nombre": "JONATHAN PORTILLO", "celular": "", "email": "", "ciudad": "Bogotá", "direccion": "", "identificacion": ""}
+        ];
+
+        // VARIABLES
+        const productos = [
+            // CAFÉS - COLIBRI HONEY
+            { id: 1, nombre: 'COLIBRI HONEY 454GM MOLIDO', precio: 50900 },
+            { id: 2, nombre: 'COLIBRI HONEY 454GM GRANO', precio: 50900 },
+            
+            // CAFÉS - CHIVITO DE PARAMO
+            { id: 3, nombre: 'CHIVITO DE PARAMO 454GM GRANO', precio: 46900 },
+            { id: 4, nombre: 'CHIVITO DE PARAMO 454GM MOLIDO', precio: 46900 },
+            
+            // CAFÉS - QUETZAL DEL TOLIMA
+            { id: 5, nombre: 'QUETZAL DEL TOLIMA 454GM GRANO', precio: 45900 },
+            { id: 6, nombre: 'QUETZAL DEL TOLIMA 454GM MOLIDO', precio: 45900 },
+            
+            // CAFETERAS CUELLO DE CISNE
+            { id: 7, nombre: 'CAFETERA CUELLO DE CISNE 350ml PLATEADA', precio: 40000 },
+            { id: 8, nombre: 'CAFETERA CUELLO DE CISNE 350ml NEGRO', precio: 40000 },
+            
+            // ACCESORIOS
+            { id: 9, nombre: 'CONTENEDOR VIDRIO CAFÉ', precio: 20000 },
+            { id: 10, nombre: 'FILTROS', precio: 20000 },
+            { id: 11, nombre: 'FILTRO POCILLO', precio: 20000 },
+            { id: 12, nombre: 'CUCHARAS CAFÉ', precio: 15000 },
+            
+            // CHEMEX
+            { id: 13, nombre: 'CHEMEX 600ML DELGADA VIDRIO BOROSILICATO', precio: 87000 },
+            { id: 14, nombre: 'CHEMEX 400ml BOROSILICATO', precio: 70000 },
+            { id: 15, nombre: 'CHEMEX 300ml BOROSILICATO', precio: 70000 },
+            { id: 16, nombre: 'CHEMEX 800ML VIDRIO BOROSILICATO', precio: 95000 },
+            
+            // V60
+            { id: 17, nombre: 'V60 FILTRO MADERA 700ml 2p', precio: 100000 },
+            { id: 18, nombre: 'V60 FILTRO MADERA 500ml', precio: 95000 },
+            { id: 19, nombre: 'V60 VIDRIO BOROSILICATO NEGRA 600ml', precio: 130000 },
+            { id: 20, nombre: 'V60 NEGRA BISELADA BOROSILICATO 500ml', precio: 95000 },
+            { id: 21, nombre: 'V60 NEGRA BOROSILICATO 400ml', precio: 100000 },
+            { id: 22, nombre: 'V60 FILTRO PLASTICO VIDRIO COMPLETA 600ml', precio: 100000 },
+            
+            // PRENSA FRANCESA
+            { id: 23, nombre: 'PRENSA FRANCESA 600ml BOROSILICATO', precio: 60000 },
+            { id: 24, nombre: 'PRENSA FRANCESA 800ml VIDRIO', precio: 50000 },
+            { id: 25, nombre: 'PRENSA FRANCESA 350ml', precio: 45000 },
+            { id: 26, nombre: 'PRENSA FRANCESA SENCILLA', precio: 45000 },
+            
+            // COMPLEMENTOS
+            { id: 27, nombre: 'JUEGO SEIS POCILLOS DE VIDRIO', precio: 60000 },
+            { id: 28, nombre: 'GRAMERAS SENCILLAS', precio: 22000 },
+            { id: 29, nombre: 'GRAMERA PROFESIONAL 3000 GRAMOS', precio: 50000 },
+            { id: 30, nombre: 'MOLINO ELECTRICO', precio: 65000 },
+            { id: 31, nombre: 'BOTELLA AISLADORA ACERO INOXIDABLE 1LT', precio: 70000 },
+            
+            // CAJAS SACHET
+            { id: 32, nombre: 'CAJA SACHET QUETZAL x8', precio: 35000 },
+            { id: 33, nombre: 'CAJA SACHET CHIVITO x8', precio: 35000 },
+            
+            // DUO QUETZAL
+            { id: 34, nombre: 'DUO QUETZAL - Grano', precio: 88000 },
+            { id: 35, nombre: 'DUO QUETZAL - Molido', precio: 88000 },
+            
+            // DUO CHIVITO
+            { id: 36, nombre: 'DUO CHIVITO - Grano', precio: 90000 },
+            { id: 37, nombre: 'DUO CHIVITO - Molido', precio: 90000 },
+            
+            // TRILOGIA HUELLA DE ORIGEN
+            { id: 38, nombre: 'TRILOGIA HUELLA DE ORIGEN - Grano', precio: 135000 },
+            { id: 39, nombre: 'TRILOGIA HUELLA DE ORIGEN - Molido', precio: 135000 },
+            
+            // DILOGIA DE ORIGEN
+            { id: 40, nombre: 'DILOGIA DE ORIGEN - Grano', precio: 92000 },
+            { id: 41, nombre: 'DILOGIA DE ORIGEN - Molido', precio: 92000 }
+        ];
+
+        // VARIABLES
+        let clientes = [];
+        let facturas = [];
+        let clienteSeleccionado = null;
+        let itemsTemp = [];
+        let productosSeleccionados = {};
+
+        // INICIALIZAR
+        function init() {
+            cargarConfigSupabase();
+            cargarDatos();
+            
+            // Renderizar solo si elementos existen
+            if (document.getElementById('productsList')) renderProductos();
+            if (document.getElementById('facturasTable')) renderFacturas();
+            if (document.getElementById('totalVentas')) renderReportes();
+            
+            // Listeners
+            document.getElementById('clientesSearch')?.addEventListener('input', renderClientesTable);
+            document.getElementById('clientesModalSearch')?.addEventListener('input', filtrarClientesModal);
+            document.getElementById('clienteModalSearch')?.addEventListener('input', renderClienteListaFactura);
+            document.getElementById('productSearch')?.addEventListener('input', renderProductos);
+        }
+
+        function cargarDatos() {
+            const clientesGuardados = localStorage.getItem('clientes_huella');
+            const facturasGuardadas = localStorage.getItem('facturas_huella');
+            
+            if (!clientesGuardados) {
+                clientes = JSON.parse(JSON.stringify(clientesSeed));
+                guardarEnStorage();
+            } else {
+                clientes = JSON.parse(clientesGuardados);
+            }
+            
+            if (facturasGuardadas) facturas = JSON.parse(facturasGuardadas);
+        }
+
+        function guardarEnStorage() {
+            localStorage.setItem('clientes_huella', JSON.stringify(clientes));
+            localStorage.setItem('facturas_huella', JSON.stringify(facturas));
+            
+            // Si Supabase está configurado, sincronizar automáticamente
+            if (supabaseConfigured) {
+                sincronizarConSupabase();
+            }
+        }
+
+        // ☁️ FUNCIONES SUPABASE
+        async function sincronizarConSupabase() {
+            if (!SUPABASE_KEY) {
+                console.warn('⚠️ Supabase no configurado. Usando solo localStorage.');
+                return;
+            }
+
+            try {
+                // Cargar facturas de Supabase
+                const respFacturas = await fetch(`${SUPABASE_URL}/rest/v1/facturas?select=*`, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (respFacturas.ok) {
+                    const facturasDB = await respFacturas.json();
+                    if (facturasDB && facturasDB.length > 0) {
+                        facturas = facturasDB.map(f => ({
+                            id: f.numero_factura || f.id,
+                            numero_orden: f.numero_factura || f.id,
+                            cliente: { nombre: f.cliente_nombre || 'Cliente' },
+                            fecha: f.fecha,
+                            estado: f.estado,
+                            total: f.total,
+                            descuento: f.descuento_monto || 0,
+                            envio: f.envio || 0,
+                            vendedor: f.cliente_comercial || '',
+                            items: typeof f.items === 'string' ? JSON.parse(f.items) : (f.items || [])
+                        }));
+                        localStorage.setItem('facturas_huella', JSON.stringify(facturas));
+                        console.log('✅ Facturas cargadas desde Supabase:', facturas.length);
+                        renderHistorial();
+                        renderSeguimiento();
+                    }
+                }
+
+                // Guardar facturas nuevas en Supabase
+                if (facturas && facturas.length > 0) {
+                    for (const factura of facturas) {
+                        await fetch(`${SUPABASE_URL}/rest/v1/facturas`, {
+                            method: 'POST',
+                            headers: {
+                                'apikey': SUPABASE_KEY,
+                                'Content-Type': 'application/json',
+                                'Prefer': 'return=minimal'
+                            },
+                            body: JSON.stringify({
+                                numero_factura: factura.id,
+                                cliente_nombre: factura.cliente?.nombre || 'Cliente',
+                                fecha: factura.fecha,
+                                estado: factura.estado || 'Pedido recibido',
+                                total: factura.total,
+                                descuento_monto: factura.descuento || 0,
+                                envio: factura.envio || 0,
+                                cliente_comercial: factura.vendedor || '',
+                                items: JSON.stringify(factura.items || []),
+                                subtotal: factura.total - (factura.descuento || 0)
+                            })
+                        }).catch(e => console.log('Factura ya existe en Supabase:', e.message));
+                    }
+                }
+
+                console.log('✅ Sincronizado con Supabase');
+            } catch (error) {
+                console.error('❌ Error de sincronización:', error);
+            }
+        }
+
+        function configurarSupabase() {
+            const apiKey = prompt('Ingresa tu API Key de Supabase:\n\n(Disponible en: https://app.supabase.com/project/szjxvgkqtrqstegejmta/settings/api)');
+            if (apiKey && apiKey.trim()) {
+                window.SUPABASE_KEY = apiKey;
+                supabaseConfigured = true;
+                localStorage.setItem('supabase_key_huella', apiKey);
+                alert('✅ Supabase configurado correctamente\n\nAhora los cambios se guardarán automáticamente en la nube.');
+            }
+        }
+
+        function cargarConfigSupabase() {
+            const apiKeySaved = localStorage.getItem('supabase_key_huella');
+            if (apiKeySaved) {
+                window.SUPABASE_KEY = apiKeySaved;
+                supabaseConfigured = true;
+                console.log('✅ Supabase configurado (desde storage local)');
+            }
+        }
+
+        function abrirModalClientes() {
+            const modal = document.getElementById('clientesModal');
+            modal.style.display = 'block';
+            renderClienteModalList();
+            
+            // Cerrar modal al hacer click fuera
+            modal.onclick = function(event) {
+                if (event.target === modal) {
+                    cerrarModalClientes();
+                }
+            };
+        }
+
+        function cerrarModalClientes() {
+            const modal = document.getElementById('clientesModal');
+            modal.style.display = 'none';
+            document.getElementById('clientesModalSearch').value = '';
+            document.getElementById('clientesModalDropdown').style.display = 'none';
+        }
+
+        function renderClienteModalList() {
+            const search = (document.getElementById('clientesModalSearch')?.value || '').toLowerCase();
+            const list = document.getElementById('clientesModalList');
+
+            // BÚSQUEDA SOLO POR NOMBRE
+            const filtrados = clientes.filter(c => 
+                c.nombre.toLowerCase().includes(search)
+            );
+
+            if (filtrados.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #999; padding: 40px 20px;">No hay clientes que coincidan con tu búsqueda</p>';
+                return;
+            }
+
+            list.innerHTML = filtrados.map(c => {
+                const numFacturas = facturas.filter(f => f.cliente.id === c.id).length;
+                return `
+                    <div style="padding: 15px; border: 1px solid #eee; border-radius: 6px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#f9f9f9'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.background='white'; this.style.boxShadow='none'">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div>
+                                <p style="margin: 0 0 5px 0;"><strong style="color: #2C1810; font-size: 15px;">${c.nombre}</strong></p>
+                                <p style="margin: 0 0 3px 0; color: #666; font-size: 13px;">📱 ${c.celular || 'Sin celular'}</p>
+                                <p style="margin: 0 0 3px 0; color: #999; font-size: 12px;">📍 ${c.ciudad || 'Sin ciudad'}</p>
+                                <p style="margin: 0; color: #999; font-size: 12px;">✉️ ${c.email || 'Sin email'}</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="background: #D4A574; color: white; padding: 8px 12px; border-radius: 4px; font-weight: bold; font-size: 13px; margin-bottom: 8px;">${numFacturas} facturas</div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button onclick="abrirEditarCliente(${c.id})" class="btn" style="padding: 8px 12px; font-size: 12px; background: #6B5344; color: white; border: none; cursor: pointer;">✏️ Editar</button>
+                                    <button onclick="irAFacturaConClienteDesdeModal(${c.id})" class="btn" style="padding: 8px 12px; font-size: 12px; background: #2C1810; color: white; border: none; cursor: pointer;">📄 Factura</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filtrarClientesModal() {
+            const entrada = document.getElementById('clientesModalSearch')?.value || '';
+            const dropdown = document.getElementById('clientesModalDropdown');
+
+            if (entrada.length < 1) {
+                dropdown.style.display = 'none';
+                renderClienteModalList();
+                return;
+            }
+
+            const search = entrada.toLowerCase();
+            // BÚSQUEDA SOLO POR NOMBRE
+            const filtrados = clientes.filter(c => 
+                c.nombre.toLowerCase().includes(search)
+            );
+
+            if (filtrados.length === 0) {
+                dropdown.innerHTML = '<div style="padding: 12px; color: #999; text-align: center;">Sin resultados</div>';
+            } else {
+                dropdown.innerHTML = filtrados.map(c => `
+                    <div onclick="seleccionarClienteDeModal(${c.id})" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; background: white;">
+                        <strong style="display: block; color: #2C1810;">${c.nombre}</strong>
+                        <small style="color: #999;">📍 ${c.ciudad || 'N/A'}</small>
+                    </div>
+                `).join('');
+            }
+            dropdown.style.display = 'block';
+            renderClienteModalList();
+        }
+
+        function seleccionarClienteDeModal(clienteId) {
+            const cliente = clientes.find(c => c.id === clienteId);
+            if (cliente) {
+                document.getElementById('clientesModalSearch').value = cliente.nombre;
+                document.getElementById('clientesModalDropdown').style.display = 'none';
+                renderClienteModalList();
+            }
+        }
+
+        // EDITAR CLIENTE
+        let clienteEnEdicion = null;
+        
+        function abrirEditarCliente(clienteId) {
+            clienteEnEdicion = clientes.find(c => c.id === clienteId);
+            if (!clienteEnEdicion) return;
+            
+            // Llenar el modal de edición
+            document.getElementById('editClientId').value = clienteEnEdicion.id;
+            document.getElementById('editClientNombre').value = clienteEnEdicion.nombre;
+            document.getElementById('editClientCelular').value = clienteEnEdicion.celular || '';
+            document.getElementById('editClientIdentificacion').value = clienteEnEdicion.identificacion || '';
+            document.getElementById('editClientEmail').value = clienteEnEdicion.email || '';
+            document.getElementById('editClientCiudad').value = clienteEnEdicion.ciudad || '';
+            document.getElementById('editClientDireccion').value = clienteEnEdicion.direccion || '';
+            
+            const modal = document.getElementById('editarClienteModal');
+            if (modal) modal.style.display = 'block';
+        }
+        
+        function cerrarEditarCliente() {
+            const modal = document.getElementById('editarClienteModal');
+            if (modal) modal.style.display = 'none';
+            clienteEnEdicion = null;
+        }
+        
+        function guardarEditarCliente() {
+            if (!clienteEnEdicion) return;
+            
+            // Actualizar datos del cliente
+            clienteEnEdicion.nombre = document.getElementById('editClientNombre').value.trim();
+            clienteEnEdicion.celular = document.getElementById('editClientCelular').value.trim();
+            clienteEnEdicion.identificacion = document.getElementById('editClientIdentificacion').value.trim();
+            clienteEnEdicion.email = document.getElementById('editClientEmail').value.trim();
+            clienteEnEdicion.ciudad = document.getElementById('editClientCiudad').value.trim();
+            clienteEnEdicion.direccion = document.getElementById('editClientDireccion').value.trim();
+            
+            // Guardar en localStorage
+            guardarEnStorage();
+            
+            alert('✅ Cliente actualizado correctamente');
+            cerrarEditarCliente();
+            renderClienteModalList();
+        }
+
+        function renderClientesTable() {
+            // Función vacía ya que ahora usamos modal
+            // Se mantiene para compatibilidad
+        }
+
+        function filtrarClientesTable() {
+            // Función vacía ya que ahora usamos modal
+            // Se mantiene para compatibilidad
+        }
+
+        function limpiarBuscador() {
+            const busca = document.getElementById('clientesSearch');
+            const dropdown = document.getElementById('clientesDropdown');
+            if (busca) busca.value = '';
+            if (dropdown) dropdown.style.display = 'none';
+            renderClientesTable();
+        }
+
+
+        // Funciones para modal de selección en Nueva Factura (usan clienteModalFactura)
+        function abrirModalClientesFactura() {
+            const modal = document.getElementById('clienteModalFactura');
+            if (modal) {
+                modal.classList.add('active');
+                renderClienteListaFactura();
+            }
+        }
+
+        function cerrarModalClientesFactura() {
+            const modal = document.getElementById('clienteModalFactura');
+            if (modal) modal.classList.remove('active');
+        }
+
+        function renderClienteListaFactura() {
+            const search = (document.getElementById('clienteModalSearch')?.value || '').toLowerCase();
+            const list = document.getElementById('clienteModalList');
+            if (!list) return;
+
+            // BÚSQUEDA SOLO POR NOMBRE
+            const filtrados = clientes.filter(c => 
+                c.nombre.toLowerCase().includes(search)
+            );
+
+            if (filtrados.length === 0) {
+                list.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No hay clientes</div>';
+                return;
+            }
+
+            list.innerHTML = filtrados.map(c => `
+                <div class="modal-item" onclick="seleccionarClienteDelModal(${c.id})">
+                    <div style="flex: 1;">
+                        <strong>${c.nombre}</strong>
+                        <small>${c.ciudad || '—'}</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function seleccionarClienteDelModal(clienteId) {
+            const cliente = clientes.find(c => c.id === clienteId);
+            if (cliente) {
+                const phoneField = document.getElementById('facturaClientPhone');
+                if (phoneField) phoneField.value = cliente.nombre;
+                cargarClienteEnFactura(cliente);
+                cerrarModalClientes();
+            }
+        }
+        function normalizarTelefono(tel) {
+            let limpio = tel.replace(/\D/g, '');
+            if (limpio.startsWith('57')) limpio = limpio.substring(2);
+            if (limpio.length === 10) limpio = '3' + limpio;
+            return limpio;
+        }
+
+        // CREAR CLIENTE
+        document.getElementById('newClientForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('clientNombre').value.trim();
+            const celular = normalizarTelefono(document.getElementById('clientCelular').value);
+            const identificacion = document.getElementById('clientIdentificacion').value.trim();
+            const email = document.getElementById('clientEmail').value.trim();
+            const ciudad = document.getElementById('clientCiudad').value.trim();
+            const direccion = document.getElementById('clientDireccion').value.trim();
+
+            if (!nombre || !celular || celular.length < 10) {
+                mostrarMensaje('clientFormMessage', '❌ Completa nombre y celular válido', 'error');
+                return;
+            }
+
+            const existe = clientes.find(c => normalizarTelefono(c.celular) === celular);
+            if (existe) {
+                mostrarMensaje('clientFormMessage', '❌ Este cliente ya existe', 'error');
+                return;
+            }
+
+            const nuevoCliente = { id: Date.now(), nombre, celular, identificacion, email, ciudad, direccion };
+            clientes.push(nuevoCliente);
+            guardarEnStorage();
+            mostrarMensaje('clientFormMessage', `✅ Cliente "${nombre}" creado exitosamente`, 'success');
+            this.reset();
+            renderClientesTable();
+            setTimeout(() => {
+                document.querySelector('[data-section="clientes"]').click();
+                renderClientesTable();
+            }, 1500);
+        });
+
+        // BUSCAR CLIENTE POR CELULAR
+        function buscarClientePorCelular() {
+            const phone = normalizarTelefono(document.getElementById('searchPhone').value);
+            const resultBox = document.getElementById('searchResult');
+            resultBox.innerHTML = '';
+
+            if (phone.length < 10) {
+                resultBox.innerHTML = '<p style="color: #999;">Ingresa un número válido</p>';
+                return;
+            }
+
+            const cliente = clientes.find(c => normalizarTelefono(c.celular) === phone);
+
+            if (cliente) {
+                resultBox.innerHTML = `
+                    <div class="search-result">
+                        <h3 style="color: #4caf50; margin-bottom: 10px;">✓ Cliente encontrado</h3>
+                        <p><strong>Nombre:</strong> ${cliente.nombre}</p>
+                        <p><strong>Celular:</strong> ${cliente.celular}</p>
+                        <p><strong>Email:</strong> ${cliente.email || 'No registrado'}</p>
+                        <p><strong>Dirección:</strong> ${cliente.direccion || 'No registrada'}</p>
+                        <p><strong>Ciudad:</strong> ${cliente.ciudad || 'No registrada'}</p>
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <button class="btn" style="flex: 1;" onclick="irAFacturaConCliente(${cliente.id})">📄 Nueva Factura</button>
+                            <button class="btn-secondary" style="flex: 1; padding: 12px;" onclick="abrirEditarCliente(${cliente.id})">✏️ Editar</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                resultBox.innerHTML = `
+                    <div class="search-result not-found">
+                        <h3 style="color: #c94a3a; margin-bottom: 10px;">✗ Cliente no encontrado</h3>
+                        <p>No existe un cliente con este número.</p>
+                        <button class="btn" style="width: 100%; margin-top: 15px;" onclick="document.querySelector('[data-section=\"nuevo-cliente\"]').click(); document.getElementById('clientCelular').value = '${document.getElementById('searchPhone').value}';">➕ Crear Nuevo Cliente</button>
+                    </div>
+                `;
+            }
+        }
+
+        function buscarClienteParaFactura() {
+            const input = document.getElementById('facturaClientPhone');
+            if (!input) return;
+            
+            const entrada = input.value.trim();
+            
+            if (!entrada) {
+                alert('⚠️ Ingresa el nombre del cliente');
+                return;
+            }
+            
+            if (clientes.length === 0) {
+                alert('❌ No hay clientes cargados');
+                return;
+            }
+            
+            const entrada_upper = entrada.toUpperCase();
+            
+            // 1. Buscar por nombre EXACTO
+            let cliente = clientes.find(c => c.nombre.toUpperCase() === entrada_upper);
+            if (cliente) {
+                cargarClienteEnFactura(cliente);
+                return;
+            }
+            
+            // 2. Buscar por nombre PARCIAL
+            const filtrados = clientes.filter(c => c.nombre.toUpperCase().includes(entrada_upper));
+            
+            if (filtrados.length === 0) {
+                alert('❌ No encontrado: ' + entrada);
+                return;
+            }
+            
+            if (filtrados.length === 1) {
+                cargarClienteEnFactura(filtrados[0]);
+                return;
+            }
+            
+            // Si hay múltiples, cargar el primero
+            alert('Se encontraron ' + filtrados.length + ' resultados.\nCargando: ' + filtrados[0].nombre);
+            cargarClienteEnFactura(filtrados[0]);
+        }
+
+        function filtrarClientesFactura() {
+            const entrada = document.getElementById('facturaClientPhone')?.value.trim() || '';
+            const dropdown = document.getElementById('facturaClientesDropdown');
+            if (!dropdown) return;
+
+            if (entrada.length === 0) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            // BÚSQUEDA SIMPLE: solo por NOMBRE
+            const filtrados = clientes.filter(c => 
+                c.nombre.toUpperCase().includes(entrada.toUpperCase())
+            );
+
+            if (filtrados.length === 0) {
+                dropdown.innerHTML = '<div style="padding: 12px; color: #999; text-align: center;">Sin resultados</div>';
+                dropdown.style.display = 'block';
+            } else {
+                dropdown.innerHTML = filtrados.map((c, idx) => `
+                    <div class="modal-item" onclick="seleccionarClienteDesdeDropdown(${c.id})" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; background: ${idx === 0 ? '#f0e8d0' : 'white'};">
+                        <strong>${c.nombre}</strong>
+                        <small style="display: block; color: #999;">${c.ciudad || 'N/A'}</small>
+                    </div>
+                `).join('');
+                dropdown.style.display = 'block';
+            }
+        }
+
+        function seleccionarClienteDesdeDropdown(clienteId) {
+            // Buscar el cliente exacto con este ID
+            const cliente = clientes.find(c => c.id === clienteId);
+            
+            if (!cliente) {
+                alert('❌ Error: Cliente no encontrado');
+                return;
+            }
+            
+            // Asignar al input
+            const phoneField = document.getElementById('facturaClientPhone');
+            if (phoneField) phoneField.value = cliente.nombre;
+            
+            // Cerrar dropdown
+            const dropdown = document.getElementById('facturaClientesDropdown');
+            if (dropdown) dropdown.style.display = 'none';
+            
+            // CARGAR EL CLIENTE
+            cargarClienteEnFactura(cliente);
+        }
+
+        function cargarClienteEnFactura(cliente) {
+            if (!cliente) return;
+            
+            // GUARDAR cliente seleccionado
+            clienteSeleccionado = cliente;
+            itemsTemp = [];
+            
+            // LIMPIAR todo lo anterior
+            const elements = {
+                'facturaClientNombre': cliente.nombre || '',
+                'facturaClientIdentificacion': cliente.identificacion || '—',
+                'facturaClientCelular': cliente.celular || '',
+                'facturaClientEmail': cliente.email || '',
+                'facturaClientDireccion': cliente.direccion || '',
+                'facturaClientCiudad': cliente.ciudad || ''
+            };
+            
+            // Asignar valores
+            Object.entries(elements).forEach(([id, value]) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            });
+            
+            // Mostrar secciones
+            const boxCliente = document.getElementById('clienteSeleccionadoBox');
+            const boxFormula = document.getElementById('facturaFormBox');
+            const itemBody = document.getElementById('itemsBody');
+            
+            if (boxCliente) boxCliente.style.display = 'block';
+            if (boxFormula) boxFormula.style.display = 'block';
+            if (itemBody) itemBody.innerHTML = '';
+            
+            // Resetear descuento y envío
+            const descEl = document.getElementById('descuentoPorcentaje');
+            const envEl = document.getElementById('envio');
+            if (descEl) descEl.value = '0';
+            if (envEl) envEl.value = '0';
+            
+            calcularTotales();
+        }
+
+        function cambiarCliente() {
+            clienteSeleccionado = null;
+            itemsTemp = [];
+            
+            const phoneField = document.getElementById('facturaClientPhone');
+            const boxCliente = document.getElementById('clienteSeleccionadoBox');
+            const boxFormula = document.getElementById('facturaFormBox');
+            
+            if (phoneField) phoneField.value = '';
+            if (boxCliente) boxCliente.style.display = 'none';
+            if (boxFormula) boxFormula.style.display = 'none';
+        }
+
+        function irAFacturaConClienteDesdeModal(clienteId) {
+            // Cerrar el modal de clientes
+            const modal = document.getElementById('clientesModal');
+            if (modal) modal.style.display = 'none';
+            
+            // Ir a Nueva Factura con el cliente
+            irAFacturaConCliente(clienteId);
+        }
+
+        function irAFacturaConCliente(clienteId) {
+            const cliente = clientes.find(c => c.id === clienteId);
+            if (!cliente) return;
+            
+            const btn = document.querySelector('[data-section="nueva-factura"]');
+            const phoneField = document.getElementById('facturaClientPhone');
+            
+            if (btn) btn.click();
+            if (phoneField) phoneField.value = cliente.nombre;
+            
+            cargarClienteEnFactura(cliente);
+        }
+
+        function irANuevoCliente() {
+            const btn = document.querySelector('button[data-section="nuevo-cliente"]');
+            if (btn) {
+                btn.click();
+                // Scroll hacia arriba
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // MODAL PRODUCTOS
+        function openProductModal() {
+            if (!clienteSeleccionado) {
+                alert('❌ Selecciona un cliente primero');
+                return;
+            }
+            document.getElementById('productModal').classList.add('active');
+            renderProductos();
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').classList.remove('active');
+        }
+
+        function renderProductos() {
+            const list = document.getElementById('productsList');
+            if (!list) return; // Si no existe, no hacer nada
+            
+            const search = (document.getElementById('productSearch')?.value || '').toLowerCase();
+            const filtered = productos.filter(p => p.nombre.toLowerCase().includes(search));
+            list.innerHTML = filtered.map(p => `
+                <div class="modal-item">
+                    <input type="number" id="cant_${p.id}" min="0" value="0" placeholder="Cantidad" style="width: 80px; padding: 8px; margin-right: 10px;">
+                    <div style="flex: 1;">
+                        <strong>${p.nombre}</strong>
+                        <small>$${p.precio.toLocaleString('es-ES')}</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function agregarProductosSeleccionados() {
+            productos.forEach(p => {
+                const cant = parseInt(document.getElementById(`cant_${p.id}`)?.value || 0);
+                if (cant > 0) {
+                    const existe = itemsTemp.find(i => i.id === p.id);
+                    if (existe) {
+                        existe.cantidad = cant;
+                    } else {
+                        itemsTemp.push({ id: p.id, nombre: p.nombre, precio: p.precio, cantidad: cant });
+                    }
+                }
+            });
+            renderItemsFactura();
+            calcularTotales();
+            closeProductModal();
+        }
+
+        function renderItemsFactura() {
+            const tbody = document.getElementById('itemsBody');
+            tbody.innerHTML = itemsTemp.map((item, i) => `<tr>
+                <td>${item.nombre}</td>
+                <td><input type="number" value="${item.cantidad}" min="1" onchange="actualizarCantidad(${i}, this.value)" style="width: 60px;"></td>
+                <td>$${item.precio.toLocaleString('es-ES')}</td>
+                <td>$${Math.round(item.precio * item.cantidad).toLocaleString('es-ES')}</td>
+                <td><button class="btn-delete btn-small" onclick="eliminarItem(${i})">🗑️</button></td>
+            </tr>`).join('');
+        }
+
+        function actualizarCantidad(i, cant) {
+            itemsTemp[i].cantidad = Math.max(1, parseInt(cant) || 1);
+            calcularTotales();
+            renderItemsFactura();
+        }
+
+        function eliminarItem(i) {
+            itemsTemp.splice(i, 1);
+            renderItemsFactura();
+            calcularTotales();
+        }
+
+        function calcularTotales() {
+            const subtotal = itemsTemp.reduce((s, i) => s + (i.precio * i.cantidad), 0);
+            
+            const descEl = document.getElementById('descuentoPorcentaje');
+            const envEl = document.getElementById('envio');
+            const desc = descEl ? (parseInt(descEl.value) || 0) : 0;
+            const env = envEl ? (parseInt(envEl.value) || 0) : 0;
+            
+            const descMonto = subtotal * (desc / 100);
+            const total = subtotal - descMonto + env;
+
+            const subtotalEl = document.getElementById('subtotalDisplay');
+            const totalEl = document.getElementById('totalDisplay');
+            const descDisplayEl = document.getElementById('descuentoDisplay');
+            const envDisplayEl = document.getElementById('envioDisplay');
+            
+            if (subtotalEl) subtotalEl.textContent = Math.round(subtotal).toLocaleString('es-ES');
+            if (totalEl) totalEl.textContent = Math.round(total).toLocaleString('es-ES');
+            if (descDisplayEl) descDisplayEl.innerHTML = desc > 0 ? `<strong>Descuento (${desc}%):</strong> -$${Math.round(descMonto).toLocaleString('es-ES')}` : '';
+            if (envDisplayEl) envDisplayEl.innerHTML = env > 0 ? `<strong>Envío:</strong> +$${Math.round(env).toLocaleString('es-ES')}` : '';
+        }
+
+        function guardarFactura() {
+            if (!clienteSeleccionado || itemsTemp.length === 0) {
+                alert('❌ Completa: Cliente y al menos 1 Producto');
+                return;
+            }
+            
+            const vendedorEl = document.getElementById('vendedor');
+            const estadoPagoEl = document.getElementById('estadoPago');
+            
+            if (!vendedorEl || !vendedorEl.value) {
+                alert('❌ Selecciona un Vendedor');
+                return;
+            }
+
+            const subtotal = itemsTemp.reduce((s, i) => s + (i.precio * i.cantidad), 0);
+            
+            const descEl = document.getElementById('descuentoPorcentaje');
+            const envEl = document.getElementById('envio');
+            const desc = descEl ? (parseInt(descEl.value) || 0) : 0;
+            const env = envEl ? (parseInt(envEl.value) || 0) : 0;
+            
+            const descMonto = subtotal * (desc / 100);
+            const total = subtotal - descMonto + env;
+
+            const factura = {
+                id: 'HO-' + String(facturas.length + 1).padStart(5, '0'),
+                cliente: clienteSeleccionado,
+                items: itemsTemp,
+                subtotal: subtotal,
+                descuentoPorcentaje: desc,
+                descuentoMonto: descMonto,
+                envio: env,
+                total: total,
+                vendedor: vendedorEl.value,
+                estado: estadoPagoEl ? (estadoPagoEl.value || 'Pendiente') : 'Pendiente',
+                fecha: new Date().toLocaleDateString('es-ES')
+            };
+
+            facturas.push(factura);
+            guardarEnStorage();
+
+            alert('✅ Factura guardada: ' + factura.id);
+            generarPDF(factura);
+            
+            clienteSeleccionado = null;
+            itemsTemp = [];
+            cambiarCliente();
+            renderClientesTable();
+            renderFacturas();
+            renderReportes();
+        }
+
+        // ========== MAPEO COMPLETO: PRODUCTO + PRECIO + FOTO ==========
+        const productosCompleto = {
+            'COLIBRI HONEY 454GM MOLIDO': { precio: 50900, imagen: 'Colibri_amazillia.jpeg' },
+            'COLIBRI HONEY 454GM GRANO': { precio: 50900, imagen: 'Colibri_amazillia.jpeg' },
+            'CHIVITO DE PARAMO 454GM GRANO': { precio: 46900, imagen: 'chivito_de_paramo.jpeg' },
+            'CHIVITO DE PARAMO 454GM MOLIDO': { precio: 46900, imagen: 'chivito_de_paramo.jpeg' },
+            'QUETZAL DEL TOLIMA 454 GM GRANO': { precio: 45900, imagen: 'quetzal_del_tolima.jpeg' },
+            'QUETZAL DEL TOLIMA 454 GM MOLIDO': { precio: 45900, imagen: 'quetzal_del_tolima.jpeg' },
+            'CAFETERA CUELLO DE CISNE 350ml PLATEADA': { precio: 40000, imagen: 'duo_huella_de_origen.jpeg' },
+            'CONTENEDOR VIDRIO CAFÉ': { precio: 20000, imagen: 'duo_huella_de_origen.jpeg' },
+            'CAFETERA CHEMEX BOROSILICATO 400ml': { precio: 70000, imagen: 'duo_huella_de_origen.jpeg' },
+            'CAFETERA CHEMEX BOROSILICATO 300ml': { precio: 70000, imagen: 'duo_huella_de_origen.jpeg' },
+            'CAFETERA V60 FILTRO MADERA 700 ml 2p': { precio: 100000, imagen: 'duo_huella_de_origen.jpeg' },
+            'CAFETERA V60 FILTRO PLASTICO VIDRIO COMPLETA 600 ml': { precio: 100000, imagen: 'duo_huella_de_origen.jpeg' },
+            'FILTROS': { precio: 20000, imagen: 'duo_huella_de_origen.jpeg' },
+            'FILTRO POCILLO': { precio: 20000, imagen: 'duo_huella_de_origen.jpeg' },
+            'CAJA SACHET POR 8 QUETZAL': { precio: 35000, imagen: 'quetzal_del_tolima.jpeg' },
+            'CAJAS SACHET 8 CHIVITO': { precio: 35000, imagen: 'chivito_de_paramo.jpeg' },
+            'PRENSA FRANCESA 600ml borosilicatpo': { precio: 60000, imagen: 'duo_huella_de_origen.jpeg' },
+            'CAFETERA CUELLO DE CISNE 350ml NEGRO': { precio: 40000, imagen: 'duo_huella_de_origen.jpeg' },
+            'V60 VIDRIO BOROSILICATO NEGRA 600 mi': { precio: 130000, imagen: 'duo_huella_de_origen.jpeg' },
+            'JUEGO SEIS POCILLOS DE VIDRIO': { precio: 60000, imagen: 'duo_huella_de_origen.jpeg' },
+            'GRAMERAS SENCILLAS': { precio: 22000, imagen: 'duo_huella_de_origen.jpeg' },
+            'CHEMEX 600ML DELGADA VIDRIO BOROSILICATO': { precio: 87000, imagen: 'duo_huella_de_origen.jpeg' },
+            'CHEMEX 800ML VIDRIO BOROSILICATO': { precio: 95000, imagen: 'duo_huella_de_origen.jpeg' },
+            'CUCHARAS CAFÉ': { precio: 15000, imagen: 'duo_huella_de_origen.jpeg' },
+            'CAFETERA v60 NEGRA BISELADA BOROSILICATO 500ml': { precio: 95000, imagen: 'duo_huella_de_origen.jpeg' },
+            'PRENSA FRANCESA 800 ML VIDRIO': { precio: 50000, imagen: 'duo_huella_de_origen.jpeg' },
+            'CAFETERA V60 NEGRA BOROSILICATO 400 ML': { precio: 100000, imagen: 'duo_huella_de_origen.jpeg' },
+            'CAFETERA V60 FILTRO MADERA 500 ml': { precio: 95000, imagen: 'duo_huella_de_origen.jpeg' },
+            'BOTELLA AISLADORA ACERO INOXIDABLE 1 LT': { precio: 70000, imagen: 'duo_huella_de_origen.jpeg' },
+            'GRAMERA PROFESIONAL 3.000 GRAMOS': { precio: 50000, imagen: 'duo_huella_de_origen.jpeg' },
+            'PRENSA FRANCESA SENCILLA': { precio: 45000, imagen: 'duo_huella_de_origen.jpeg' },
+            'MOLINO ELECTRICO': { precio: 65000, imagen: 'duo_huella_de_origen.jpeg' },
+            'DUO QUETZAL': { precio: 88000, imagen: 'duo_huella_de_origen.jpeg' },
+            'TRILOGIA HUELLA DE ORIGEN': { precio: 135000, imagen: 'trilogia_huella_de_origen.jpeg' },
+            'DUO CHIVITO': { precio: 90000, imagen: 'duo_huella_de_origen.jpeg' },
+            'DILOGIA DE ORIGEN': { precio: 92000, imagen: 'trilogia_huella_de_origen.jpeg' }
+        };
+
+        // Función para obtener datos del producto
+        function obtenerDatosProducto(nombreProducto) {
+            for (const [producto, datos] of Object.entries(productosCompleto)) {
+                if (nombreProducto.toUpperCase().includes(producto.toUpperCase()) || 
+                    producto.toUpperCase().includes(nombreProducto.toUpperCase())) {
+                    return {
+                        nombre: producto,
+                        precio: datos.precio,
+                        imagen: datos.imagen,
+                        urlImagen: `https://raw.githubusercontent.com/mariogalvisp-rgb/facturacion-huella/main/public/productos/${datos.imagen}`
+                    };
+                }
+            }
+            return null;
+        }
+
+        // ========== FUNCIÓN PARA GENERAR MENSAJE WHATSAPP SEGÚN ESTADO ==========
+        function generarMensajeWhatsAppPorEstado(factura, estado) {
+            const nombreCliente = factura.cliente.nombre;
+            const numeroOrden = factura.id;
+            const fecha = factura.fecha;
+            const total = Math.round(factura.total).toLocaleString('es-ES');
+
+            // Generar lista de productos CON PRECIOS EN UNA LÍNEA
+            let productoTexto = '';
+            
+            if (factura.items && factura.items.length > 0) {
+                productoTexto = factura.items
+                    .map(item => {
+                        const datosProducto = obtenerDatosProducto(item.nombre);
+                        const precio = datosProducto ? datosProducto.precio : Math.round(item.precio || 0);
+                        const precioFormato = precio.toLocaleString('es-ES');
+                        const cantidad = item.cantidad || 1;
+                        const subtotal = Math.round(precio * cantidad).toLocaleString('es-ES');
+                        return `• ${item.nombre} — $${precioFormato} x${cantidad} = $${subtotal}`;
+                    })
+                    .join('\n');
+            } else {
+                productoTexto = 'Pedido personalizado';
+            }
+
+            const mensajes = {
+                'Pedido recibido': `Hola, *${nombreCliente}*. ¡Qué alegría que llegues a Huella de Origen! ☕️✨\nGracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total: $${total}*\n\nTe notificaremos cuando esté listo.`,
+                
+                'Solicitud de pago': `💳 Puedes realizar el pago con **Bre-B** a la llave: **0090417769**\n\n🧾 *Orden:* ${numeroOrden}\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total a pagar: $${total}*`,
+                
+                'Pago recibido': `💳 *¡Tu pago ha sido recibido con éxito!*\n\n🧾 *Orden:* ${numeroOrden}\n💰 *Total pagado: $${total}*\n✅ Tu pedido está siendo preparado.`,
+                
+                'Pedido entregado': `🎉 *¡Tu pedido ha llegado!*\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n\n*PRODUCTOS ENTREGADOS:*\n${productoTexto}\n\n💰 *Total: $${total}*\n¡Gracias por tu compra! Disfruta nuestro café. 😊`,
+                
+                'Orden completada': `🎉 *Tu orden ha sido completada.*\n\n🧾 *Orden N.º:* ${numeroOrden}\n💰 *Total: $${total}*\n\nGracias por tu compra, te esperamos pronto en Huella de Origen para que pruebes nuevas experiencias. ☕️✨`,
+                
+                'Orden cancelada': `💳 *¡Tu orden ha sido cancelada con éxito!*\n\n*Orden:* ${numeroOrden}\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total cancelado: $${total}*`
+            };
+
+            return mensajes[estado] || `☕ *FACTURA HUELLA DE ORIGEN*\n\n📌 *${numeroOrden}*\n👤 Cliente: ${nombreCliente}\n📅 Fecha: ${fecha}\n\n*Productos:*\n${productoTexto}\n\n💰 *Total: $${total}*\n\n_Desde su origen, deja huella._`;
+        }
+
+        function generarPDF(factura) {
+            const pdfDiv = document.getElementById('pdf-content');
+            pdfDiv.innerHTML = `
+                <div style="font-family: 'Poppins', Arial, sans-serif; color: #2C1810; width: 800px; margin: 0 auto; padding: 40px 20px; background: white;">
+                    <div style="text-align: center; border-bottom: 2px solid #D4A574; padding-bottom: 25px; margin-bottom: 30px;">
+                        <div style="margin-bottom: 15px;">
+                            <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA2ADYAAD/4QCMRXhpZgAATU0AKgAAAAgABQESAAMAAAABAAEAAAEaAAUAAAABAAAASgEbAAUAAAABAAAAUgEoAAMAAAABAAIAAIdpAAQAAAABAAAAWgAAAAAAAADYAAAAAQAAANgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAABQqgAw" style="width: 80px; height: auto;">
+                        </div>
+                        <h1 style="font-size: 24px; margin: 0 0 5px 0; font-weight: 700;">HUELLA DE ORIGEN</h1>
+                        <p style="color: #D4A574; font-style: italic; margin: 0 0 12px 0; font-size: 14px;">Desde su origen, deja huella</p>
+                        <p style="font-size: 12px; margin: 8px 0; color: #666;">📱 311 768 2407 | ✉️ comercial@huelladeorigen.com</p>
+                    </div>
+
+                    <h2 style="text-align: center; font-size: 22px; margin-bottom: 20px; font-weight: 700;">FACTURA</h2>
+                    <p style="text-align: center; font-size: 18px; color: #D4A574; margin-bottom: 30px; font-weight: 600;">${factura.id}</p>
+
+                    <table style="width: 100%; margin-bottom: 25px; border-collapse: collapse;">
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 10px 0; font-weight: 600;">Fecha:</td>
+                            <td style="padding: 10px 0;">${factura.fecha}</td>
+                            <td style="text-align: right; padding: 10px 0; font-weight: 600;">Vendedor:</td>
+                            <td style="text-align: right; padding: 10px 0;">${factura.vendedor}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 10px 0; font-weight: 600;">Cliente:</td>
+                            <td style="padding: 10px 0;">${factura.cliente.nombre}</td>
+                            <td style="text-align: right; padding: 10px 0; font-weight: 600;">Estado:</td>
+                            <td style="text-align: right; padding: 10px 0;">${factura.estado}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 10px 0; font-weight: 600;">ID/Cédula:</td>
+                            <td style="padding: 10px 0;">${factura.cliente.identificacion || 'N/A'}</td>
+                            <td colspan="2"></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 10px 0; font-weight: 600;">Celular:</td>
+                            <td style="padding: 10px 0;">${factura.cliente.celular || 'N/A'}</td>
+                            <td colspan="2"></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 10px 0; font-weight: 600;">Dirección:</td>
+                            <td style="padding: 10px 0;" colspan="3">${factura.cliente.direccion || 'N/A'}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 10px 0; font-weight: 600;">Ciudad:</td>
+                            <td style="padding: 10px 0;">${factura.cliente.ciudad || 'N/A'}</td>
+                            <td style="text-align: right; padding: 10px 0; font-weight: 600;">Email:</td>
+                            <td style="text-align: right; padding: 10px 0; font-size: 12px;">${factura.cliente.email || 'N/A'}</td>
+                        </tr>
+                    </table>
+
+                    <table style="width: 100%; margin: 30px 0; border-collapse: collapse;">
+                        <thead style="background: #2C1810; color: white;">
+                            <tr>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Producto</th>
+                                <th style="padding: 12px; text-align: center; font-weight: 600; width: 60px;">Cant.</th>
+                                <th style="padding: 12px; text-align: right; font-weight: 600; width: 100px;">P. Unit.</th>
+                                <th style="padding: 12px; text-align: right; font-weight: 600; width: 100px;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${factura.items.map(item => `<tr style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 10px; text-align: left;">${item.nombre}</td>
+                                <td style="padding: 10px; text-align: center;">${item.cantidad}</td>
+                                <td style="padding: 10px; text-align: right;">$${item.precio.toLocaleString('es-ES')}</td>
+                                <td style="padding: 10px; text-align: right;">$${Math.round(item.precio * item.cantidad).toLocaleString('es-ES')}</td>
+                            </tr>`).join('')}
+                        </tbody>
+                    </table>
+
+                    <div style="text-align: right; margin: 30px 0; padding: 20px; background: #f9f6f3; border-radius: 8px; border: 1px solid #e8ddd0;">
+                        <table style="width: 100%; text-align: right;">
+                            <tr style="border-bottom: 1px solid #e0d5c7;">
+                                <td style="padding: 8px 0; text-align: right; width: 200px;"><strong>Subtotal:</strong></td>
+                                <td style="padding: 8px 0; text-align: right; width: 150px;">$${factura.subtotal.toLocaleString('es-ES')}</td>
+                            </tr>
+                            ${factura.descuentoMonto > 0 ? `<tr style="border-bottom: 1px solid #e0d5c7;">
+                                <td style="padding: 8px 0; text-align: right; color: #28a745;"><strong>Descuento (${factura.descuentoPorcentaje}%):</strong></td>
+                                <td style="padding: 8px 0; text-align: right; color: #28a745;">-$${Math.round(factura.descuentoMonto).toLocaleString('es-ES')}</td>
+                            </tr>` : ''}
+                            ${factura.envio > 0 ? `<tr style="border-bottom: 1px solid #e0d5c7;">
+                                <td style="padding: 8px 0; text-align: right;"><strong>Envío:</strong></td>
+                                <td style="padding: 8px 0; text-align: right;">+$${Math.round(factura.envio).toLocaleString('es-ES')}</td>
+                            </tr>` : ''}
+                            <tr>
+                                <td style="padding: 12px 0; text-align: right; font-size: 18px; color: #D4A574; border-top: 2px solid #D4A574;"><strong>TOTAL:</strong></td>
+                                <td style="padding: 12px 0; text-align: right; font-size: 18px; color: #D4A574; border-top: 2px solid #D4A574;"><strong>$${Math.round(factura.total).toLocaleString('es-ES')}</strong></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div style="text-align: center; padding-top: 25px; border-top: 1px solid #ddd; font-size: 13px; color: #999;">
+                        <p style="margin: 8px 0;">Gracias por tu compra</p>
+                        <p style="margin: 8px 0;">¡Disfruta nuestro café de especialidad!</p>
+                    </div>
+                </div>
+            `;
+
+            const element = pdfDiv.firstChild;
+            const opt = {
+                margin: [10, 10, 10, 10],
+                filename: `FACTURA-${factura.id}-HUELLA-DE-ORIGEN.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+            };
+
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // FACTURAS
+        function renderFacturas() {
+            const tbody = document.getElementById('facturasTable');
+            tbody.innerHTML = facturas.map(f => `<tr>
+                <td><strong>${f.id}</strong></td>
+                <td>${f.cliente.nombre}</td>
+                <td>${f.fecha}</td>
+                <td>${f.vendedor}</td>
+                <td>$${Math.round(f.total).toLocaleString('es-ES')}</td>
+                <td><span class="badge ${f.estado === 'Pagada' ? 'badge-success' : f.estado === 'Pendiente' ? 'badge-danger' : 'badge-warning'}">${f.estado}</span></td>
+                <td><button class="btn-small" onclick="verFactura(${facturas.indexOf(f)})">Ver</button></td>
+            </tr>`).join('');
+        }
+
+        function verFactura(idx) {
+            const factura = facturas[idx];
+            if (!factura) return;
+            
+            // Mostrar modal de factura
+            const modal = document.getElementById('verFacturaModal');
+            if (!modal) {
+                generarPDF(factura);
+                return;
+            }
+            
+            // Llenar modal con datos de la factura
+            document.getElementById('verFacturaId').textContent = factura.id;
+            document.getElementById('verFacturaCliente').textContent = factura.cliente.nombre;
+            document.getElementById('verFacturaFecha').textContent = factura.fecha;
+            document.getElementById('verFacturaVendedor').textContent = factura.vendedor;
+            document.getElementById('verFacturaEstado').textContent = factura.estado;
+            
+            // Tabla de productos
+            const productosHTML = factura.items.map(item => `
+                <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.nombre}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.cantidad}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.precio.toLocaleString('es-ES')}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${Math.round(item.precio * item.cantidad).toLocaleString('es-ES')}</td>
+                </tr>
+            `).join('');
+            document.getElementById('verFacturaProductos').innerHTML = productosHTML;
+            
+            // Totales - SIN símbolo de pesos al inicio, solo el número
+            const subtotalNum = Math.round(factura.subtotal);
+            const descuentoNum = Math.round(factura.descuentoMonto || 0);
+            const envioNum = Math.round(factura.envio || 0);
+            const totalNum = Math.round(factura.total);
+            
+            document.getElementById('verFacturaSubtotal').textContent = subtotalNum.toLocaleString('es-ES');
+            
+            // Mostrar/ocultar descuento y envío si son 0
+            const descuentoRow = document.getElementById('verFacturaDescuentoRow');
+            if (descuentoNum > 0) {
+                descuentoRow.style.display = 'inline-block';
+                document.getElementById('verFacturaDescuento').textContent = `-$${descuentoNum.toLocaleString('es-ES')}`;
+            } else {
+                descuentoRow.style.display = 'none';
+            }
+            
+            const envioRow = document.getElementById('verFacturaEnvioRow');
+            if (envioNum > 0) {
+                envioRow.style.display = 'inline-block';
+                document.getElementById('verFacturaEnvio').textContent = `+$${envioNum.toLocaleString('es-ES')}`;
+            } else {
+                envioRow.style.display = 'none';
+            }
+            
+            document.getElementById('verFacturaTotal').textContent = totalNum.toLocaleString('es-ES');
+            
+            // Guardar factura actual para descargar PDF y WhatsApp
+            window.facturaActual = factura;
+            
+            // Mostrar modal
+            modal.style.display = 'block';
+        }
+        
+        function cerrarVerFactura() {
+            const modal = document.getElementById('verFacturaModal');
+            if (modal) modal.style.display = 'none';
+        }
+        
+        function descargarPDFFacturaModal() {
+            if (window.facturaActual) {
+                generarPDF(window.facturaActual);
+            }
+        }
+        
+        function abrirWhatsAppConFotos(celular, estado) {
+            if (!window.facturaActual) return;
+            
+            const factura = window.facturaActual;
+            const mensaje = generarMensajeWhatsAppPorEstado(factura, estado);
+            
+            // Limpiar número (solo dígitos)
+            const numeroLimpio = celular.replace(/\D/g, '');
+            
+            // Si no empieza con 57, agregarlo
+            let numeroFinal = numeroLimpio;
+            if (!numeroFinal.startsWith('57')) {
+                numeroFinal = '57' + numeroLimpio;
+            }
+            
+            // Construir URL de WhatsApp
+            const urlWhatsApp = `https://wa.me/${numeroFinal}?text=${encodeURIComponent(mensaje)}`;
+            
+            // Cerrar modal
+            const modal = document.getElementById('whatsappPreviewModal');
+            if (modal) modal.remove();
+            
+            // Abrir WhatsApp después de 500ms
+            setTimeout(() => {
+                window.open(urlWhatsApp, '_blank');
+            }, 500);
+        }
+            if (!window.facturaActual) return;
+            
+            const factura = window.facturaActual;
+            const celular = factura.cliente.celular || '';
+            const estado = factura.estado || 'Pendiente';
+            
+            if (!celular) {
+                alert('❌ El cliente no tiene celular registrado');
+                return;
+            }
+            
+            // Generar mensaje según el estado actual de la factura
+            const mensaje = generarMensajeWhatsAppPorEstado(factura, estado);
+            
+            // Limpiar número (solo dígitos)
+            const numeroLimpio = celular.replace(/\D/g, '');
+            
+            // Verificar que el número sea válido
+            if (numeroLimpio.length < 7) {
+                alert('❌ El número de celular no es válido');
+                return;
+            }
+            
+            // Obtener fotos de los productos
+            let fotosHTML = '';
+            
+            if (factura.items && factura.items.length > 0) {
+                fotosHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin: 20px 0;">';
+                
+                factura.items.forEach(item => {
+                    const datosProducto = obtenerDatosProducto(item.nombre);
+                    if (datosProducto) {
+                        const precio = datosProducto.precio.toLocaleString('es-ES');
+                        const subtotal = Math.round(datosProducto.precio * item.cantidad).toLocaleString('es-ES');
+                        fotosHTML += `
+                            <div style="text-align: center; padding: 15px; background: white; border-radius: 8px; border: 3px solid #D4A574;">
+                                <h4 style="color: #2C1810; margin: 0 0 8px 0; font-size: 13px; font-weight: 700;">☕ ${datosProducto.nombre}</h4>
+                                <p style="color: #D4A574; font-weight: bold; margin: 5px 0; font-size: 14px;">$${precio}</p>
+                                <p style="color: #666; font-size: 11px; margin: 3px 0;">× ${item.cantidad} = <strong>$${subtotal}</strong></p>
+                                <a href="${datosProducto.urlImagen}" target="_blank" style="display: inline-block; margin-top: 10px; padding: 8px 12px; background: #8B6F47; color: white; text-decoration: none; border-radius: 4px; font-size: 11px; font-weight: 600;">📥 Descargar</a>
+                            </div>
+                        `;
+                    }
+                });
+                
+                fotosHTML += '</div>';
+            }
+            
+            // Crear modal de preview
+            const previewModal = document.createElement('div');
+            previewModal.id = 'whatsappPreviewModal';
+            previewModal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.75);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 9999;
+            `;
+            
+            previewModal.innerHTML = `
+                <div style="background: white; border-radius: 12px; max-width: 700px; width: 95%; max-height: 85vh; overflow-y: auto; padding: 25px;">
+                    <h2 style="color: #2C1810; margin: 0 0 15px 0; font-size: 20px; text-align: center;">📸 PRODUCTOS CON FOTOS</h2>
+                    
+                    ${fotosHTML}
+                    
+                    <div style="background: #FFF8E5; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 5px solid #D4A574;">
+                        <p style="color: #2C1810; font-weight: bold; margin: 0 0 10px 0; font-size: 14px;">📱 CÓMO ENVIAR A WHATSAPP:</p>
+                        <ol style="color: #555; margin: 0; padding-left: 20px; font-size: 12px; line-height: 1.6;">
+                            <li><strong>Haz clic</strong> en "Enviar a WhatsApp" abajo</li>
+                            <li><strong>Se abrirá</strong> WhatsApp automáticamente con tu mensaje</li>
+                            <li><strong>Descarga las fotos</strong> usando los botones "📥 Descargar" arriba</li>
+                            <li><strong>En WhatsApp</strong>, adjunta las fotos que descargaste</li>
+                            <li><strong>¡Envía</strong> el mensaje! 😊</li>
+                        </ol>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button onclick="document.getElementById('whatsappPreviewModal').remove()" style="padding: 10px 20px; background: #ddd; color: #333; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">✕ Cerrar</button>
+                        <button onclick="abrirWhatsAppConFotos('${celular}', '${estado}')" style="padding: 10px 20px; background: #25D366; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">📲 Enviar a WhatsApp</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(previewModal);
+        }
+
+        function mostrarPreviewWhatsAppConFotos() {
+            if (!window.facturaActual) return;
+            
+            const factura = window.facturaActual;
+            const nombreCliente = factura.cliente.nombre;
+            const numeroOrden = factura.id;
+            const fecha = factura.fecha;
+            const estado = factura.estado || 'Pedido recibido';
+            const total = Math.round(factura.total).toLocaleString('es-ES');
+
+            // Generar HTML del preview
+            let mensajeHTML = `
+                <div class="whatsapp-message">
+                    <p>Hola, <strong>${nombreCliente}</strong>. ¡Qué alegría que llegues a Huella de Origen! ☕️✨</p>
+                    <p>Gracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.</p>
+                </div>
+                
+                <div class="whatsapp-message">
+                    <p>🧾 <strong>Orden N.º:</strong> ${numeroOrden}</p>
+                    <p>📅 <strong>Fecha:</strong> ${fecha}</p>
+                </div>
+                
+                <div class="whatsapp-message">
+                    <p><strong>PRODUCTOS:</strong></p>
+                </div>
+            `;
+
+            // Agregar cada producto con su foto
+            if (factura.items && factura.items.length > 0) {
+                factura.items.forEach(item => {
+                    const datosProducto = obtenerDatosProducto(item.nombre);
+                    const precio = datosProducto ? datosProducto.precio : Math.round(item.precio || 0);
+                    const precioFormato = precio.toLocaleString('es-ES');
+                    const cantidad = item.cantidad || 1;
+                    const subtotal = Math.round(precio * cantidad).toLocaleString('es-ES');
+                    const urlImagen = datosProducto ? datosProducto.urlImagen : '';
+
+                    mensajeHTML += `
+                        <div class="whatsapp-product-item">
+                            <div class="whatsapp-product-text">
+                                • ${item.nombre} — $${precioFormato}<br>
+                                x${cantidad} = $${subtotal}
+                            </div>
+                            ${urlImagen ? `
+                                <div class="whatsapp-product-image">
+                                    <img src="${urlImagen}" alt="${item.nombre}" title="Click para descargar">
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+            }
+
+            // Agregar total
+            mensajeHTML += `
+                <div class="whatsapp-message">
+                    <p><strong>💰 Total: $${total}</strong></p>
+                    <p>Te notificaremos cuando esté listo.</p>
+                </div>
+            `;
+
+            // Crear container del preview
+            const container = document.createElement('div');
+            container.id = 'whatsappPreviewContainer';
+            container.innerHTML = `
+                <div class="whatsapp-window">
+                    <div class="whatsapp-header">
+                        <div>
+                            <h3>${nombreCliente}</h3>
+                            <div class="whatsapp-header-info">Estado: ${estado}</div>
+                        </div>
+                        <div style="font-size: 20px; cursor: pointer;" onclick="cerrarPreviewWhatsApp()">✕</div>
+                    </div>
+                    
+                    <div class="whatsapp-body">
+                        ${mensajeHTML}
+                    </div>
+                    
+                    <div class="whatsapp-footer">
+                        <button class="btn-estado-cambiar" onclick="mostrarSelectorEstados()">📊 Cambiar Estado</button>
+                        <button class="btn-cerrar-preview" onclick="cerrarPreviewWhatsApp()">Cerrar</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(container);
+
+            // Agregar event listeners a las imágenes para descargar
+            const imagenes = container.querySelectorAll('.whatsapp-product-image img');
+            imagenes.forEach((img, idx) => {
+                img.addEventListener('click', function() {
+                    const link = document.createElement('a');
+                    link.href = this.src;
+                    link.download = `producto-${idx + 1}.jpg`;
+                    link.click();
+                });
+            });
+        }
+
+        function cerrarPreviewWhatsApp() {
+            const container = document.getElementById('whatsappPreviewContainer');
+            if (container) container.remove();
+        }
+
+        function mostrarSelectorEstados() {
+            const estados = ['Pedido recibido', 'Solicitud de pago', 'Pago recibido', 'Pedido entregado', 'Orden completada'];
+            const container = document.getElementById('whatsappPreviewContainer');
+            
+            if (!container) return;
+
+            // Remover selector anterior si existe
+            const selectorAnterior = document.querySelector('.estado-selector');
+            if (selectorAnterior) selectorAnterior.remove();
+
+            // Crear selector
+            const selector = document.createElement('div');
+            selector.className = 'estado-selector';
+            selector.style.top = '250px';
+            selector.style.left = '50px';
+
+            estados.forEach(estado => {
+                const option = document.createElement('div');
+                option.className = 'estado-option';
+                if (estado === (window.facturaActual.estado || 'Pedido recibido')) {
+                    option.classList.add('active');
+                }
+                option.textContent = estado;
+                option.onclick = () => {
+                    window.facturaActual.estado = estado;
+                    selector.remove();
+                    cerrarPreviewWhatsApp();
+                    mostrarPreviewWhatsAppConFotos();
+                };
+                selector.appendChild(option);
+            });
+
+            document.body.appendChild(selector);
+        }
+
+        // SEGUIMIENTO
+        function renderSeguimiento() {
+            const container = document.getElementById('seguimientoList');
+            
+            // Filtrar solo facturas que NO estén completadas
+            const facturasActivas = facturas
+                .map((f, idx) => ({ factura: f, idx: idx }))
+                .filter(item => item.factura.estado !== 'Orden completada');
+            
+            if (facturasActivas.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">✅ ¡Todos los pedidos están completados!</p>';
+                return;
+            }
+
+            container.innerHTML = facturasActivas.map(item => {
+                const f = item.factura;
+                const idx = item.idx;
+                const estados = ['Pedido recibido', 'Solicitud de pago', 'Pago recibido', 'Pedido entregado', 'Orden completada'];
+                const estadoActual = f.estado || 'Pedido recibido';
+                
+                return `
+                    <div class="card" style="margin-bottom: 15px; border-left: 4px solid #2C1810;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div>
+                                <p style="margin: 5px 0;"><strong>📌 ${f.id}</strong> - ${f.cliente.nombre}</p>
+                                <p style="margin: 5px 0; color: #666; font-size: 14px;">Celular: <strong>${f.cliente.celular}</strong></p>
+                                <p style="margin: 5px 0; color: #999; font-size: 12px;">${f.fecha}</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <p style="margin: 0; font-weight: bold; color: #2C1810;">Total: $${Math.round(f.total).toLocaleString('es-ES')}</p>
+                                <p style="margin: 5px 0; padding: 5px 10px; background: #f0f0f0; border-radius: 4px; font-weight: bold; font-size: 13px;">Estado: ${estadoActual}</p>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 12px;">
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                ${estados.map((estado) => `
+                                    <button class="btn-small" style="background: ${estado === estadoActual ? '#2C1810' : '#ddd'}; color: ${estado === estadoActual ? 'white' : '#666'};" 
+                                            onclick="actualizarSeguimiento(${idx}, '${estado}')">
+                                        ${estado}
+                                    </button>
+                                `).join('')}
+                                <button class="btn-small" style="background: #E74C3C; color: white;" 
+                                        onclick="actualizarSeguimiento(${idx}, 'Orden cancelada')">
+                                    ❌ Cancelada
+                                </button>
+                            </div>
+                            <button class="btn" style="margin-top: 10px; width: 100%; background: #25D366; border: none; color: white; cursor: pointer; font-weight: 600;" 
+                                    onclick="enviarWhatsAppSeguimiento(${idx})">
+                                📱 Enviar Mensaje WhatsApp
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function actualizarSeguimiento(idx, nuevoEstado) {
+            if (facturas[idx]) {
+                facturas[idx].estado = nuevoEstado;
+                guardarEnStorage();
+                renderSeguimiento();
+                // Mostrar confirmación
+                const nombreEstado = nuevoEstado;
+                alert(`✅ Estado actualizado a: ${nombreEstado}`);
+            }
+        }
+
+        function enviarWhatsAppSeguimiento(idx) {
+            const factura = facturas[idx];
+            if (!factura) return;
+            
+            const celular = factura.cliente.celular || '';
+            if (!celular) {
+                alert('❌ El cliente no tiene celular registrado');
+                return;
+            }
+            
+            // Generar mensaje según el estado actual
+            const estado = factura.estado || 'Pedido recibido';
+            const mensaje = generarMensajeWhatsAppPorEstado(factura, estado);
+            
+            // Limpiar número (solo dígitos)
+            const numeroLimpio = celular.replace(/\D/g, '');
+            
+            // Verificar que el número sea válido
+            if (numeroLimpio.length < 7) {
+                alert('❌ El número de celular no es válido');
+                return;
+            }
+            
+            // Construir URL de WhatsApp (agregar +57 para Colombia si no lo tiene)
+            let numeroFinal = numeroLimpio;
+            if (!numeroFinal.startsWith('57')) {
+                numeroFinal = '57' + numeroFinal;
+            }
+            const urlWA = `https://wa.me/${numeroFinal}?text=${encodeURIComponent(mensaje)}`;
+            
+            window.open(urlWA, '_blank');
+        }
+
+        // NUEVO: Mensaje independiente de actualización de pago
+        function enviarWhatsAppActualizacionPago(idx) {
+            const factura = facturas[idx];
+            if (!factura) return;
+            
+            const mensaje = `¡Hola ${factura.cliente.nombre}! 💳\n\n✅ Actualización de pago:\nPuedes realizar el pago con Bre-B a la llave: 0090417769\n\nPedido: ${factura.id}\nTotal: $${Math.round(factura.total).toLocaleString('es-ES')}\n\n¡Gracias! ☕`;
+
+            const numeroLimpio = factura.cliente.celular.replace(/\D/g, '');
+            const urlWA = `https://wa.me/57${numeroLimpio.replace(/^57/, '')}?text=${encodeURIComponent(mensaje)}`;
+            window.open(urlWA, '_blank');
+        }
+
+        // REPORTES
+        function renderReportes() {
+            const tot = facturas.reduce((s, f) => s + f.total, 0);
+            const pag = facturas.filter(f => f.estado === 'Pagada').reduce((s, f) => s + f.total, 0);
+            const pend = tot - pag;
+
+            document.getElementById('totalVentas').textContent = Math.round(tot).toLocaleString('es-ES');
+            document.getElementById('totalFacturas').textContent = facturas.length;
+            document.getElementById('totalPagadas').textContent = Math.round(pag).toLocaleString('es-ES');
+            document.getElementById('totalPendientes').textContent = Math.round(pend).toLocaleString('es-ES');
+
+            const ventasVendedor = {};
+            facturas.forEach(f => {
+                ventasVendedor[f.vendedor] = (ventasVendedor[f.vendedor] || 0) + f.total;
+            });
+
+            document.getElementById('ventasPorVendedor').innerHTML = Object.entries(ventasVendedor)
+                .map(([v, t]) => `<p><strong>${v}:</strong> $${Math.round(t).toLocaleString('es-ES')}</p>`)
+                .join('');
+        }
+
+        function descargarReporte() {
+            const datos = facturas.map(f => ({
+                'Factura': f.id,
+                'Cliente': f.cliente.nombre,
+                'Fecha': f.fecha,
+                'Vendedor': f.vendedor,
+                'Subtotal': f.subtotal,
+                'Descuento': f.descuentoMonto,
+                'Envío': f.envio,
+                'Total': f.total,
+                'Estado': f.estado
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(datos);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Facturas');
+            XLSX.writeFile(wb, 'Facturas_Huella_Origen.xlsx');
+        }
+
+        function mostrarMensaje(elementId, mensaje, tipo) {
+            const el = document.getElementById(elementId);
+            if (!el) return; // Si elemento no existe, no hacer nada
+            el.innerHTML = `<div class="${tipo === 'error' ? 'error-msg' : 'success-msg'}">${mensaje}</div>`;
+            setTimeout(() => { if (el) el.innerHTML = ''; }, 4000);
+        }
+
+        // NAVEGACIÓN
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                e.target.classList.add('active');
+                const sec = e.target.dataset.section;
+                document.getElementById(sec).classList.add('active');
+                if (sec === 'clientes') renderClientesTable();
+                if (sec === 'seguimiento') renderSeguimiento();
+                if (sec === 'facturas') renderFacturas();
+                if (sec === 'reportes') renderReportes();
+                // Cerrar dropdowns al cambiar sección
+                const dropdown1 = document.getElementById('clientesDropdown');
+                const dropdown2 = document.getElementById('facturaClientesDropdown');
+                if (dropdown1) dropdown1.style.display = 'none';
+                if (dropdown2) dropdown2.style.display = 'none';
+            });
+        });
+
+        // Cerrar dropdowns al hacer click fuera
+        document.addEventListener('click', function(event) {
+            const dropdown1 = document.getElementById('clientesDropdown');
+            const dropdown2 = document.getElementById('facturaClientesDropdown');
+            const clientesSearch = document.getElementById('clientesSearch');
+            const facturaClientPhone = document.getElementById('facturaClientPhone');
+
+            if (clientesSearch && !clientesSearch.contains(event.target) && dropdown1 && !dropdown1.contains(event.target)) {
+                dropdown1.style.display = 'none';
+            }
+            if (facturaClientPhone && !facturaClientPhone.contains(event.target) && dropdown2 && !dropdown2.contains(event.target)) {
+                dropdown2.style.display = 'none';
+            }
+        });
+
+        // Actualizar status de Supabase en la interfaz
+        function actualizarStatusSupabase() {
+            const statusEl = document.getElementById('supabaseStatus');
+            if (supabaseConfigured) {
+                statusEl.innerHTML = '☁️ Supabase Sincronizado';
+                statusEl.style.background = '#d4f0e3';
+                statusEl.style.color = '#2c6e49';
+            } else {
+                statusEl.innerHTML = '💾 Local Storage (sin sincronizar)';
+                statusEl.style.background = '#f0f0f0';
+                statusEl.style.color = '#666';
+            }
+        }
+
+        // ========== LOGIN FUNCTIONS ==========
+        let currentUser = null;
+
+        function checkAuth() {
+            const session = localStorage.getItem('user_session_huella');
+            if (session) {
+                try {
+                    currentUser = JSON.parse(session);
+                    window.userSession = currentUser;
+                    
+                    // Cargar datos de Supabase
+                    console.log('Sesión encontrada, cargando datos de Supabase...');
+                    sincronizarConSupabase();
+                    
+                    showApp();
+                } catch (e) {
+                    showLoginScreen();
+                }
+            } else {
+                showLoginScreen();
+            }
+        }
+
+        function loginUser() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            if (!email || !password) {
+                showLoginMessage('Completa email y contraseña', 'error');
+                return;
+            }
+
+            currentUser = { email: email, name: email.split('@')[0] };
+            localStorage.setItem('user_session_huella', JSON.stringify(currentUser));
+            window.userSession = currentUser;
+            
+            // Cargar datos de Supabase
+            console.log('Cargando datos de Supabase...');
+            sincronizarConSupabase();
+            
+            showLoginMessage('✅ Sesión iniciada', 'success');
+            setTimeout(showApp, 800);
+        }
+
+        function registerUser() {
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+
+            if (!name || !email || !password || password.length < 6) {
+                showLoginMessage('Completa todos - contraseña mínimo 6 caracteres', 'error');
+                return;
+            }
+
+            currentUser = { name: name, email: email };
+            localStorage.setItem('user_session_huella', JSON.stringify(currentUser));
+            window.userSession = currentUser;
+            
+            // Cargar datos de Supabase
+            console.log('Cargando datos de Supabase...');
+            sincronizarConSupabase();
+            
+            showLoginMessage('✅ Cuenta creada', 'success');
+            setTimeout(showApp, 800);
+        }
+
+        function logoutUser() {
+            localStorage.removeItem('user_session_huella');
+            currentUser = null;
+            showLoginScreen();
+        }
+
+        function toggleLoginForm(form) {
+            if (form === 'register') {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('registerForm').style.display = 'block';
+            } else {
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('registerForm').style.display = 'none';
+            }
+        }
+
+        function showLoginScreen() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('userBadge').classList.remove('active');
+            toggleLoginForm('login');
+        }
+
+        function showApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appContainer').style.display = 'block';
+            document.getElementById('userBadge').classList.add('active');
+            document.getElementById('userEmail').textContent = currentUser.email;
+            init();
+            actualizarStatusSupabase();
+        }
+
+        function showLoginMessage(msg, type) {
+            const msgBox = document.getElementById('loginMessage');
+            msgBox.textContent = msg;
+            msgBox.className = `login-message ${type}`;
+            setTimeout(() => msgBox.className = 'login-message', 3000);
+        }
+
+        // INICIAR
+        window.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+        });
+    </script>
+</body>
+</html>
