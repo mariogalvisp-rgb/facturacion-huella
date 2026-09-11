@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facturación Huella de Origen</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
@@ -1118,10 +1118,7 @@
                 </div>
                 <div class="login-form-group">
                     <label>🔐 Contraseña</label>
-                    <div style="position: relative;">
-                        <input type="password" id="loginPassword" placeholder="Tu contraseña">
-                        <button type="button" onclick="togglePasswordVisibility('loginPassword')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px;">👁️</button>
-                    </div>
+                    <input type="password" id="loginPassword" placeholder="Tu contraseña">
                 </div>
                 <div class="login-buttons">
                     <button class="btn-login" onclick="loginUser()">🔓 Ingresar</button>
@@ -1141,10 +1138,7 @@
                 </div>
                 <div class="login-form-group">
                     <label>🔐 Contraseña</label>
-                    <div style="position: relative;">
-                        <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres">
-                        <button type="button" onclick="togglePasswordVisibility('regPassword')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px;">👁️</button>
-                    </div>
+                    <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres">
                 </div>
                 <div class="login-buttons">
                     <button class="btn-register" onclick="registerUser()">✨ Crear Cuenta</button>
@@ -1928,71 +1922,73 @@
         }
 
         // ☁️ FUNCIONES SUPABASE
-        // Inicializar cliente de Supabase
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
         async function sincronizarConSupabase() {
             if (!SUPABASE_KEY) {
-                console.warn('⚠️ Supabase no configurado.');
+                console.warn('⚠️ Supabase no configurado. Usando solo localStorage.');
                 return;
             }
 
             try {
-                console.log('🔄 Sincronizando con Supabase...');
-
                 // Cargar facturas de Supabase
-                const { data: facturasDB, error: errorFacturas } = await supabaseClient
-                    .from('facturas')
-                    .select('*');
+                const respFacturas = await fetch(`${SUPABASE_URL}/rest/v1/facturas?select=*`, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-                if (errorFacturas) {
-                    console.error('Error cargando facturas:', errorFacturas);
-                } else if (facturasDB && facturasDB.length > 0) {
-                    facturas = facturasDB.map(f => ({
-                        id: f.numero_factura || f.id,
-                        numero_orden: f.numero_factura || f.id,
-                        cliente: { nombre: f.cliente_nombre || 'Cliente' },
-                        fecha: f.fecha,
-                        estado: f.estado,
-                        total: f.total,
-                        descuento: f.descuento_monto || 0,
-                        envio: f.envio || 0,
-                        vendedor: f.cliente_comercial || '',
-                        items: typeof f.items === 'string' ? JSON.parse(f.items) : (f.items || [])
-                    }));
-                    localStorage.setItem('facturas_huella', JSON.stringify(facturas));
-                    console.log('✅ Facturas cargadas desde Supabase:', facturas.length);
-                    renderHistorial();
-                    renderSeguimiento();
+                if (respFacturas.ok) {
+                    const facturasDB = await respFacturas.json();
+                    if (facturasDB && facturasDB.length > 0) {
+                        facturas = facturasDB.map(f => ({
+                            id: f.id,
+                            numero_orden: f.numero_orden,
+                            cliente: { nombre: f.cliente_nombre || 'Cliente' },
+                            fecha: f.fecha,
+                            estado: f.estado,
+                            total: f.total,
+                            descuento: f.descuento || 0,
+                            envio: f.envio || 0,
+                            vendedor: f.vendedor || '',
+                            items: typeof f.items === 'string' ? JSON.parse(f.items) : (f.items || [])
+                        }));
+                        localStorage.setItem('facturas_huella', JSON.stringify(facturas));
+                        console.log('✅ Facturas cargadas desde Supabase:', facturas.length);
+                        renderHistorial();
+                        renderSeguimiento();
+                    }
                 }
 
                 // Guardar facturas nuevas en Supabase
                 if (facturas && facturas.length > 0) {
                     for (const factura of facturas) {
-                        const { error } = await supabaseClient
-                            .from('facturas')
-                            .upsert({
-                                numero_factura: factura.id,
+                        await fetch(`${SUPABASE_URL}/rest/v1/facturas`, {
+                            method: 'POST',
+                            headers: {
+                                'apikey': SUPABASE_KEY,
+                                'Content-Type': 'application/json',
+                                'Prefer': 'return=minimal'
+                            },
+                            body: JSON.stringify({
+                                id: factura.id,
+                                numero_orden: factura.numero_orden || factura.id,
                                 cliente_nombre: factura.cliente?.nombre || 'Cliente',
                                 fecha: factura.fecha,
                                 estado: factura.estado || 'Pedido recibido',
                                 total: factura.total,
-                                descuento_monto: factura.descuento || 0,
+                                descuento: factura.descuento || 0,
                                 envio: factura.envio || 0,
-                                cliente_comercial: factura.vendedor || '',
-                                items: JSON.stringify(factura.items || []),
-                                subtotal: factura.total - (factura.descuento || 0)
-                            });
-
-                        if (error) {
-                            console.log('Error guardando factura:', error.message);
-                        }
+                                vendedor: factura.vendedor || '',
+                                items: JSON.stringify(factura.items || [])
+                            })
+                        }).catch(e => console.log('Factura ya existe en Supabase'));
                     }
                 }
 
-                console.log('✅ Sincronización completada con Supabase');
+                console.log('✅ Sincronizado con Supabase');
             } catch (error) {
-                console.error('❌ Error en sincronización:', error);
+                console.error('❌ Error de sincronización:', error);
             }
         }
 
@@ -2922,43 +2918,14 @@
             }
         }
         
-        function abrirWhatsAppConFotos(celular, estado) {
-            if (!window.facturaActual) return;
-            
-            const factura = window.facturaActual;
-            const mensaje = generarMensajeWhatsAppPorEstado(factura, estado);
-            
-            // Limpiar número (solo dígitos)
-            const numeroLimpio = celular.replace(/\D/g, '');
-            
-            // Si no empieza con 57, agregarlo
-            let numeroFinal = numeroLimpio;
-            if (!numeroFinal.startsWith('57')) {
-                numeroFinal = '57' + numeroLimpio;
-            }
-            
-            // Construir URL de WhatsApp
-            const urlWhatsApp = `https://wa.me/${numeroFinal}?text=${encodeURIComponent(mensaje)}`;
-            
-            // Cerrar modal
-            const modal = document.getElementById('whatsappPreviewModal');
-            if (modal) modal.remove();
-            
-            // Abrir WhatsApp después de 500ms
-            setTimeout(() => {
-                window.open(urlWhatsApp, '_blank');
-            }, 500);
-        }
-
         function compartirWhatsAppDesdeModal() {
             if (!window.facturaActual) return;
             
             const factura = window.facturaActual;
-            // Buscar celular en diferentes ubicaciones
-            const celular = factura.cliente?.celular || factura.celular_cliente || factura.celular || '';
-            const estado = factura.estado || 'Pedido recibido';
+            const celular = factura.cliente.celular || '';
+            const estado = factura.estado || 'Pendiente';
             
-            if (!celular || celular.trim() === '') {
+            if (!celular) {
                 alert('❌ El cliente no tiene celular registrado');
                 return;
             }
@@ -3254,9 +3221,8 @@
             const factura = facturas[idx];
             if (!factura) return;
             
-            // Buscar celular en diferentes ubicaciones
-            const celular = factura.cliente?.celular || factura.celular_cliente || factura.celular || '';
-            if (!celular || celular.trim() === '') {
+            const celular = factura.cliente.celular || '';
+            if (!celular) {
                 alert('❌ El cliente no tiene celular registrado');
                 return;
             }
@@ -3412,15 +3378,6 @@
                 }
             } else {
                 showLoginScreen();
-            }
-        }
-
-        function togglePasswordVisibility(fieldId) {
-            const field = document.getElementById(fieldId);
-            if (field.type === 'password') {
-                field.type = 'text';
-            } else {
-                field.type = 'password';
             }
         }
 
