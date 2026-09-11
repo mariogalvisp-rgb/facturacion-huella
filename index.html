@@ -1950,15 +1950,14 @@
                                     'Prefer': 'return=minimal'
                                 },
                                 body: JSON.stringify({
-                                    id: factura.id,
-                                    numero_orden: factura.numero_orden || factura.id,
+                                    numero_factura: factura.id,
                                     cliente_nombre: factura.cliente?.nombre || 'Cliente',
                                     fecha: factura.fecha,
                                     estado: factura.estado || 'Pedido recibido',
                                     total: factura.total,
                                     descuento: factura.descuento || 0,
                                     envio: factura.envio || 0,
-                                    vendedor: factura.vendedor || '',
+                                    cliente_comercial: factura.vendedor || '',
                                     items: JSON.stringify(factura.items || [])
                                 })
                             });
@@ -1974,15 +1973,14 @@
                                         'Prefer': 'return=minimal'
                                     },
                                     body: JSON.stringify({
-                                        id: factura.id,
-                                        numero_orden: factura.numero_orden || factura.id,
+                                        numero_factura: factura.id,
                                         cliente_nombre: factura.cliente?.nombre || 'Cliente',
                                         fecha: factura.fecha,
                                         estado: factura.estado || 'Pedido recibido',
                                         total: factura.total,
                                         descuento: factura.descuento || 0,
                                         envio: factura.envio || 0,
-                                        vendedor: factura.vendedor || '',
+                                        cliente_comercial: factura.vendedor || '',
                                         items: JSON.stringify(factura.items || [])
                                     })
                                 });
@@ -2947,6 +2945,41 @@
             }
         }
         
+        function abrirWhatsAppDesdePreview() {
+            if (!window.facturaActual) return;
+            
+            const factura = window.facturaActual;
+            const celular = factura.cliente.celular || '';
+            const estado = factura.estado || 'Pendiente';
+            
+            if (!celular) {
+                alert('❌ El cliente no tiene celular registrado');
+                return;
+            }
+            
+            const mensaje = generarMensajeWhatsAppPorEstado(factura, estado);
+            const numeroLimpio = celular.replace(/\D/g, '');
+            
+            if (numeroLimpio.length < 7) {
+                alert('❌ El número de celular no es válido');
+                return;
+            }
+            
+            let numeroFinal = numeroLimpio;
+            if (!numeroFinal.startsWith('57')) {
+                numeroFinal = '57' + numeroFinal;
+            }
+            
+            const urlWA = `https://wa.me/${numeroFinal}?text=${encodeURIComponent(mensaje)}`;
+            
+            // Cerrar modal
+            const modal = document.getElementById('whatsappPreviewModal');
+            if (modal) modal.remove();
+            
+            // Abrir WhatsApp
+            window.open(urlWA, '_blank');
+        }
+
         function compartirWhatsAppDesdeModal() {
             if (!window.facturaActual) return;
             
@@ -3031,7 +3064,7 @@
                     
                     <div style="display: flex; gap: 10px; justify-content: flex-end;">
                         <button onclick="document.getElementById('whatsappPreviewModal').remove()" style="padding: 10px 20px; background: #ddd; color: #333; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">✕ Cerrar</button>
-                        <button onclick="abrirWhatsAppConFotos('${celular}', '${estado}')" style="padding: 10px 20px; background: #25D366; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">📲 Enviar a WhatsApp</button>
+                        <button onclick="abrirWhatsAppDesdePreview()" style="padding: 10px 20px; background: #25D366; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">📲 Enviar a WhatsApp</button>
                     </div>
                 </div>
             `;
