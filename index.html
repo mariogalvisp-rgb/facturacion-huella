@@ -1887,9 +1887,9 @@
         let productosSeleccionados = {};
 
         // INICIALIZAR
-        function init() {
+        async function init() {
             cargarConfigSupabase();
-            cargarDatos();
+            await cargarDatos();
             
             // Renderizar solo si elementos existen
             if (document.getElementById('productsList')) renderProductos();
@@ -1903,7 +1903,7 @@
             document.getElementById('productSearch')?.addEventListener('input', renderProductos);
         }
 
-        function cargarDatos() {
+        async function cargarDatos() {
             const clientesGuardados = localStorage.getItem('clientes_huella');
             const facturasGuardadas = localStorage.getItem('facturas_huella');
             
@@ -1914,7 +1914,49 @@
                 clientes = JSON.parse(clientesGuardados);
             }
             
-            if (facturasGuardadas) facturas = JSON.parse(facturasGuardadas);
+            if (facturasGuardadas) {
+                facturas = JSON.parse(facturasGuardadas);
+            } else if (supabaseConfigured && SUPABASE_KEY) {
+                // Si localStorage está vacío pero Supabase está configurado, cargar de Supabase
+                console.log('🔄 localStorage vacío. Cargando facturas desde Supabase...');
+                await cargarFacturasDeSupabase();
+            }
+        }
+
+        async function cargarFacturasDeSupabase() {
+            try {
+                const respFacturas = await fetch(`${SUPABASE_URL}/rest/v1/facturas?select=*`, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (respFacturas.ok) {
+                    const facturasDB = await respFacturas.json();
+                    if (facturasDB && facturasDB.length > 0) {
+                        facturas = facturasDB.map(f => ({
+                            id: f.numero_factura,
+                            numero_orden: f.numero_factura,
+                            cliente: { 
+                                nombre: f.cliente_nombre || 'Cliente'
+                            },
+                            fecha: f.fecha,
+                            estado: f.estado,
+                            total: f.total,
+                            descuento: f.descuento || 0,
+                            envio: f.envio || 0,
+                            vendedor: f.cliente_comercial || '',
+                            items: typeof f.items === 'string' ? JSON.parse(f.items) : (f.items || [])
+                        }));
+                        localStorage.setItem('facturas_huella', JSON.stringify(facturas));
+                        console.log('✅ Facturas recuperadas de Supabase:', facturas.length);
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error cargando de Supabase:', error);
+            }
         }
 
         function guardarEnStorage() {
