@@ -1920,7 +1920,11 @@
         function guardarEnStorage() {
             localStorage.setItem('clientes_huella', JSON.stringify(clientes));
             localStorage.setItem('facturas_huella', JSON.stringify(facturas));
-            console.log('✅ Guardado en localStorage. Total facturas:', facturas.length);
+            
+            // Si Supabase está configurado, sincronizar automáticamente
+            if (supabaseConfigured) {
+                sincronizarConSupabase();
+            }
         }
 
         // ☁️ FUNCIONES SUPABASE
@@ -1957,8 +1961,34 @@
                         }));
                         localStorage.setItem('facturas_huella', JSON.stringify(facturas));
                         console.log('✅ Facturas cargadas desde Supabase:', facturas.length);
-                        renderFacturas();
+                        renderHistorial();
                         renderSeguimiento();
+                    }
+                }
+
+                // Guardar facturas nuevas en Supabase
+                if (facturas && facturas.length > 0) {
+                    for (const factura of facturas) {
+                        await fetch(`${SUPABASE_URL}/rest/v1/facturas`, {
+                            method: 'POST',
+                            headers: {
+                                'apikey': SUPABASE_KEY,
+                                'Content-Type': 'application/json',
+                                'Prefer': 'return=minimal'
+                            },
+                            body: JSON.stringify({
+                                id: factura.id,
+                                numero_orden: factura.numero_orden || factura.id,
+                                cliente_nombre: factura.cliente?.nombre || 'Cliente',
+                                fecha: factura.fecha,
+                                estado: factura.estado || 'Pedido recibido',
+                                total: factura.total,
+                                descuento: factura.descuento || 0,
+                                envio: factura.envio || 0,
+                                vendedor: factura.vendedor || '',
+                                items: JSON.stringify(factura.items || [])
+                            })
+                        }).catch(e => console.log('Factura ya existe en Supabase'));
                     }
                 }
 
@@ -2571,7 +2601,7 @@
             const total = subtotal - descMonto + env;
 
             const factura = {
-                id: 'HO-' + String(facturas.length + 1).padStart(5, '0'),
+                id: 'HO-' + Date.now().toString().slice(-8) + '-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0'),
                 cliente: clienteSeleccionado,
                 items: itemsTemp,
                 subtotal: subtotal,
@@ -2596,7 +2626,6 @@
             renderClientesTable();
             renderFacturas();
             renderReportes();
-            renderSeguimiento();
         }
 
         // ========== MAPEO COMPLETO: PRODUCTO + PRECIO + FOTO ==========
@@ -2979,7 +3008,7 @@
                     
                     <div style="display: flex; gap: 10px; justify-content: flex-end;">
                         <button onclick="document.getElementById('whatsappPreviewModal').remove()" style="padding: 10px 20px; background: #ddd; color: #333; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">✕ Cerrar</button>
-                        <button onclick="compartirWhatsAppDesdeModal()" style="padding: 10px 20px; background: #25D366; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">📲 Enviar a WhatsApp</button>
+                        <button onclick="abrirWhatsAppConFotos('${celular}', '${estado}')" style="padding: 10px 20px; background: #25D366; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">📲 Enviar a WhatsApp</button>
                     </div>
                 </div>
             `;
