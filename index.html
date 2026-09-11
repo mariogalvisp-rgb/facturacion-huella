@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facturación Huella de Origen</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
@@ -1922,50 +1922,55 @@
         }
 
         // ☁️ FUNCIONES SUPABASE
-        // Inicializar cliente de Supabase
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
         async function sincronizarConSupabase() {
             if (!SUPABASE_KEY) {
-                console.warn('⚠️ Supabase no configurado.');
+                console.warn('⚠️ Supabase no configurado. Usando solo localStorage.');
                 return;
             }
 
             try {
-                console.log('🔄 Sincronizando con Supabase...');
-
                 // Cargar facturas de Supabase
-                const { data: facturasDB, error: errorFacturas } = await supabaseClient
-                    .from('facturas')
-                    .select('*');
+                const respFacturas = await fetch(`${SUPABASE_URL}/rest/v1/facturas?select=*`, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-                if (errorFacturas) {
-                    console.error('Error cargando facturas:', errorFacturas);
-                } else if (facturasDB && facturasDB.length > 0) {
-                    facturas = facturasDB.map(f => ({
-                        id: f.numero_factura || f.id,
-                        numero_orden: f.numero_factura || f.id,
-                        cliente: { nombre: f.cliente_nombre || 'Cliente' },
-                        fecha: f.fecha,
-                        estado: f.estado,
-                        total: f.total,
-                        descuento: f.descuento_monto || 0,
-                        envio: f.envio || 0,
-                        vendedor: f.cliente_comercial || '',
-                        items: typeof f.items === 'string' ? JSON.parse(f.items) : (f.items || [])
-                    }));
-                    localStorage.setItem('facturas_huella', JSON.stringify(facturas));
-                    console.log('✅ Facturas cargadas desde Supabase:', facturas.length);
-                    renderHistorial();
-                    renderSeguimiento();
+                if (respFacturas.ok) {
+                    const facturasDB = await respFacturas.json();
+                    if (facturasDB && facturasDB.length > 0) {
+                        facturas = facturasDB.map(f => ({
+                            id: f.numero_factura || f.id,
+                            numero_orden: f.numero_factura || f.id,
+                            cliente: { nombre: f.cliente_nombre || 'Cliente' },
+                            fecha: f.fecha,
+                            estado: f.estado,
+                            total: f.total,
+                            descuento: f.descuento_monto || 0,
+                            envio: f.envio || 0,
+                            vendedor: f.cliente_comercial || '',
+                            items: typeof f.items === 'string' ? JSON.parse(f.items) : (f.items || [])
+                        }));
+                        localStorage.setItem('facturas_huella', JSON.stringify(facturas));
+                        console.log('✅ Facturas cargadas desde Supabase:', facturas.length);
+                        renderHistorial();
+                        renderSeguimiento();
+                    }
                 }
 
                 // Guardar facturas nuevas en Supabase
                 if (facturas && facturas.length > 0) {
                     for (const factura of facturas) {
-                        const { error } = await supabaseClient
-                            .from('facturas')
-                            .upsert({
+                        await fetch(`${SUPABASE_URL}/rest/v1/facturas`, {
+                            method: 'POST',
+                            headers: {
+                                'apikey': SUPABASE_KEY,
+                                'Content-Type': 'application/json',
+                                'Prefer': 'return=minimal'
+                            },
+                            body: JSON.stringify({
                                 numero_factura: factura.id,
                                 cliente_nombre: factura.cliente?.nombre || 'Cliente',
                                 fecha: factura.fecha,
@@ -1976,17 +1981,14 @@
                                 cliente_comercial: factura.vendedor || '',
                                 items: JSON.stringify(factura.items || []),
                                 subtotal: factura.total - (factura.descuento || 0)
-                            });
-
-                        if (error) {
-                            console.log('Error guardando factura:', error.message);
-                        }
+                            })
+                        }).catch(e => console.log('Factura ya existe en Supabase:', e.message));
                     }
                 }
 
-                console.log('✅ Sincronización completada con Supabase');
+                console.log('✅ Sincronizado con Supabase');
             } catch (error) {
-                console.error('❌ Error en sincronización:', error);
+                console.error('❌ Error de sincronización:', error);
             }
         }
 
@@ -2943,8 +2945,6 @@
                 window.open(urlWhatsApp, '_blank');
             }, 500);
         }
-
-        function compartirWhatsAppDesdeModal() {
             if (!window.facturaActual) return;
             
             const factura = window.facturaActual;
