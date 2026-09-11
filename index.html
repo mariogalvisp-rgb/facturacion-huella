@@ -1935,42 +1935,13 @@
             }
 
             try {
-                // Cargar facturas de Supabase
-                const respFacturas = await fetch(`${SUPABASE_URL}/rest/v1/facturas?select=*`, {
-                    method: 'GET',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (respFacturas.ok) {
-                    const facturasDB = await respFacturas.json();
-                    if (facturasDB && facturasDB.length > 0) {
-                        facturas = facturasDB.map(f => ({
-                            id: f.id,
-                            numero_orden: f.numero_orden,
-                            cliente: { nombre: f.cliente_nombre || 'Cliente' },
-                            fecha: f.fecha,
-                            estado: f.estado,
-                            total: f.total,
-                            descuento: f.descuento || 0,
-                            envio: f.envio || 0,
-                            vendedor: f.vendedor || '',
-                            items: typeof f.items === 'string' ? JSON.parse(f.items) : (f.items || [])
-                        }));
-                        localStorage.setItem('facturas_huella', JSON.stringify(facturas));
-                        console.log('✅ Facturas cargadas desde Supabase:', facturas.length);
-                        renderHistorial();
-                        renderSeguimiento();
-                    }
-                }
-
-                // Guardar facturas nuevas en Supabase
+                // ⚠️ IMPORTANTE: NO cargar de Supabase aquí para no perder datos locales nuevos
+                // Solo intentar guardar las facturas actuales en Supabase
+                
                 if (facturas && facturas.length > 0) {
                     for (const factura of facturas) {
-                        await fetch(`${SUPABASE_URL}/rest/v1/facturas`, {
-                            method: 'POST',
+                        await fetch(`${SUPABASE_URL}/rest/v1/facturas?id=eq.${encodeURIComponent(factura.id)}`, {
+                            method: 'PATCH',
                             headers: {
                                 'apikey': SUPABASE_KEY,
                                 'Content-Type': 'application/json',
@@ -1988,13 +1959,35 @@
                                 vendedor: factura.vendedor || '',
                                 items: JSON.stringify(factura.items || [])
                             })
-                        }).catch(e => console.log('Factura ya existe en Supabase'));
+                        }).catch(e => {
+                            // Si PATCH falla, intenta INSERT
+                            fetch(`${SUPABASE_URL}/rest/v1/facturas`, {
+                                method: 'POST',
+                                headers: {
+                                    'apikey': SUPABASE_KEY,
+                                    'Content-Type': 'application/json',
+                                    'Prefer': 'return=minimal'
+                                },
+                                body: JSON.stringify({
+                                    id: factura.id,
+                                    numero_orden: factura.numero_orden || factura.id,
+                                    cliente_nombre: factura.cliente?.nombre || 'Cliente',
+                                    fecha: factura.fecha,
+                                    estado: factura.estado || 'Pedido recibido',
+                                    total: factura.total,
+                                    descuento: factura.descuento || 0,
+                                    envio: factura.envio || 0,
+                                    vendedor: factura.vendedor || '',
+                                    items: JSON.stringify(factura.items || [])
+                                })
+                            }).catch(err => console.log('Error guardando en Supabase:', err.message));
+                        });
                     }
                 }
 
-                console.log('✅ Sincronizado con Supabase');
+                console.log('✅ Sincronización con Supabase completada');
             } catch (error) {
-                console.error('❌ Error de sincronización:', error);
+                console.error('❌ Error en sincronización:', error);
             }
         }
 
@@ -2052,7 +2045,7 @@
             }
 
             list.innerHTML = filtrados.map(c => {
-                const numFacturas = facturas.filter(f => f.cliente.id === c.id).length;
+                const numFacturas = facturas.filter(f => f.cliente.nombre === c.nombre).length;
                 return `
                     <div style="padding: 15px; border: 1px solid #eee; border-radius: 6px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#f9f9f9'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.background='white'; this.style.boxShadow='none'">
                         <div style="display: flex; justify-content: space-between; align-items: start;">
@@ -2063,7 +2056,7 @@
                                 <p style="margin: 0; color: #999; font-size: 12px;">✉️ ${c.email || 'Sin email'}</p>
                             </div>
                             <div style="text-align: right;">
-                                <div style="background: #D4A574; color: white; padding: 8px 12px; border-radius: 4px; font-weight: bold; font-size: 13px; margin-bottom: 8px;">${numFacturas} facturas</div>
+                                <div style="background: #D4A574; color: white; padding: 8px 12px; border-radius: 4px; font-weight: bold; font-size: 13px; margin-bottom: 8px; cursor: pointer;" onclick="irAFacturasDelCliente('${c.nombre}')">${numFacturas} facturas</div>
                                 <div style="display: flex; gap: 8px;">
                                     <button onclick="abrirEditarCliente(${c.id})" class="btn" style="padding: 8px 12px; font-size: 12px; background: #6B5344; color: white; border: none; cursor: pointer;">✏️ Editar</button>
                                     <button onclick="irAFacturaConClienteDesdeModal(${c.id})" class="btn" style="padding: 8px 12px; font-size: 12px; background: #2C1810; color: white; border: none; cursor: pointer;">📄 Factura</button>
@@ -2452,6 +2445,15 @@
             if (boxFormula) boxFormula.style.display = 'none';
         }
 
+        function irAFacturasDelCliente(nombreCliente) {
+            cerrarModalClientes();
+            // Ir a sección de Historial (data-section="facturas")
+            document.querySelector('[data-section="facturas"]').click();
+            setTimeout(() => {
+                renderFacturas();
+            }, 500);
+        }
+
         function irAFacturaConClienteDesdeModal(clienteId) {
             // Cerrar el modal de clientes
             const modal = document.getElementById('clientesModal');
@@ -2625,6 +2627,7 @@
             cambiarCliente();
             renderClientesTable();
             renderFacturas();
+            renderSeguimiento();
             renderReportes();
         }
 
