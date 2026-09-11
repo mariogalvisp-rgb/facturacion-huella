@@ -1942,15 +1942,15 @@
                     const facturasDB = await respFacturas.json();
                     if (facturasDB && facturasDB.length > 0) {
                         facturas = facturasDB.map(f => ({
-                            id: f.id,
-                            numero_orden: f.numero_orden,
+                            id: f.numero_factura || f.id,
+                            numero_orden: f.numero_factura || f.id,
                             cliente: { nombre: f.cliente_nombre || 'Cliente' },
                             fecha: f.fecha,
                             estado: f.estado,
                             total: f.total,
-                            descuento: f.descuento || 0,
+                            descuento: f.descuento_monto || 0,
                             envio: f.envio || 0,
-                            vendedor: f.vendedor || '',
+                            vendedor: f.cliente_comercial || '',
                             items: typeof f.items === 'string' ? JSON.parse(f.items) : (f.items || [])
                         }));
                         localStorage.setItem('facturas_huella', JSON.stringify(facturas));
@@ -1971,18 +1971,18 @@
                                 'Prefer': 'return=minimal'
                             },
                             body: JSON.stringify({
-                                id: factura.id,
-                                numero_orden: factura.numero_orden || factura.id,
+                                numero_factura: factura.id,
                                 cliente_nombre: factura.cliente?.nombre || 'Cliente',
                                 fecha: factura.fecha,
                                 estado: factura.estado || 'Pedido recibido',
                                 total: factura.total,
-                                descuento: factura.descuento || 0,
+                                descuento_monto: factura.descuento || 0,
                                 envio: factura.envio || 0,
-                                vendedor: factura.vendedor || '',
-                                items: JSON.stringify(factura.items || [])
+                                cliente_comercial: factura.vendedor || '',
+                                items: JSON.stringify(factura.items || []),
+                                subtotal: factura.total - (factura.descuento || 0)
                             })
-                        }).catch(e => console.log('Factura ya existe en Supabase'));
+                        }).catch(e => console.log('Factura ya existe en Supabase:', e.message));
                     }
                 }
 
@@ -2918,7 +2918,33 @@
             }
         }
         
-        function compartirWhatsAppDesdeModal() {
+        function abrirWhatsAppConFotos(celular, estado) {
+            if (!window.facturaActual) return;
+            
+            const factura = window.facturaActual;
+            const mensaje = generarMensajeWhatsAppPorEstado(factura, estado);
+            
+            // Limpiar número (solo dígitos)
+            const numeroLimpio = celular.replace(/\D/g, '');
+            
+            // Si no empieza con 57, agregarlo
+            let numeroFinal = numeroLimpio;
+            if (!numeroFinal.startsWith('57')) {
+                numeroFinal = '57' + numeroLimpio;
+            }
+            
+            // Construir URL de WhatsApp
+            const urlWhatsApp = `https://wa.me/${numeroFinal}?text=${encodeURIComponent(mensaje)}`;
+            
+            // Cerrar modal
+            const modal = document.getElementById('whatsappPreviewModal');
+            if (modal) modal.remove();
+            
+            // Abrir WhatsApp después de 500ms
+            setTimeout(() => {
+                window.open(urlWhatsApp, '_blank');
+            }, 500);
+        }
             if (!window.facturaActual) return;
             
             const factura = window.facturaActual;
