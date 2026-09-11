@@ -1634,7 +1634,7 @@
         // ☁️ CONFIGURACIÓN SUPABASE
         const SUPABASE_URL = 'https://szjxvgkqtrqstegejmta.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_7bSb3TvYnxBizjyUn5kD6A_QxK-2Vci';
-        let supabaseConfigured = false;
+        let supabaseConfigured = true; // Ya tiene la key configurada
 
         // CLIENTES - 161 CLIENTES PRECARGADOS (DEL EXCEL)
         const clientesSeed = [
@@ -1929,23 +1929,66 @@
             }
 
             try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/clientes`, {
-                    method: 'POST',
+                // Cargar facturas de Supabase
+                const respFacturas = await fetch(`${SUPABASE_URL}/rest/v1/facturas?select=*`, {
+                    method: 'GET',
                     headers: {
                         'apikey': SUPABASE_KEY,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify({ data: clientes })
+                        'Content-Type': 'application/json'
+                    }
                 });
 
-                if (response.ok) {
-                    console.log('✅ Sincronizado con Supabase');
-                } else {
-                    console.warn('⚠️ Error al sincronizar:', response.status);
+                if (respFacturas.ok) {
+                    const facturasDB = await respFacturas.json();
+                    if (facturasDB && facturasDB.length > 0) {
+                        facturas = facturasDB.map(f => ({
+                            id: f.id,
+                            numero_orden: f.numero_orden,
+                            cliente: { nombre: f.cliente_nombre || 'Cliente' },
+                            fecha: f.fecha,
+                            estado: f.estado,
+                            total: f.total,
+                            descuento: f.descuento || 0,
+                            envio: f.envio || 0,
+                            vendedor: f.vendedor || '',
+                            items: typeof f.items === 'string' ? JSON.parse(f.items) : (f.items || [])
+                        }));
+                        localStorage.setItem('facturas_huella', JSON.stringify(facturas));
+                        console.log('✅ Facturas cargadas desde Supabase:', facturas.length);
+                        renderHistorial();
+                        renderSeguimiento();
+                    }
                 }
+
+                // Guardar facturas nuevas en Supabase
+                if (facturas && facturas.length > 0) {
+                    for (const factura of facturas) {
+                        await fetch(`${SUPABASE_URL}/rest/v1/facturas`, {
+                            method: 'POST',
+                            headers: {
+                                'apikey': SUPABASE_KEY,
+                                'Content-Type': 'application/json',
+                                'Prefer': 'return=minimal'
+                            },
+                            body: JSON.stringify({
+                                id: factura.id,
+                                numero_orden: factura.numero_orden || factura.id,
+                                cliente_nombre: factura.cliente?.nombre || 'Cliente',
+                                fecha: factura.fecha,
+                                estado: factura.estado || 'Pedido recibido',
+                                total: factura.total,
+                                descuento: factura.descuento || 0,
+                                envio: factura.envio || 0,
+                                vendedor: factura.vendedor || '',
+                                items: JSON.stringify(factura.items || [])
+                            })
+                        }).catch(e => console.log('Factura ya existe en Supabase'));
+                    }
+                }
+
+                console.log('✅ Sincronizado con Supabase');
             } catch (error) {
-                console.error('❌ Error de conexión con Supabase:', error);
+                console.error('❌ Error de sincronización:', error);
             }
         }
 
@@ -3323,6 +3366,12 @@
             if (session) {
                 try {
                     currentUser = JSON.parse(session);
+                    window.userSession = currentUser;
+                    
+                    // Cargar datos de Supabase
+                    console.log('Sesión encontrada, cargando datos de Supabase...');
+                    sincronizarConSupabase();
+                    
                     showApp();
                 } catch (e) {
                     showLoginScreen();
@@ -3343,6 +3392,12 @@
 
             currentUser = { email: email, name: email.split('@')[0] };
             localStorage.setItem('user_session_huella', JSON.stringify(currentUser));
+            window.userSession = currentUser;
+            
+            // Cargar datos de Supabase
+            console.log('Cargando datos de Supabase...');
+            sincronizarConSupabase();
+            
             showLoginMessage('✅ Sesión iniciada', 'success');
             setTimeout(showApp, 800);
         }
@@ -3359,6 +3414,12 @@
 
             currentUser = { name: name, email: email };
             localStorage.setItem('user_session_huella', JSON.stringify(currentUser));
+            window.userSession = currentUser;
+            
+            // Cargar datos de Supabase
+            console.log('Cargando datos de Supabase...');
+            sincronizarConSupabase();
+            
             showLoginMessage('✅ Cuenta creada', 'success');
             setTimeout(showApp, 800);
         }
