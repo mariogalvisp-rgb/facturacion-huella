@@ -1971,6 +1971,7 @@
 
         // ☁️ FUNCIONES SUPABASE
         async function sincronizarConSupabase() {
+            console.log('🔄 INICIANDO sincronización con Supabase...');
             if (!SUPABASE_KEY) {
                 console.warn('⚠️ Supabase no configurado. Usando solo localStorage.');
                 return;
@@ -2006,7 +2007,7 @@
                             
                             if (!patchResp.ok) {
                                 // Si PATCH falla, intenta INSERT
-                                console.log(`PATCH falló para ${factura.id}, intentando INSERT...`);
+                                console.log(`⚠️ PATCH falló para ${factura.id}. Status: ${patchResp.status}. Intentando INSERT...`);
                                 const postResp = await fetch(`${SUPABASE_URL}/rest/v1/facturas`, {
                                     method: 'POST',
                                     headers: {
@@ -2028,13 +2029,13 @@
                                 });
                                 
                                 if (postResp.ok) {
-                                    console.log(`✅ Factura ${factura.id} insertada en Supabase`);
+                                    console.log(`✅ Factura ${factura.id} insertada en Supabase correctamente`);
                                 } else {
                                     const errorText = await postResp.text();
-                                    console.error(`❌ Error insertando ${factura.id}:`, errorText);
+                                    console.error(`❌ Error INSERT para ${factura.id}. Status: ${postResp.status}. Error: ${errorText}`);
                                 }
                             } else {
-                                console.log(`✅ Factura ${factura.id} actualizada en Supabase`);
+                                console.log(`✅ Factura ${factura.id} actualizada en Supabase (PATCH ok)`);
                             }
                         } catch (err) {
                             console.error(`❌ Error procesando factura ${factura.id}:`, err.message);
