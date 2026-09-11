@@ -1118,7 +1118,10 @@
                 </div>
                 <div class="login-form-group">
                     <label>🔐 Contraseña</label>
-                    <input type="password" id="loginPassword" placeholder="Tu contraseña">
+                    <div style="position: relative;">
+                        <input type="password" id="loginPassword" placeholder="Tu contraseña">
+                        <button type="button" onclick="togglePasswordVisibility('loginPassword')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; padding: 0;">👁️</button>
+                    </div>
                 </div>
                 <div class="login-buttons">
                     <button class="btn-login" onclick="loginUser()">🔓 Ingresar</button>
@@ -1138,7 +1141,10 @@
                 </div>
                 <div class="login-form-group">
                     <label>🔐 Contraseña</label>
-                    <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres">
+                    <div style="position: relative;">
+                        <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres">
+                        <button type="button" onclick="togglePasswordVisibility('regPassword')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; padding: 0;">👁️</button>
+                    </div>
                 </div>
                 <div class="login-buttons">
                     <button class="btn-register" onclick="registerUser()">✨ Crear Cuenta</button>
@@ -2620,6 +2626,8 @@
             renderClientesTable();
             renderFacturas();
             renderReportes();
+            renderHistorial();
+            renderSeguimiento();
         }
 
         // ========== MAPEO COMPLETO: PRODUCTO + PRECIO + FOTO ==========
@@ -3378,6 +3386,15 @@
                 }
             } else {
                 showLoginScreen();
+            }
+        }
+
+        function togglePasswordVisibility(fieldId) {
+            const field = document.getElementById(fieldId);
+            if (field.type === 'password') {
+                field.type = 'text';
+            } else {
+                field.type = 'password';
             }
         }
 
