@@ -1961,7 +1961,7 @@
                         }));
                         localStorage.setItem('facturas_huella', JSON.stringify(facturas));
                         console.log('✅ Facturas cargadas desde Supabase:', facturas.length);
-                        renderHistorial();
+                        renderFacturas();
                         renderSeguimiento();
                     }
                 }
@@ -2626,7 +2626,6 @@
             renderClientesTable();
             renderFacturas();
             renderReportes();
-            renderHistorial();
             renderSeguimiento();
         }
 
