@@ -1920,11 +1920,7 @@
         function guardarEnStorage() {
             localStorage.setItem('clientes_huella', JSON.stringify(clientes));
             localStorage.setItem('facturas_huella', JSON.stringify(facturas));
-            
-            // Si Supabase está configurado, sincronizar automáticamente
-            if (supabaseConfigured) {
-                sincronizarConSupabase();
-            }
+            console.log('✅ Guardado en localStorage. Total facturas:', facturas.length);
         }
 
         // ☁️ FUNCIONES SUPABASE
@@ -1963,32 +1959,6 @@
                         console.log('✅ Facturas cargadas desde Supabase:', facturas.length);
                         renderFacturas();
                         renderSeguimiento();
-                    }
-                }
-
-                // Guardar facturas nuevas en Supabase
-                if (facturas && facturas.length > 0) {
-                    for (const factura of facturas) {
-                        await fetch(`${SUPABASE_URL}/rest/v1/facturas`, {
-                            method: 'POST',
-                            headers: {
-                                'apikey': SUPABASE_KEY,
-                                'Content-Type': 'application/json',
-                                'Prefer': 'return=minimal'
-                            },
-                            body: JSON.stringify({
-                                id: factura.id,
-                                numero_orden: factura.numero_orden || factura.id,
-                                cliente_nombre: factura.cliente?.nombre || 'Cliente',
-                                fecha: factura.fecha,
-                                estado: factura.estado || 'Pedido recibido',
-                                total: factura.total,
-                                descuento: factura.descuento || 0,
-                                envio: factura.envio || 0,
-                                vendedor: factura.vendedor || '',
-                                items: JSON.stringify(factura.items || [])
-                            })
-                        }).catch(e => console.log('Factura ya existe en Supabase'));
                     }
                 }
 
