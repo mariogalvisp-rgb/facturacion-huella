@@ -1882,6 +1882,7 @@
         // VARIABLES
         let clientes = [];
         let facturas = [];
+        let facturasEnSupabase = [];  // ← Rastrea qué facturas ya existen en Supabase
         let clienteSeleccionado = null;
         let itemsTemp = [];
         let productosSeleccionados = {};
@@ -1936,6 +1937,9 @@
                 if (respFacturas.ok) {
                     const facturasDB = await respFacturas.json();
                     if (facturasDB && facturasDB.length > 0) {
+                        // Rastrea qué facturas ya existen en Supabase
+                        facturasEnSupabase = facturasDB.map(f => f.numero_factura);
+                        
                         facturas = facturasDB.map(f => ({
                             id: f.numero_factura,
                             numero_orden: f.numero_factura,
@@ -1979,38 +1983,18 @@
             }
 
             try {
-                // ⚠️ IMPORTANTE: NO cargar de Supabase aquí para no perder datos locales nuevos
-                // Solo intentar guardar las facturas actuales en Supabase
-                
+                // SINCRONIZAR FACTURAS
                 if (facturas && facturas.length > 0) {
                     for (const factura of facturas) {
                         try {
-                            // Intenta actualizar con PATCH
-                            const patchResp = await fetch(`${SUPABASE_URL}/rest/v1/facturas?id=eq.${encodeURIComponent(factura.id)}`, {
-                                method: 'PATCH',
-                                headers: {
-                                    'apikey': SUPABASE_KEY,
-                                    'Content-Type': 'application/json',
-                                    'Prefer': 'return=minimal'
-                                },
-                                body: JSON.stringify({
-                                    numero_factura: factura.id,
-                                    cliente_nombre: factura.cliente?.nombre || 'Cliente',
-                                    fecha: factura.fecha,
-                                    estado: factura.estado || 'Pedido recibido',
-                                    total: factura.total,
-                                    descuento: factura.descuento || 0,
-                                    envio: factura.envio || 0,
-                                    cliente_comercial: factura.vendedor || '',
-                                    items: JSON.stringify(factura.items || [])
-                                })
-                            });
-                            
-                            if (!patchResp.ok) {
-                                // Si PATCH falla, intenta INSERT
-                                console.log(`⚠️ PATCH falló para ${factura.id}. Status: ${patchResp.status}. Intentando INSERT...`);
-                                const postResp = await fetch(`${SUPABASE_URL}/rest/v1/facturas`, {
-                                    method: 'POST',
+                            // Determinar si la factura ya existe en Supabase
+                            const facturaExisteEnSupabase = facturasEnSupabase.includes(factura.id);
+
+                            if (facturaExisteEnSupabase) {
+                                // ✅ FACTURA EXISTENTE: Usar PATCH para actualizar
+                                console.log(`📝 Actualizando factura ${factura.id} en Supabase...`);
+                                const patchResp = await fetch(`${SUPABASE_URL}/rest/v1/facturas?numero_factura=eq.${encodeURIComponent(factura.id)}`, {
+                                    method: 'PATCH',
                                     headers: {
                                         'apikey': SUPABASE_KEY,
                                         'Content-Type': 'application/json',
@@ -2018,6 +2002,37 @@
                                     },
                                     body: JSON.stringify({
                                         numero_factura: factura.id,
+                                        cliente_id: factura.cliente_id || null,
+                                        cliente_nombre: factura.cliente?.nombre || 'Cliente',
+                                        fecha: factura.fecha,
+                                        estado: factura.estado || 'Pedido recibido',
+                                        total: factura.total,
+                                        descuento: factura.descuento || 0,
+                                        envio: factura.envio || 0,
+                                        cliente_comercial: factura.vendedor || '',
+                                        items: JSON.stringify(factura.items || [])
+                                    })
+                                });
+                                
+                                if (patchResp.ok) {
+                                    console.log(`✅ Factura ${factura.id} actualizada en Supabase correctamente`);
+                                } else {
+                                    const errorText = await patchResp.text();
+                                    console.error(`❌ Error PATCH para ${factura.id}. Status: ${patchResp.status}. Error: ${errorText}`);
+                                }
+                            } else {
+                                // ✅ FACTURA NUEVA: Usar INSERT directo
+                                console.log(`➕ Insertando factura nueva ${factura.id} en Supabase...`);
+                                const postResp = await fetch(`${SUPABASE_URL}/rest/v1/facturas`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'apikey': SUPABASE_KEY,
+                                        'Content-Type': 'application/json',
+                                        'Prefer': 'return=representation'
+                                    },
+                                    body: JSON.stringify({
+                                        numero_factura: factura.id,
+                                        cliente_id: factura.cliente_id || null,
                                         cliente_nombre: factura.cliente?.nombre || 'Cliente',
                                         fecha: factura.fecha,
                                         estado: factura.estado || 'Pedido recibido',
@@ -2030,16 +2045,76 @@
                                 });
                                 
                                 if (postResp.ok) {
+                                    // Marcar como sincronizada
+                                    if (!facturasEnSupabase.includes(factura.id)) {
+                                        facturasEnSupabase.push(factura.id);
+                                    }
                                     console.log(`✅ Factura ${factura.id} insertada en Supabase correctamente`);
                                 } else {
                                     const errorText = await postResp.text();
                                     console.error(`❌ Error INSERT para ${factura.id}. Status: ${postResp.status}. Error: ${errorText}`);
                                 }
-                            } else {
-                                console.log(`✅ Factura ${factura.id} actualizada en Supabase (PATCH ok)`);
                             }
                         } catch (err) {
                             console.error(`❌ Error procesando factura ${factura.id}:`, err.message);
+                        }
+                    }
+                }
+
+                // ☁️ SINCRONIZAR CLIENTES CON SUPABASE
+                if (clientes && clientes.length > 0) {
+                    for (const cliente of clientes) {
+                        try {
+                            // Intenta actualizar cliente existente con PATCH
+                            const clientePatchResp = await fetch(`${SUPABASE_URL}/rest/v1/clientes?id=eq.${cliente.id}`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'apikey': SUPABASE_KEY,
+                                    'Content-Type': 'application/json',
+                                    'Prefer': 'return=minimal'
+                                },
+                                body: JSON.stringify({
+                                    nombre: cliente.nombre,
+                                    celular: cliente.celular || '',
+                                    email: cliente.email || '',
+                                    ciudad: cliente.ciudad || '',
+                                    direccion: cliente.direccion || '',
+                                    identificacion: cliente.identificacion || ''
+                                })
+                            });
+                            
+                            if (!clientePatchResp.ok) {
+                                // Si PATCH falla, intenta INSERT
+                                console.log(`⚠️ PATCH cliente falló para ${cliente.nombre}. Status: ${clientePatchResp.status}. Intentando INSERT...`);
+                                const clientePostResp = await fetch(`${SUPABASE_URL}/rest/v1/clientes`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'apikey': SUPABASE_KEY,
+                                        'Content-Type': 'application/json',
+                                        'Prefer': 'return=minimal'
+                                    },
+                                    body: JSON.stringify({
+                                        id: cliente.id,
+                                        nombre: cliente.nombre,
+                                        celular: cliente.celular || '',
+                                        email: cliente.email || '',
+                                        ciudad: cliente.ciudad || '',
+                                        direccion: cliente.direccion || '',
+                                        identificacion: cliente.identificacion || ''
+                                    })
+                                });
+                                
+                                if (clientePostResp.ok) {
+                                    console.log(`✅ Cliente ${cliente.nombre} insertado en Supabase correctamente`);
+                                } else {
+                                    const errorText = await clientePostResp.text();
+                                    console.error(`❌ Error INSERT cliente ${cliente.nombre}. Status: ${clientePostResp.status}. Error: ${errorText}`);
+                                }
+                            } else {
+                                console.log(`✅ Cliente ${cliente.nombre} actualizado en Supabase (PATCH ok)`);
+                            }
+                        } catch (err) {
+                            console.error(`❌ Error procesando cliente ${cliente.nombre}:`, err.message);
                         }
                     }
                 }
@@ -2666,6 +2741,7 @@
             
             const factura = {
                 id: 'HO-' + String(nuevoNumero).padStart(5, '0'),
+                cliente_id: clienteSeleccionado?.id || null,
                 cliente: clienteSeleccionado,
                 items: itemsTemp,
                 subtotal: subtotal,
@@ -2681,7 +2757,7 @@
             facturas.push(factura);
             guardarEnStorage();
 
-            alert('✅ Factura guardada: ' + factura.id);
+            alert('✅ Factura guardada: ' + factura.id + '\n(Sincronizando con Supabase...)');
             generarPDF(factura);
             
             clienteSeleccionado = null;
