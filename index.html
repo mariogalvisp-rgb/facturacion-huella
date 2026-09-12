@@ -2762,7 +2762,7 @@
             const fecha = factura.fecha;
             const total = Math.round(factura.total).toLocaleString('es-ES');
 
-            // Generar lista de productos CON PRECIOS EN UNA LÍNEA
+            // Generar lista de productos CON PRECIOS Y FOTOS EN UNA LÍNEA
             let productoTexto = '';
             
             if (factura.items && factura.items.length > 0) {
@@ -2773,7 +2773,9 @@
                         const precioFormato = precio.toLocaleString('es-ES');
                         const cantidad = item.cantidad || 1;
                         const subtotal = Math.round(precio * cantidad).toLocaleString('es-ES');
-                        return `• ${item.nombre} — $${precioFormato} x${cantidad} = $${subtotal}`;
+                        const urlImagen = datosProducto ? datosProducto.urlImagen : '';
+                        const imagenLink = urlImagen ? `\n  📷 ${urlImagen}` : '';
+                        return `• ${item.nombre} — $${precioFormato} x${cantidad} = $${subtotal}${imagenLink}`;
                     })
                     .join('\n');
             } else {
