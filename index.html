@@ -2732,8 +2732,8 @@
             'TRILOGÍA HUELLA DE ORIGEN GRANO': { precio: 135000, imagen: 'trilogia huella de origen.jpeg' },
             'DUO CHIVITO DE PARAMO GRANO': { precio: 90000, imagen: 'duo chivito de paramo.jpeg' },
             'DUO CHIVITO DE PARAMO MOLIDO': { precio: 90000, imagen: 'duo chivito de paramo.jpeg' },
-            'DILOGIA DE ORIGEN MOLIDO': { precio: 92000, imagen: 'dilogia de origen.jpeg' },
-            'DILOGIA DE ORIGEN GRANO': { precio: 92000, imagen: 'dilogia de origen.jpeg' },
+            'DILOGIA HUELLA DE ORIGEN MOLIDO': { precio: 92000, imagen: 'dilogia de origen.jpeg' },
+            'DILOGIA HUELLA DE ORIGEN GRANO': { precio: 92000, imagen: 'dilogia de origen.jpeg' },
             'DUO COLIBRI AMAZILIA GRANO': { precio: 96000, imagen: 'duo amazillia.jpeg' },
             'DUO COLIBRI AMAZILIA MOLIDO': { precio: 96000, imagen: 'duo amazillia.jpeg' }
         };
@@ -3411,6 +3411,12 @@
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Facturas');
             XLSX.writeFile(wb, 'Facturas_Huella_Origen.xlsx');
+        }
+
+                })
+                .catch(error => {
+                    alert('❌ Error al descargar: ' + error.message);
+                });
         }
 
         function mostrarMensaje(elementId, mensaje, tipo) {
