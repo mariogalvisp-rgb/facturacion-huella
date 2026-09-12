@@ -1962,6 +1962,7 @@
         function guardarEnStorage() {
             localStorage.setItem('clientes_huella', JSON.stringify(clientes));
             localStorage.setItem('facturas_huella', JSON.stringify(facturas));
+            console.log('✅ Guardado en STORAGE (localStorage)');
             
             // Si Supabase está configurado, sincronizar automáticamente
             if (supabaseConfigured) {
