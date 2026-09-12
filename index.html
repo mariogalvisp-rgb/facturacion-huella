@@ -1863,20 +1863,20 @@
             { id: 33, nombre: 'CAJA SACHET CHIVITO x8', precio: 35000 },
             
             // DUO QUETZAL
-            { id: 34, nombre: 'DUO QUETZAL - Grano', precio: 88000 },
-            { id: 35, nombre: 'DUO QUETZAL - Molido', precio: 88000 },
+            { id: 34, nombre: 'DUO QUETZAL DEL TOLIMA GRANO', precio: 88000 },
+            { id: 35, nombre: 'DUO QUETZAL DEL TOLIMA MOLIDO', precio: 88000 },
             
             // DUO CHIVITO
-            { id: 36, nombre: 'DUO CHIVITO - Grano', precio: 90000 },
-            { id: 37, nombre: 'DUO CHIVITO - Molido', precio: 90000 },
+            { id: 36, nombre: 'DUO CHIVITO DE PARAMO GRANO', precio: 90000 },
+            { id: 37, nombre: 'DUO CHIVITO DE PARAMO MOLIDO', precio: 90000 },
             
             // TRILOGIA HUELLA DE ORIGEN
-            { id: 38, nombre: 'TRILOGIA HUELLA DE ORIGEN - Grano', precio: 135000 },
-            { id: 39, nombre: 'TRILOGIA HUELLA DE ORIGEN - Molido', precio: 135000 },
+            { id: 38, nombre: 'TRILOGÍA HUELLA DE ORIGEN GRANO', precio: 135000 },
+            { id: 39, nombre: 'TRILOGÍA HUELLA DE ORIGEN MOLIDO', precio: 135000 },
             
             // DILOGIA DE ORIGEN
-            { id: 40, nombre: 'DILOGIA DE ORIGEN - Grano', precio: 92000 },
-            { id: 41, nombre: 'DILOGIA DE ORIGEN - Molido', precio: 92000 }
+            { id: 40, nombre: 'DILOGIA HUELLA DE ORIGEN GRANO', precio: 92000 },
+            { id: 41, nombre: 'DILOGIA HUELLA DE ORIGEN MOLIDO', precio: 92000 }
         ];
 
         // VARIABLES
@@ -3411,12 +3411,6 @@
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Facturas');
             XLSX.writeFile(wb, 'Facturas_Huella_Origen.xlsx');
-        }
-
-                })
-                .catch(error => {
-                    alert('❌ Error al descargar: ' + error.message);
-                });
         }
 
         function mostrarMensaje(elementId, mensaje, tipo) {
