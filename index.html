@@ -3335,7 +3335,7 @@
             // Filtrar solo facturas que NO estén completadas
             const facturasActivas = facturas
                 .map((f, idx) => ({ factura: f, idx: idx }))
-                .filter(item => item.factura.estado !== 'Orden completada');
+                .filter(item => item.factura.estado !== 'Orden completada' && item.factura.estado !== 'Orden cancelada');
             
             if (facturasActivas.length === 0) {
                 container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">✅ ¡Todos los pedidos están completados!</p>';
