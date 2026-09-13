@@ -3458,19 +3458,19 @@
             }
             
             // ========== RESUMEN DE VENTAS ==========
-            const totalVentas = facturasParaReporte.reduce((s, f) => s + (f.total || 0), 0);
-            const totalPagado = facturasParaReporte.filter(f => f.estado === 'Pagada').reduce((s, f) => s + (f.total || 0), 0);
+            const totalVentas = facturasParaReporte.filter(f => f.estado !== 'Orden cancelada').reduce((s, f) => s + (f.total || 0), 0);
+            const totalPagado = facturasParaReporte.filter(f => f.estado === 'Pagada' || f.estado === 'Orden completada').reduce((s, f) => s + (f.total || 0), 0);
             const totalPendiente = totalVentas - totalPagado;
             const numeroFacturas = facturasParaReporte.length;
             const ticketPromedio = numeroFacturas > 0 ? totalVentas / numeroFacturas : 0;
             
             // Unidades vendidas
-            const unidadesVendidas = facturasParaReporte.reduce((total, f) => {
+            const unidadesVendidas = facturasParaReporte.filter(f => f.estado !== 'Orden cancelada').reduce((total, f) => {
                 return total + (f.items ? f.items.reduce((s, item) => s + (item.cantidad || 0), 0) : 0);
             }, 0);
             
             // Clientes únicos con compras
-            const clientesUnicos = new Set(facturasParaReporte.map(f => f.cliente_id || f.cliente?.id)).size;
+            const clientesUnicos = new Set(facturasParaReporte.filter(f => f.estado !== 'Orden cancelada').map(f => f.cliente_id || f.cliente?.id)).size;
             
             // Cancelaciones
             const cancelaciones = facturasParaReporte.filter(f => f.estado === 'Orden cancelada').length;
@@ -3527,7 +3527,7 @@
             const cantidadVendedor = {};
             const unidadesVendedor = {};
             
-            facturasParaReporte.forEach(f => {
+            facturasParaReporte.filter(f => f.estado !== 'Orden cancelada').forEach(f => {
                 const v = f.vendedor || 'Sin asignar';
                 ventasVendedor[v] = (ventasVendedor[v] || 0) + (f.total || 0);
                 cantidadVendedor[v] = (cantidadVendedor[v] || 0) + 1;
@@ -3572,7 +3572,7 @@
             
             // ========== PRODUCTOS ==========
             const productosMap = {};
-            facturasParaReporte.forEach(f => {
+            facturasParaReporte.filter(f => f.estado !== 'Orden cancelada').forEach(f => {
                 if (f.items) {
                     f.items.forEach(item => {
                         if (!productosMap[item.nombre]) {
@@ -3619,7 +3619,7 @@
             
             // ========== CLIENTES ==========
             const clientesMap = {};
-            facturasParaReporte.forEach(f => {
+            facturasParaReporte.filter(f => f.estado !== 'Orden cancelada').forEach(f => {
                 const clienteId = f.cliente_id || f.cliente?.id || 'Desconocido';
                 const clienteNombre = f.cliente?.nombre || 'Desconocido';
                 if (!clientesMap[clienteId]) {
@@ -3727,18 +3727,18 @@
                 console.log('📊 Generando reporte COMPLETO con', facturasParaExportar.length, 'facturas...');
                 
                 // CALCULAR MÉTRICAS
-                const totalVentas = facturasParaExportar.reduce((s, f) => s + (f.total || 0), 0);
-                const totalPagado = facturasParaExportar.filter(f => f.estado === 'Pagada').reduce((s, f) => s + (f.total || 0), 0);
+                const totalVentas = facturasParaExportar.filter(f => f.estado !== 'Orden cancelada').reduce((s, f) => s + (f.total || 0), 0);
+                const totalPagado = facturasParaExportar.filter(f => f.estado === 'Pagada' || f.estado === 'Orden completada').reduce((s, f) => s + (f.total || 0), 0);
                 const totalPendiente = totalVentas - totalPagado;
-                const unidadesVendidas = facturasParaExportar.reduce((total, f) => total + (f.items ? f.items.reduce((s, item) => s + (item.cantidad || 0), 0) : 0), 0);
-                const clientesUnicos = new Set(facturasParaExportar.map(f => f.cliente_id || f.cliente?.id)).size;
+                const unidadesVendidas = facturasParaExportar.filter(f => f.estado !== 'Orden cancelada').reduce((total, f) => total + (f.items ? f.items.reduce((s, item) => s + (item.cantidad || 0), 0) : 0), 0);
+                const clientesUnicos = new Set(facturasParaExportar.filter(f => f.estado !== 'Orden cancelada').map(f => f.cliente_id || f.cliente?.id)).size;
                 const cancelaciones = facturasParaExportar.filter(f => f.estado === 'Orden cancelada').length;
                 const ticketPromedio = facturasParaExportar.length > 0 ? totalVentas / facturasParaExportar.length : 0;
                 
                 // VENDEDORES
                 const ventasVendedor = {};
                 const cantidadVendedor = {};
-                facturasParaExportar.forEach(f => {
+                facturasParaExportar.filter(f => f.estado !== 'Orden cancelada').forEach(f => {
                     const v = f.vendedor || 'Sin asignar';
                     ventasVendedor[v] = (ventasVendedor[v] || 0) + (f.total || 0);
                     cantidadVendedor[v] = (cantidadVendedor[v] || 0) + 1;
