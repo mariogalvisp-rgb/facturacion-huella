@@ -2845,7 +2845,7 @@
                         nombre: producto,
                         precio: datos.precio,
                         imagen: datos.imagen,
-                        urlImagen: `https://raw.githubusercontent.com/mariogalvisp-rgb/facturacion-huella/main/public/productos/${datos.imagen}`
+                        urlImagen: `https://raw.githubusercontent.com/mariogalvisp-rgb/facturacion-huella/main/public/productos/${encodeURIComponent(datos.imagen)}`
                     };
                 }
             }
