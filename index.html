@@ -7,6 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Supabase JS (como en CLIXUM) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <style>
         /* ========== WHATSAPP PREVIEW STYLES ========== */
         #whatsappPreviewContainer {
@@ -1645,8 +1647,29 @@
 
     <script>
         // ☁️ CONFIGURACIÓN SUPABASE
-        const SUPABASE_URL = 'https://szjxvgkqtrqstegejmta.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_7bSb3TvYnxBizjyUn5kD6A_QxK-2Vci';
+        const SUPABASE_URL = 'https://vvomvdqnyqpahaufxrbl.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_57RPFmfxhXTAYNAQ_b0ztg_E0Xu-UtP';
+        
+        // Cliente Supabase (como en CLIXUM)
+        var sbClient = null;
+        var SUPABASE_INIT_ERROR = '';
+        try {
+          if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+            throw new Error('Supabase SDK did not load from the CDN');
+          }
+          sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: {
+              persistSession: true,
+              autoRefreshToken: true,
+              detectSessionInUrl: true,
+              storageKey: 'huella_auth_session',
+            }
+          });
+          console.log('✅ Supabase inicializado correctamente');
+        } catch (e) {
+          SUPABASE_INIT_ERROR = e.message || String(e);
+          console.error('❌ Error inicializando Supabase:', e);
+        }
         let supabaseConfigured = true; // Ya tiene la key configurada
 
         // CLIENTES - 161 CLIENTES PRECARGADOS (DEL EXCEL)
@@ -2034,41 +2057,30 @@
         }
 
         async function cargarFacturasDeSupabase() {
+            // Cargar desde Supabase usando sbClient
+            if (!sbClient) return;
+            
             try {
-                const respFacturas = await fetch(`${SUPABASE_URL}/rest/v1/facturas?select=*`, {
-                    method: 'GET',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (respFacturas.ok) {
-                    const facturasDB = await respFacturas.json();
-                    if (facturasDB && facturasDB.length > 0) {
-                        // Rastrea qué facturas ya existen en Supabase
-                        facturasEnSupabase = facturasDB.map(f => f.numero_factura);
-                        
-                        facturas = facturasDB.map(f => ({
-                            id: f.numero_factura,
-                            numero_orden: f.numero_factura,
-                            cliente: { 
-                                nombre: f.cliente_nombre || 'Cliente'
-                            },
-                            fecha: f.fecha,
-                            estado: f.estado,
-                            total: f.total,
-                            descuento: f.descuento || 0,
-                            envio: f.envio || 0,
-                            vendedor: f.cliente_comercial || '',
-                            items: typeof f.items === 'string' ? JSON.parse(f.items) : (f.items || [])
-                        }));
-                        localStorage.setItem('facturas_huella', JSON.stringify(facturas));
-                        console.log('✅ Facturas recuperadas de Supabase:', facturas.length);
-                    }
+                const { data, error } = await sbClient.from('facturas').select('*');
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    facturas = data.map(f => ({
+                        id: f.numero_factura || f.id,
+                        numero_orden: f.numero_factura || f.id,
+                        cliente: { nombre: f.cliente_nombre || 'Cliente' },
+                        fecha: f.fecha,
+                        estado: f.estado,
+                        total: f.total,
+                        descuento: f.descuento || 0,
+                        envio: f.envio || 0,
+                        items: typeof f.items === 'string' ? JSON.parse(f.items) : (f.items || [])
+                    }));
+                    localStorage.setItem('facturas_huella', JSON.stringify(facturas));
+                    console.log('✅ Facturas cargadas de Supabase:', facturas.length);
                 }
             } catch (error) {
-                console.error('❌ Error cargando de Supabase:', error);
+                console.warn('⚠️ Error cargando facturas:', error.message);
             }
         }
 
@@ -2104,243 +2116,69 @@
 
         // ☁️ FUNCIONES SUPABASE
         async function sincronizarConSupabase() {
-            // FALLBACK: Intenta Supabase, si falla usa localStorage (sin errores)
-            if (!SUPABASE_KEY) {
+            // Usar cliente Supabase (como CLIXUM) en lugar de fetch
+            if (!sbClient) {
+                console.log('⚠️ Supabase no está inicializado');
                 return;
             }
             
             try {
-                // Intentar sincronizar SILENCIOSAMENTE
-                // Si falla, localStorage ya tiene los datos guardados
-                
-                // SINCRONIZAR FACTURAS
-                if (facturas && facturas.length > 0) {
-                    for (const factura of facturas) {
-                        try {
-                            const facturaExisteEnSupabase = facturasEnSupabase.includes(factura.id);
-                            if (!facturaExisteEnSupabase) {
-                                const resp = await fetch(`${SUPABASE_URL}/rest/v1/facturas`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'apikey': SUPABASE_KEY,
-                                        'Content-Type': 'application/json',
-                                        'Prefer': 'return=representation'
-                                    },
-                                    body: JSON.stringify({
-                                        numero_factura: factura.id,
-                                        cliente_nombre: factura.cliente?.nombre || 'Cliente',
-                                        fecha: factura.fecha,
-                                        estado: factura.estado || 'Pedido recibido',
-                                        total: factura.total,
-                                        descuento: factura.descuento || 0,
-                                        envio: factura.envio || 0,
-                                        cliente_comercial: factura.vendedor || '',
-                                        items: JSON.stringify(factura.items || [])
-                                    })
-                                });
-                                if (resp.ok && !facturasEnSupabase.includes(factura.id)) {
-                                    facturasEnSupabase.push(factura.id);
-                                }
-                            }
-                        } catch(e) {
-                            // Silencio - localStorage ya tiene el dato
-                        }
-                    }
-                }
-                
                 // SINCRONIZAR CLIENTES
                 if (clientes && clientes.length > 0) {
                     for (const cliente of clientes) {
                         try {
-                            const clienteExisteEnSupabase = clientesEnSupabase.includes(cliente.id);
-                            if (!clienteExisteEnSupabase) {
-                                const resp = await fetch(`${SUPABASE_URL}/rest/v1/clientes`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'apikey': SUPABASE_KEY,
-                                        'Content-Type': 'application/json',
-                                        'Prefer': 'return=representation'
-                                    },
-                                    body: JSON.stringify({
-                                        nombre: cliente.nombre,
-                                        celular: cliente.celular,
-                                        identificacion: cliente.identificacion || '',
-                                        email: cliente.email || '',
-                                        ciudad: cliente.ciudad || '',
-                                        direccion: cliente.direccion || ''
-                                    })
-                                });
-                                if (resp.ok && !clientesEnSupabase.includes(cliente.id)) {
-                                    clientesEnSupabase.push(cliente.id);
-                                }
-                            }
+                            await sbClient.from('clientes').upsert({
+                                id: cliente.id,
+                                nombre: cliente.nombre,
+                                celular: cliente.celular || '',
+                                email: cliente.email || '',
+                                ciudad: cliente.ciudad || '',
+                                direccion: cliente.direccion || '',
+                                identificacion: cliente.identificacion || ''
+                            }, { onConflict: 'id' }).throwOnError();
                         } catch(e) {
-                            // Silencio - localStorage ya tiene el dato
+                            // Silencio
                         }
                     }
                 }
-            } catch(error) {
-                // Silencio total - localStorage es el respaldo
-            }
-
-            try {
+                
                 // SINCRONIZAR FACTURAS
                 if (facturas && facturas.length > 0) {
                     for (const factura of facturas) {
                         try {
-                            // Determinar si la factura ya existe en Supabase
-                            const facturaExisteEnSupabase = facturasEnSupabase.includes(factura.id);
-
-                            if (facturaExisteEnSupabase) {
-                                // ✅ FACTURA EXISTENTE: Usar PATCH para actualizar
-                                console.log(`📝 Actualizando factura ${factura.id} en Supabase...`);
-                                const patchResp = await fetch(`${SUPABASE_URL}/rest/v1/facturas?numero_factura=eq.${encodeURIComponent(factura.id)}`, {
-                                    method: 'PATCH',
-                                    headers: {
-                                        'apikey': SUPABASE_KEY,
-                                        'Content-Type': 'application/json',
-                                        'Prefer': 'return=minimal'
-                                    },
-                                    body: JSON.stringify({
-                                        numero_factura: factura.id,
-                                        cliente_id: factura.cliente_id || null,
-                                        cliente_nombre: factura.cliente?.nombre || 'Cliente',
-                                        fecha: factura.fecha,
-                                        estado: factura.estado || 'Pedido recibido',
-                                        total: factura.total,
-                                        descuento: factura.descuento || 0,
-                                        envio: factura.envio || 0,
-                                        cliente_comercial: factura.vendedor || '',
-                                        items: JSON.stringify(factura.items || [])
-                                    })
-                                });
-                                
-                                if (patchResp.ok) {
-                                    console.log(`✅ Factura ${factura.id} actualizada en Supabase correctamente`);
-                                } else {
-                                    const errorText = await patchResp.text();
-                                    console.error(`❌ Error PATCH para ${factura.id}. Status: ${patchResp.status}. Error: ${errorText}`);
-                                }
-                            } else {
-                                // ✅ FACTURA NUEVA: Usar INSERT directo
-                                console.log(`➕ Insertando factura nueva ${factura.id} en Supabase...`);
-                                const postResp = await fetch(`${SUPABASE_URL}/rest/v1/facturas`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'apikey': SUPABASE_KEY,
-                                        'Content-Type': 'application/json',
-                                        'Prefer': 'return=representation'
-                                    },
-                                    body: JSON.stringify({
-                                        numero_factura: factura.id,
-                                        cliente_id: factura.cliente_id || null,
-                                        cliente_nombre: factura.cliente?.nombre || 'Cliente',
-                                        fecha: factura.fecha,
-                                        estado: factura.estado || 'Pedido recibido',
-                                        total: factura.total,
-                                        descuento: factura.descuento || 0,
-                                        envio: factura.envio || 0,
-                                        cliente_comercial: factura.vendedor || '',
-                                        items: JSON.stringify(factura.items || [])
-                                    })
-                                });
-                                
-                                if (postResp.ok) {
-                                    // Marcar como sincronizada
-                                    if (!facturasEnSupabase.includes(factura.id)) {
-                                        facturasEnSupabase.push(factura.id);
-                                    }
-                                    console.log(`✅ Factura ${factura.id} insertada en Supabase correctamente`);
-                                } else {
-                                    const errorText = await postResp.text();
-                                    console.error(`❌ Error INSERT para ${factura.id}. Status: ${postResp.status}. Error: ${errorText}`);
-                                }
-                            }
-                        } catch (err) {
-                            console.error(`❌ Error procesando factura ${factura.id}:`, err.message);
+                            await sbClient.from('facturas').upsert({
+                                id: factura.id,
+                                numero_factura: factura.id,
+                                cliente_nombre: factura.cliente?.nombre || 'Cliente',
+                                fecha: factura.fecha,
+                                estado: factura.estado || 'Pendiente',
+                                total: factura.total,
+                                descuento: factura.descuento || 0,
+                                envio: factura.envio || 0,
+                                items: JSON.stringify(factura.items || [])
+                            }, { onConflict: 'id' }).throwOnError();
+                        } catch(e) {
+                            // Silencio
                         }
                     }
                 }
-
-                // ☁️ SINCRONIZAR CLIENTES CON SUPABASE
-                if (clientes && clientes.length > 0) {
-                    for (const cliente of clientes) {
-                        try {
-                            // Intenta actualizar cliente existente con PATCH
-                            const clientePatchResp = await fetch(`${SUPABASE_URL}/rest/v1/clientes?id=eq.${cliente.id}`, {
-                                method: 'PATCH',
-                                headers: {
-                                    'apikey': SUPABASE_KEY,
-                                    'Content-Type': 'application/json',
-                                    'Prefer': 'return=minimal'
-                                },
-                                body: JSON.stringify({
-                                    nombre: cliente.nombre,
-                                    celular: cliente.celular || '',
-                                    email: cliente.email || '',
-                                    ciudad: cliente.ciudad || '',
-                                    direccion: cliente.direccion || '',
-                                    identificacion: cliente.identificacion || ''
-                                })
-                            });
-                            
-                            if (!clientePatchResp.ok) {
-                                // Si PATCH falla, intenta INSERT
-                                console.log(`⚠️ PATCH cliente falló para ${cliente.nombre}. Status: ${clientePatchResp.status}. Intentando INSERT...`);
-                                const clientePostResp = await fetch(`${SUPABASE_URL}/rest/v1/clientes`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'apikey': SUPABASE_KEY,
-                                        'Content-Type': 'application/json',
-                                        'Prefer': 'return=minimal'
-                                    },
-                                    body: JSON.stringify({
-                                        id: cliente.id,
-                                        nombre: cliente.nombre,
-                                        celular: cliente.celular || '',
-                                        email: cliente.email || '',
-                                        ciudad: cliente.ciudad || '',
-                                        direccion: cliente.direccion || '',
-                                        identificacion: cliente.identificacion || ''
-                                    })
-                                });
-                                
-                                if (clientePostResp.ok) {
-                                    console.log(`✅ Cliente ${cliente.nombre} insertado en Supabase correctamente`);
-                                } else {
-                                    const errorText = await clientePostResp.text();
-                                    console.error(`❌ Error INSERT cliente ${cliente.nombre}. Status: ${clientePostResp.status}. Error: ${errorText}`);
-                                }
-                            } else {
-                                console.log(`✅ Cliente ${cliente.nombre} actualizado en Supabase (PATCH ok)`);
-                            }
-                        } catch (err) {
-                            console.error(`❌ Error procesando cliente ${cliente.nombre}:`, err.message);
-                        }
-                    }
-                }
-
+                
                 console.log('✅ Sincronización con Supabase completada');
-            } catch (error) {
-                console.error('❌ Error general en sincronización:', error);
+            } catch(error) {
+                console.warn('⚠️ Error sincronizando con Supabase:', error.message);
             }
         }
-
         function configurarSupabase() {
-            // Ya tiene API Key integrada - no pedir más
-            if (SUPABASE_KEY && SUPABASE_KEY.trim()) {
-                supabaseConfigured = true;
-                localStorage.setItem('supabase_configured', 'true');
-                alert('✅ Supabase está configurado automáticamente\n\nLos datos se guardarán en localStorage + IndexedDB (respaldo local)\n\nNube: Supabase (cuando esté disponible)');
+            if (sbClient) {
+                alert('✅ Supabase está configurado correctamente\n\nLos datos se guardarán en:\n• localStorage (respaldo)\n• Supabase (nube)');
+            } else {
+                alert('⚠️ Supabase no está disponible. Usando localStorage.');
             }
         }
 
         function cargarConfigSupabase() {
-            const apiKeySaved = localStorage.getItem('supabase_key_huella');
-            if (apiKeySaved) {
-                window.SUPABASE_KEY = apiKeySaved;
-                supabaseConfigured = true;
-                console.log('✅ Supabase configurado (desde storage local)');
+            if (sbClient) {
+                console.log('✅ Supabase cliente listo');
             }
         }
 
@@ -4202,48 +4040,40 @@
         // INICIAR
         
         async function poblarClientesEnSupabase() {
-            if (!SUPABASE_KEY) return;
+            if (!sbClient) return;
             
             try {
-                // Verificar si ya hay clientes en Supabase
-                const respCheck = await fetch(`${SUPABASE_URL}/rest/v1/clientes?select=id&limit=1`, {
-                    method: 'GET',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (!respCheck.ok) return;
-                const datosExistentes = await respCheck.json();
+                const { count, error } = await sbClient.from('clientes').select('*', { count: 'exact', head: true });
+                if (error) throw error;
                 
                 // Si ya hay datos, no hacer nada
-                if (datosExistentes && datosExistentes.length > 0) {
+                if (count && count > 0) {
                     console.log('✅ Tabla clientes ya tiene datos en Supabase');
                     return;
                 }
                 
-                // Tabla vacía - insertar clientes
+                // Tabla vacía - insertar clientes UNO POR UNO
                 console.log('🔄 Poblando tabla clientes en Supabase...');
-                const clientesBatch = clientes.slice(0, 50); // Primeros 50
                 
-                const resp = await fetch(`${SUPABASE_URL}/rest/v1/clientes`, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify(clientesBatch)
-                });
-                
-                if (resp.ok) {
-                    console.log('✅ Clientes insertados en Supabase');
-                } else {
-                    console.warn('⚠️ No se pudieron insertar clientes en Supabase (pero están en localStorage)');
+                for (const cliente of clientes.slice(0, 50)) {
+                    try {
+                        await sbClient.from('clientes').insert([{
+                            id: cliente.id,
+                            nombre: cliente.nombre,
+                            celular: cliente.celular || '',
+                            email: cliente.email || '',
+                            ciudad: cliente.ciudad || '',
+                            direccion: cliente.direccion || '',
+                            identificacion: cliente.identificacion || ''
+                        }]);
+                    } catch(e) {
+                        // Continuar con el siguiente
+                    }
                 }
+                
+                console.log('✅ Clientes insertados en Supabase');
             } catch(e) {
-                console.warn('⚠️ Error poblando Supabase (normal si está desconectado):', e.message);
+                console.warn('⚠️ Error poblando Supabase:', e.message);
             }
         }
 
