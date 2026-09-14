@@ -2080,6 +2080,7 @@
                 console.log('✅ Guardado en localStorage');
             } catch (error) {
                 console.error('❌ Error al guardar en localStorage:', error);
+                return false;
             }
             
             // ✅ RESPALDO: IndexedDB (protección contra historial borrado)
@@ -2097,23 +2098,8 @@
                     // Silencio - localStorage + IndexedDB ya tienen los datos
                 });
             }
-                alert('❌ Error al guardar datos localmente');
-                return false;  // No intentar Supabase si localStorage falló
-            }
             
-            // ✅ DESPUÉS de confirmar localStorage, intentar sincronizar con Supabase
-            if (supabaseConfigured) {
-                try {
-                    console.log('🔄 Sincronizando con Supabase...');
-                    await sincronizarConSupabase();
-                    console.log('✅ Sincronización con Supabase completada');
-                } catch (error) {
-                    console.error('⚠️ Error sincronizando Supabase (pero datos locales están seguros):', error);
-                    // NO abortar - los datos YA están en localStorage
-                }
-            }
-            
-            return true;  // ✅ localStorage OK = éxito
+            return true;  // ✅ Guardado exitoso
         }
 
         // ☁️ FUNCIONES SUPABASE
@@ -2341,12 +2327,11 @@
         }
 
         function configurarSupabase() {
-            const apiKey = prompt('Ingresa tu API Key de Supabase:\n\n(Disponible en: https://app.supabase.com/project/szjxvgkqtrqstegejmta/settings/api)');
-            if (apiKey && apiKey.trim()) {
-                window.SUPABASE_KEY = apiKey;
+            // Ya tiene API Key integrada - no pedir más
+            if (SUPABASE_KEY && SUPABASE_KEY.trim()) {
                 supabaseConfigured = true;
-                localStorage.setItem('supabase_key_huella', apiKey);
-                alert('✅ Supabase configurado correctamente\n\nAhora los cambios se guardarán automáticamente en la nube.');
+                localStorage.setItem('supabase_configured', 'true');
+                alert('✅ Supabase está configurado automáticamente\n\nLos datos se guardarán en localStorage + IndexedDB (respaldo local)\n\nNube: Supabase (cuando esté disponible)');
             }
         }
 
@@ -4111,6 +4096,7 @@
                     console.log('Sesión encontrada, cargando datos...');
                     cargarDatos(); // Siempre desde localStorage
                     sincronizarConSupabase(); // Intenta Supabase (si falla, localStorage ya tiene todo)
+                    poblarClientesEnSupabase(); // Populate clientes table if empty
                     
                     showApp();
                 } catch (e) {
@@ -4214,6 +4200,54 @@
         }
 
         // INICIAR
+        
+        async function poblarClientesEnSupabase() {
+            if (!SUPABASE_KEY) return;
+            
+            try {
+                // Verificar si ya hay clientes en Supabase
+                const respCheck = await fetch(`${SUPABASE_URL}/rest/v1/clientes?select=id&limit=1`, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!respCheck.ok) return;
+                const datosExistentes = await respCheck.json();
+                
+                // Si ya hay datos, no hacer nada
+                if (datosExistentes && datosExistentes.length > 0) {
+                    console.log('✅ Tabla clientes ya tiene datos en Supabase');
+                    return;
+                }
+                
+                // Tabla vacía - insertar clientes
+                console.log('🔄 Poblando tabla clientes en Supabase...');
+                const clientesBatch = clientes.slice(0, 50); // Primeros 50
+                
+                const resp = await fetch(`${SUPABASE_URL}/rest/v1/clientes`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify(clientesBatch)
+                });
+                
+                if (resp.ok) {
+                    console.log('✅ Clientes insertados en Supabase');
+                } else {
+                    console.warn('⚠️ No se pudieron insertar clientes en Supabase (pero están en localStorage)');
+                }
+            } catch(e) {
+                console.warn('⚠️ Error poblando Supabase (normal si está desconectado):', e.message);
+            }
+        }
+
+
         window.addEventListener('DOMContentLoaded', function() {
             checkAuth();
         });
