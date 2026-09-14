@@ -1912,22 +1912,35 @@
         }
 
         async function cargarDatos() {
+            // SIEMPRE intentar cargar desde localStorage PRIMERO
             const clientesGuardados = localStorage.getItem('clientes_huella');
             const facturasGuardadas = localStorage.getItem('facturas_huella');
             
-            if (!clientesGuardados) {
+            // CLIENTES: localStorage tiene prioridad
+            if (clientesGuardados) {
+                try {
+                    clientes = JSON.parse(clientesGuardados);
+                    console.log('✅ Clientes cargados desde localStorage:', clientes.length);
+                } catch(e) {
+                    console.warn('⚠️ Error parsing clientes localStorage, usando seed');
+                    clientes = JSON.parse(JSON.stringify(clientesSeed));
+                }
+            } else {
                 clientes = JSON.parse(JSON.stringify(clientesSeed));
                 guardarEnStorage();
-            } else {
-                clientes = JSON.parse(clientesGuardados);
             }
             
+            // FACTURAS: localStorage tiene prioridad
             if (facturasGuardadas) {
-                facturas = JSON.parse(facturasGuardadas);
-            } else if (supabaseConfigured && SUPABASE_KEY) {
-                // Si localStorage está vacío pero Supabase está configurado, cargar de Supabase
-                console.log('🔄 localStorage vacío. Cargando facturas desde Supabase...');
-                await cargarFacturasDeSupabase();
+                try {
+                    facturas = JSON.parse(facturasGuardadas);
+                    console.log('✅ Facturas cargadas desde localStorage:', facturas.length);
+                } catch(e) {
+                    console.warn('⚠️ Error parsing facturas localStorage');
+                    facturas = [];
+                }
+            } else {
+                facturas = [];
             }
         }
 
@@ -1977,9 +1990,11 @@
                 localStorage.setItem('facturas_huella', JSON.stringify(facturas));
                 console.log('✅ Guardado en localStorage');
                 
-                // ✅ RESPALDO: Sincronizar con Supabase (sin esperar respuesta)
+                // Respaldo: Intentar sincronizar con Supabase (si falla, localStorage ya tiene los datos)
                 if (SUPABASE_KEY) {
-                    sincronizarConSupabase().catch(err => console.warn('⚠️ Sync Supabase fallido:', err));
+                    sincronizarConSupabase().catch(() => {
+                        // Silencio - localStorage es suficiente
+                    });
                 }
             } catch (error) {
                 console.error('❌ Error al guardar en localStorage:', error);
@@ -2004,10 +2019,83 @@
 
         // ☁️ FUNCIONES SUPABASE
         async function sincronizarConSupabase() {
-            console.log('🔄 INICIANDO sincronización con Supabase...');
+            // FALLBACK: Intenta Supabase, si falla usa localStorage (sin errores)
             if (!SUPABASE_KEY) {
-                console.warn('⚠️ Supabase no configurado. Usando solo localStorage.');
                 return;
+            }
+            
+            try {
+                // Intentar sincronizar SILENCIOSAMENTE
+                // Si falla, localStorage ya tiene los datos guardados
+                
+                // SINCRONIZAR FACTURAS
+                if (facturas && facturas.length > 0) {
+                    for (const factura of facturas) {
+                        try {
+                            const facturaExisteEnSupabase = facturasEnSupabase.includes(factura.id);
+                            if (!facturaExisteEnSupabase) {
+                                const resp = await fetch(`${SUPABASE_URL}/rest/v1/facturas`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'apikey': SUPABASE_KEY,
+                                        'Content-Type': 'application/json',
+                                        'Prefer': 'return=representation'
+                                    },
+                                    body: JSON.stringify({
+                                        numero_factura: factura.id,
+                                        cliente_nombre: factura.cliente?.nombre || 'Cliente',
+                                        fecha: factura.fecha,
+                                        estado: factura.estado || 'Pedido recibido',
+                                        total: factura.total,
+                                        descuento: factura.descuento || 0,
+                                        envio: factura.envio || 0,
+                                        cliente_comercial: factura.vendedor || '',
+                                        items: JSON.stringify(factura.items || [])
+                                    })
+                                });
+                                if (resp.ok && !facturasEnSupabase.includes(factura.id)) {
+                                    facturasEnSupabase.push(factura.id);
+                                }
+                            }
+                        } catch(e) {
+                            // Silencio - localStorage ya tiene el dato
+                        }
+                    }
+                }
+                
+                // SINCRONIZAR CLIENTES
+                if (clientes && clientes.length > 0) {
+                    for (const cliente of clientes) {
+                        try {
+                            const clienteExisteEnSupabase = clientesEnSupabase.includes(cliente.id);
+                            if (!clienteExisteEnSupabase) {
+                                const resp = await fetch(`${SUPABASE_URL}/rest/v1/clientes`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'apikey': SUPABASE_KEY,
+                                        'Content-Type': 'application/json',
+                                        'Prefer': 'return=representation'
+                                    },
+                                    body: JSON.stringify({
+                                        nombre: cliente.nombre,
+                                        celular: cliente.celular,
+                                        identificacion: cliente.identificacion || '',
+                                        email: cliente.email || '',
+                                        ciudad: cliente.ciudad || '',
+                                        direccion: cliente.direccion || ''
+                                    })
+                                });
+                                if (resp.ok && !clientesEnSupabase.includes(cliente.id)) {
+                                    clientesEnSupabase.push(cliente.id);
+                                }
+                            }
+                        } catch(e) {
+                            // Silencio - localStorage ya tiene el dato
+                        }
+                    }
+                }
+            } catch(error) {
+                // Silencio total - localStorage es el respaldo
             }
 
             try {
@@ -2865,6 +2953,7 @@
                         nombre: producto,
                         precio: datos.precio,
                         imagen: datos.imagen,
+                        urlProducto: productosURLs[producto] || null,
                         urlImagen: `https://raw.githubusercontent.com/mariogalvisp-rgb/facturacion-huella/main/public/productos/${encodeURIComponent(datos.imagen)}`
                     };
                 }
@@ -2873,13 +2962,35 @@
         }
 
         // ========== FUNCIÓN PARA GENERAR MENSAJE WHATSAPP SEGÚN ESTADO ==========
+        
+        const productosURLs = {
+            'COLIBRI HONEY 454GM MOLIDO': 'https://huelladeorigen.com/producto/colibri-amazilia-cafe/',
+            'COLIBRI HONEY 454GM GRANO': 'https://huelladeorigen.com/producto/colibri-amazilia-cafe/',
+            'CHIVITO DE PARAMO 454GM GRANO': 'https://huelladeorigen.com/producto/chivito-de-paramo-cafe/',
+            'CHIVITO DE PARAMO 454GM MOLIDO': 'https://huelladeorigen.com/producto/chivito-de-paramo-cafe/',
+            'QUETZAL DEL TOLIMA 454 GM GRANO': 'https://huelladeorigen.com/producto/quetzal-cafe/',
+            'QUETZAL DEL TOLIMA 454 GM MOLIDO': 'https://huelladeorigen.com/producto/quetzal-cafe/',
+            'CAFETERA CUELLO DE CISNE 350ml PLATEADA': 'https://huelladeorigen.com/producto/jarra-cuello-de-ganzo-350ml/',
+            'CUCHARAS CAFÉ': 'https://huelladeorigen.com/producto/cuchara-medidora-para-cafe-acero-inoxidable/',
+            'PRENSA FRANCESA 800 ML VIDRIO': 'https://huelladeorigen.com/producto/prensa-francesa-borosilicato-650ml/',
+            'DUO COLIBRI AMAZILIA GRANO': 'https://huelladeorigen.com/producto/colibri-amazilia-cafe/',
+            'DUO COLIBRI AMAZILIA MOLIDO': 'https://huelladeorigen.com/producto/colibri-amazilia-cafe/',
+            'TRILOGÍA HUELLA DE ORIGEN MOLIDO': 'https://huelladeorigen.com/producto/trilogia-huella-de-origen-la-experiencia-completa-del-cafe-colombiano/',
+            'TRILOGÍA HUELLA DE ORIGEN GRANO': 'https://huelladeorigen.com/producto/trilogia-huella-de-origen-la-experiencia-completa-del-cafe-colombiano/',
+            'DILOGIA HUELLA DE ORIGEN MOLIDO': 'https://huelladeorigen.com/producto/cafe-especial-huella-de-origen-chivito-y-quetzal-454g/',
+            'DILOGIA HUELLA DE ORIGEN GRANO': 'https://huelladeorigen.com/producto/cafe-especial-huella-de-origen-chivito-y-quetzal-454g/',
+            'DUO QUETZAL DEL TOLIMA MOLIDO': 'https://huelladeorigen.com/producto/quetzal-cafe/',
+            'DUO QUETZAL DEL TOLIMA GRANO': 'https://huelladeorigen.com/producto/quetzal-cafe/'
+        };
+
+
         function generarMensajeWhatsAppPorEstado(factura, estado) {
             const nombreCliente = factura.cliente.nombre;
             const numeroOrden = factura.id;
             const fecha = factura.fecha;
             const total = Math.round(factura.total).toLocaleString('es-ES');
 
-            // Generar lista de productos CON PRECIOS Y FOTOS EN UNA LÍNEA
+            // Generar lista de productos CON PRECIOS Y LINKS A HUELLA DE ORIGEN
             let productoTexto = '';
             
             if (factura.items && factura.items.length > 0) {
@@ -2890,9 +3001,9 @@
                         const precioFormato = precio.toLocaleString('es-ES');
                         const cantidad = item.cantidad || 1;
                         const subtotal = Math.round(precio * cantidad).toLocaleString('es-ES');
-                        const urlImagen = datosProducto ? datosProducto.urlImagen : '';
-                        const imagenLink = urlImagen ? `\n  📷 ${urlImagen}` : '';
-                        return `• ${item.nombre} — $${precioFormato} x${cantidad} = $${subtotal}${imagenLink}`;
+                        const urlProducto = datosProducto ? datosProducto.urlProducto : null;
+                        const productoLink = urlProducto ? ` 🔗 ${urlProducto}` : '';
+                        return `* ${item.nombre} — $${precioFormato} x${cantidad} = $${subtotal}${productoLink}`;
                     })
                     .join('\n');
             } else {
@@ -3897,10 +4008,10 @@
                     currentUser = JSON.parse(session);
                     window.userSession = currentUser;
                     
-                    // Cargar datos: PRIMERO localStorage, LUEGO Supabase
+                    // Cargar datos: PRIMERO localStorage (garantizado), LUEGO Supabase (si está disponible)
                     console.log('Sesión encontrada, cargando datos...');
-                    cargarDatos(); // Carga desde localStorage
-                    sincronizarConSupabase(); // Luego sincroniza con Supabase
+                    cargarDatos(); // Siempre desde localStorage
+                    sincronizarConSupabase(); // Intenta Supabase (si falla, localStorage ya tiene todo)
                     
                     showApp();
                 } catch (e) {
@@ -4012,19 +4123,20 @@
             const factura = facturas[idx];
             if (!factura) return;
             
-            const cliente = factura.cliente;
-            const nombre = cliente.nombre || 'Cliente';
-            const dir = cliente.direccion || 'Sin dirección';
+            // Obtener cliente completo desde el array (tiene más datos)
+            const clienteCompleto = clientes.find(c => c.nombre === factura.cliente.nombre);
+            const nombre = (clienteCompleto || factura.cliente).nombre || 'Cliente';
+            const dir = (clienteCompleto || factura.cliente).direccion || 'Sin dirección';
             
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;justify-content:center;align-items:center;';
             
             const sticker = document.createElement('div');
-            sticker.style.cssText = 'width:150px;height:113px;background:white;border:2px solid #2C1810;border-radius:4px;padding:12px;display:flex;flex-direction:column;font-family:Arial;font-size:10px;justify-content:center;';
+            sticker.style.cssText = 'width:150px;height:113px;background:white;border:2px solid #2C1810;border-radius:4px;padding:10px;display:flex;flex-direction:column;font-family:Arial;font-size:9px;justify-content:center;';
             
             const info = document.createElement('div');
-            info.style.cssText = 'text-align:left;';
-            info.innerHTML = '<p style="margin:0 0 8px 0;font-weight:bold;color:#2C1810;font-size:11px;">'+nombre+'</p><p style="margin:0;font-size:9px;color:#666;line-height:1.3;">'+dir+'</p>';
+            info.style.cssText = 'text-align:left;word-wrap:break-word;';
+            info.innerHTML = '<p style="margin:0 0 6px 0;font-weight:bold;color:#2C1810;font-size:10px;word-wrap:break-word;">'+nombre+'</p><p style="margin:0;font-size:8px;color:#666;line-height:1.4;word-wrap:break-word;">'+dir+'</p>';
             
             sticker.appendChild(info);
             overlay.appendChild(sticker);
