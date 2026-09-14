@@ -2363,13 +2363,21 @@
             }
 
             list.innerHTML = filtrados.map(c => `
-                <div class="modal-item" onclick="seleccionarClienteDelModal(${c.id})">
+                <div class="modal-item" data-cliente-id="${c.id}">
                     <div style="flex: 1;">
                         <strong>${c.nombre}</strong>
                         <small>${c.ciudad || '—'}</small>
                     </div>
                 </div>
             `).join('');
+            
+            // Agregar listeners a TODOS los items (funciona mejor en mobile)
+            document.querySelectorAll('.modal-item[data-cliente-id]').forEach(item => {
+                item.addEventListener('click', function() {
+                    const clienteId = parseInt(this.getAttribute('data-cliente-id'));
+                    seleccionarClienteDelModal(clienteId);
+                });
+            });
         }
 
         function seleccionarClienteDelModal(clienteId) {
