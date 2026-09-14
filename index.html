@@ -1647,8 +1647,8 @@
 
     <script>
         // ☁️ CONFIGURACIÓN SUPABASE
-        const SUPABASE_URL = 'https://vvomvdqnyqpahaufxrbl.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_57RPFmfxhXTAYNAQ_b0ztg_E0Xu-UtP';
+        const SUPABASE_URL = 'https://szjxvgkqtrqstegejmta.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_7bSb3TvYnxBizjyUn5kD6A_QxK-2Vci';
         
         // Cliente Supabase (como en CLIXUM)
         var sbClient = null;
@@ -2057,11 +2057,14 @@
         }
 
         async function cargarFacturasDeSupabase() {
-            // Cargar desde Supabase usando sbClient
-            if (!sbClient) return;
+            if (!sbClient || !currentUser) return;
             
             try {
-                const { data, error } = await sbClient.from('facturas').select('*');
+                // PRIMERO: Cargar TODAS las facturas (sin filtro, para migración)
+                const { data, error } = await sbClient
+                    .from('facturas')
+                    .select('*');
+                
                 if (error) throw error;
                 
                 if (data && data.length > 0) {
@@ -2078,9 +2081,66 @@
                     }));
                     localStorage.setItem('facturas_huella', JSON.stringify(facturas));
                     console.log('✅ Facturas cargadas de Supabase:', facturas.length);
+                    
+                    // SEGUNDO: Asignar user_id a facturas que no lo tienen y sincronizar
+                    for (const factura of data) {
+                        if (!factura.user_id) {
+                            try {
+                                await sbClient.from('facturas').update({
+                                    user_id: currentUser.id
+                                }).eq('id', factura.id);
+                                console.log('✅ Asignado user_id a factura', factura.id);
+                            } catch(e) {
+                                // Silencio
+                            }
+                        }
+                    }
                 }
             } catch (error) {
                 console.warn('⚠️ Error cargando facturas:', error.message);
+            }
+        }
+
+        async function cargarClientesDeSupabase() {
+            if (!sbClient || !currentUser) return;
+            
+            try {
+                // PRIMERO: Cargar TODOS los clientes (sin filtro, para migración)
+                const { data, error } = await sbClient
+                    .from('clientes')
+                    .select('*');
+                
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    clientes = data.map(c => ({
+                        id: c.id,
+                        nombre: c.nombre,
+                        celular: c.celular || '',
+                        email: c.email || '',
+                        ciudad: c.ciudad || '',
+                        direccion: c.direccion || '',
+                        identificacion: c.identificacion || ''
+                    }));
+                    localStorage.setItem('clientes_huella', JSON.stringify(clientes));
+                    console.log('✅ Clientes cargados de Supabase:', clientes.length);
+                    
+                    // SEGUNDO: Asignar user_id a clientes que no lo tienen
+                    for (const cliente of data) {
+                        if (!cliente.user_id) {
+                            try {
+                                await sbClient.from('clientes').update({
+                                    user_id: currentUser.id
+                                }).eq('id', cliente.id);
+                                console.log('✅ Asignado user_id a cliente', cliente.id);
+                            } catch(e) {
+                                // Silencio
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ Error cargando clientes:', error.message);
             }
         }
 
@@ -2116,11 +2176,9 @@
 
         // ☁️ FUNCIONES SUPABASE
         async function sincronizarConSupabase() {
-            // Usar cliente Supabase (como CLIXUM) en lugar de fetch
-            if (!sbClient) {
-                console.log('⚠️ Supabase no está inicializado');
-                return;
-            }
+            if (!sbClient || !currentUser) return;
+            
+            const userId = currentUser.id;
             
             try {
                 // SINCRONIZAR CLIENTES
@@ -2129,13 +2187,14 @@
                         try {
                             await sbClient.from('clientes').upsert({
                                 id: cliente.id,
+                                user_id: userId,
                                 nombre: cliente.nombre,
                                 celular: cliente.celular || '',
                                 email: cliente.email || '',
                                 ciudad: cliente.ciudad || '',
                                 direccion: cliente.direccion || '',
                                 identificacion: cliente.identificacion || ''
-                            }, { onConflict: 'id' }).throwOnError();
+                            }, { onConflict: 'id' });
                         } catch(e) {
                             // Silencio
                         }
@@ -2148,6 +2207,7 @@
                         try {
                             await sbClient.from('facturas').upsert({
                                 id: factura.id,
+                                user_id: userId,
                                 numero_factura: factura.id,
                                 cliente_nombre: factura.cliente?.nombre || 'Cliente',
                                 fecha: factura.fecha,
@@ -2156,16 +2216,16 @@
                                 descuento: factura.descuento || 0,
                                 envio: factura.envio || 0,
                                 items: JSON.stringify(factura.items || [])
-                            }, { onConflict: 'id' }).throwOnError();
+                            }, { onConflict: 'id' });
                         } catch(e) {
                             // Silencio
                         }
                     }
                 }
                 
-                console.log('✅ Sincronización con Supabase completada');
+                console.log('✅ Datos sincronizados con Supabase');
             } catch(error) {
-                console.warn('⚠️ Error sincronizando con Supabase:', error.message);
+                console.warn('⚠️ Error sincronizando:', error.message);
             }
         }
         function configurarSupabase() {
@@ -2427,7 +2487,16 @@
                 return;
             }
 
-            const nuevoCliente = { id: Date.now(), nombre, celular, identificacion, email, ciudad, direccion };
+            const nuevoCliente = { 
+                id: Date.now(), 
+                user_id: currentUser?.id || null,
+                nombre, 
+                celular, 
+                identificacion, 
+                email, 
+                ciudad, 
+                direccion 
+            };
             clientes.push(nuevoCliente);
             guardarEnStorage();
             mostrarMensaje('clientFormMessage', `✅ Cliente "${nombre}" creado exitosamente`, 'success');
@@ -2792,6 +2861,7 @@
             
             const factura = {
                 id: 'HO-' + String(nuevoNumero).padStart(5, '0'),
+                user_id: currentUser?.id || null,
                 cliente_id: clienteSeleccionado?.id || null,
                 cliente: clienteSeleccionado,
                 items: itemsTemp,
@@ -3923,25 +3993,36 @@
         // ========== LOGIN FUNCTIONS ==========
         let currentUser = null;
 
-        function checkAuth() {
-            const session = localStorage.getItem('user_session_huella');
-            if (session) {
-                try {
-                    currentUser = JSON.parse(session);
+        async function checkAuth() {
+            if (!sbClient) {
+                showLoginScreen();
+                return;
+            }
+            
+            try {
+                const { data } = await sbClient.auth.getSession();
+                
+                if (data && data.session && data.session.user) {
+                    currentUser = data.session.user;
                     window.userSession = currentUser;
+                    console.log('✅ Sesión activa:', currentUser.email);
                     
-                    // Cargar datos: PRIMERO localStorage (garantizado), LUEGO Supabase (si está disponible)
-                    console.log('Sesión encontrada, cargando datos...');
-                    cargarDatos(); // Siempre desde localStorage
-                    sincronizarConSupabase(); // Intenta Supabase (si falla, localStorage ya tiene todo)
-                    poblarClientesEnSupabase(); // Populate clientes table if empty
+                    // Cargar desde localStorage primero
+                    await cargarDatos();
+                    
+                    // Luego sincronizar desde Supabase
+                    await cargarFacturasDeSupabase();
+                    await cargarClientesDeSupabase();
+                    
+                    // Finalmente, sincronizar de vuelta a Supabase (datos nuevos)
+                    await sincronizarConSupabase();
                     
                     showApp();
-                } catch (e) {
-                    localStorage.removeItem('user_session_huella');
+                } else {
                     showLoginScreen();
                 }
-            } else {
+            } catch (e) {
+                console.error('Auth check error:', e);
                 showLoginScreen();
             }
         }
@@ -3955,7 +4036,7 @@
             }
         }
 
-        function loginUser() {
+        async function loginUser() {
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
 
@@ -3964,41 +4045,93 @@
                 return;
             }
 
-            currentUser = { email: email, name: email.split('@')[0] };
-            localStorage.setItem('user_session_huella', JSON.stringify(currentUser));
-            window.userSession = currentUser;
-            
-            // Cargar datos de Supabase
-            console.log('Cargando datos de Supabase...');
-            sincronizarConSupabase();
-            
-            showLoginMessage('✅ Sesión iniciada', 'success');
-            setTimeout(showApp, 800);
+            if (!sbClient) {
+                showLoginMessage('❌ Supabase no está disponible', 'error');
+                return;
+            }
+
+            try {
+                const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
+                
+                if (error) {
+                    showLoginMessage('❌ ' + (error.message || 'Error en login'), 'error');
+                    return;
+                }
+
+                if (data && data.user) {
+                    currentUser = data.user;
+                    window.userSession = currentUser;
+                    localStorage.setItem('user_session_huella', JSON.stringify(currentUser));
+                    
+                    console.log('✅ Sesión iniciada:', currentUser.email);
+                    showLoginMessage('✅ Sesión iniciada', 'success');
+                    setTimeout(() => {
+                        cargarDatos();
+                        showApp();
+                    }, 800);
+                }
+            } catch (e) {
+                showLoginMessage('❌ Error: ' + e.message, 'error');
+                console.error('Login error:', e);
+            }
         }
 
-        function registerUser() {
+        async function registerUser() {
             const name = document.getElementById('regName').value.trim();
             const email = document.getElementById('regEmail').value.trim();
             const password = document.getElementById('regPassword').value.trim();
+
+            console.log('🔍 Registro intento:', { name, email, sbClient: !!sbClient, SUPABASE_INIT_ERROR });
 
             if (!name || !email || !password || password.length < 6) {
                 showLoginMessage('Completa todos - contraseña mínimo 6 caracteres', 'error');
                 return;
             }
 
-            currentUser = { name: name, email: email };
-            localStorage.setItem('user_session_huella', JSON.stringify(currentUser));
-            window.userSession = currentUser;
-            
-            // Cargar datos de Supabase
-            console.log('Cargando datos de Supabase...');
-            sincronizarConSupabase();
-            
-            showLoginMessage('✅ Cuenta creada', 'success');
-            setTimeout(showApp, 800);
+            if (!sbClient) {
+                showLoginMessage('❌ Supabase no está disponible: ' + SUPABASE_INIT_ERROR, 'error');
+                console.error('❌ sbClient es null. Error:', SUPABASE_INIT_ERROR);
+                return;
+            }
+
+            try {
+                console.log('📤 Enviando registro a Supabase...');
+                const { data, error } = await sbClient.auth.signUp({ 
+                    email, 
+                    password,
+                    data: { full_name: name }
+                });
+                
+                console.log('📥 Respuesta Supabase:', { data, error });
+                
+                if (error) {
+                    showLoginMessage('❌ ' + (error.message || 'Error en registro'), 'error');
+                    console.error('❌ Error Supabase:', error);
+                    return;
+                }
+
+                if (data && data.user) {
+                    currentUser = data.user;
+                    window.userSession = currentUser;
+                    localStorage.setItem('user_session_huella', JSON.stringify(currentUser));
+                    
+                    console.log('✅ Cuenta creada:', currentUser.email);
+                    showLoginMessage('✅ Cuenta creada. Verifica tu email.', 'success');
+                    setTimeout(() => {
+                        cargarDatos();
+                        showApp();
+                    }, 800);
+                }
+            } catch (e) {
+                console.error('❌ Exception en registro:', e);
+                showLoginMessage('❌ Error: ' + e.message, 'error');
+            }
         }
 
-        function logoutUser() {
+        async function logoutUser() {
+            if (sbClient) {
+                await sbClient.auth.signOut();
+            }
             localStorage.removeItem('user_session_huella');
             currentUser = null;
             showLoginScreen();
@@ -4040,25 +4173,28 @@
         // INICIAR
         
         async function poblarClientesEnSupabase() {
-            if (!sbClient) return;
+            if (!sbClient || !currentUser) return;
             
             try {
-                const { count, error } = await sbClient.from('clientes').select('*', { count: 'exact', head: true });
-                if (error) throw error;
+                const { count } = await sbClient
+                    .from('clientes')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('user_id', currentUser.id);
                 
-                // Si ya hay datos, no hacer nada
+                // Si este usuario ya tiene clientes, no hacer nada
                 if (count && count > 0) {
-                    console.log('✅ Tabla clientes ya tiene datos en Supabase');
+                    console.log('✅ Este usuario ya tiene clientes en Supabase');
                     return;
                 }
                 
-                // Tabla vacía - insertar clientes UNO POR UNO
-                console.log('🔄 Poblando tabla clientes en Supabase...');
+                // Insertar clientes para este usuario
+                console.log('🔄 Poblando clientes en Supabase...');
                 
                 for (const cliente of clientes.slice(0, 50)) {
                     try {
                         await sbClient.from('clientes').insert([{
                             id: cliente.id,
+                            user_id: currentUser.id,
                             nombre: cliente.nombre,
                             celular: cliente.celular || '',
                             email: cliente.email || '',
@@ -4071,15 +4207,57 @@
                     }
                 }
                 
-                console.log('✅ Clientes insertados en Supabase');
+                console.log('✅ Clientes poblados en Supabase');
             } catch(e) {
-                console.warn('⚠️ Error poblando Supabase:', e.message);
+                console.warn('⚠️ Error poblando clientes:', e.message);
             }
         }
 
 
+        async function testSupabaseConnection() {
+            console.log('🧪 Testeando conexión a Supabase...');
+            console.log('URL:', SUPABASE_URL);
+            console.log('KEY:', SUPABASE_KEY.substring(0, 20) + '...');
+            console.log('sbClient:', !!sbClient);
+            
+            if (!sbClient) {
+                console.error('❌ sbClient no está inicializado');
+                return;
+            }
+            
+            try {
+                // Test 1: getSession
+                console.log('📤 Test 1: getSession...');
+                const { data, error } = await sbClient.auth.getSession();
+                console.log('✅ getSession respondió:', { data: !!data, error: !!error });
+                
+                // Test 2: Select de tabla
+                console.log('📤 Test 2: Select clientes...');
+                const { data: tableData, error: tableError } = await sbClient.from('clientes').select('*').limit(1);
+                console.log('✅ Select respondió:', { data: !!tableData, error: !!tableError });
+                
+            } catch(e) {
+                console.error('❌ Error en test:', e.message);
+            }
+        }
+
         window.addEventListener('DOMContentLoaded', function() {
-            checkAuth();
+            // Esperar a que Supabase esté listo
+            let waitCount = 0;
+            const checkSupabaseReady = setInterval(() => {
+                if (sbClient) {
+                    clearInterval(checkSupabaseReady);
+                    console.log('✅ Supabase está listo, ejecutando checkAuth()');
+                    // Test de conexión
+                    testSupabaseConnection();
+                    checkAuth();
+                } else if (waitCount > 50) {  // 5 segundos máximo
+                    clearInterval(checkSupabaseReady);
+                    console.warn('⚠️ Supabase no se inicializó a tiempo, mostrando login');
+                    showLoginScreen();
+                }
+                waitCount++;
+            }, 100);
         });
     
         function mostrarStickerDomicilio(idx) {
