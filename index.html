@@ -1911,36 +1911,125 @@
             document.getElementById('productSearch')?.addEventListener('input', renderProductos);
         }
 
+        
+        // ========== INDEXEDDB - RESPALDO CONTRA HISTORIAL BORRADO ==========
+        const DB_NAME = 'huella_origen_db';
+        const DB_VERSION = 1;
+        let db = null;
+
+        async function abrirIndexedDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    db = request.result;
+                    resolve(db);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    if (!db.objectStoreNames.contains('clientes')) {
+                        db.createObjectStore('clientes');
+                    }
+                    if (!db.objectStoreNames.contains('facturas')) {
+                        db.createObjectStore('facturas');
+                    }
+                };
+            });
+        }
+
+        async function guardarEnIndexedDB(storeName, data) {
+            try {
+                if (!db) await abrirIndexedDB();
+                const tx = db.transaction(storeName, 'readwrite');
+                const store = tx.objectStore(storeName);
+                await new Promise((resolve, reject) => {
+                    const req = store.put(data, 'data');
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                });
+            } catch(e) {
+                // Silencio si IndexedDB falla
+            }
+        }
+
+        async function cargarDeIndexedDB(storeName) {
+            try {
+                if (!db) await abrirIndexedDB();
+                const tx = db.transaction(storeName, 'readonly');
+                const store = tx.objectStore(storeName);
+                return new Promise((resolve, reject) => {
+                    const req = store.get('data');
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+            } catch(e) {
+                return null;
+            }
+        }
+
+
         async function cargarDatos() {
-            // SIEMPRE intentar cargar desde localStorage PRIMERO
+            // PRIORIDAD 1: localStorage
             const clientesGuardados = localStorage.getItem('clientes_huella');
             const facturasGuardadas = localStorage.getItem('facturas_huella');
             
-            // CLIENTES: localStorage tiene prioridad
+            // CLIENTES
             if (clientesGuardados) {
                 try {
                     clientes = JSON.parse(clientesGuardados);
-                    console.log('✅ Clientes cargados desde localStorage:', clientes.length);
+                    console.log('✅ Clientes desde localStorage:', clientes.length);
                 } catch(e) {
-                    console.warn('⚠️ Error parsing clientes localStorage, usando seed');
-                    clientes = JSON.parse(JSON.stringify(clientesSeed));
+                    // Intentar IndexedDB como respaldo
+                    const clientesDB = await cargarDeIndexedDB('clientes');
+                    if (clientesDB) {
+                        clientes = clientesDB;
+                        console.log('✅ Clientes restaurados desde IndexedDB:', clientes.length);
+                        guardarEnStorage(); // Guardar en localStorage
+                    } else {
+                        clientes = JSON.parse(JSON.stringify(clientesSeed));
+                    }
                 }
             } else {
-                clientes = JSON.parse(JSON.stringify(clientesSeed));
-                guardarEnStorage();
+                // localStorage vacío, intentar IndexedDB
+                const clientesDB = await cargarDeIndexedDB('clientes');
+                if (clientesDB) {
+                    clientes = clientesDB;
+                    console.log('✅ Clientes restaurados desde IndexedDB:', clientes.length);
+                    localStorage.setItem('clientes_huella', JSON.stringify(clientes));
+                } else {
+                    clientes = JSON.parse(JSON.stringify(clientesSeed));
+                    guardarEnStorage();
+                }
             }
             
-            // FACTURAS: localStorage tiene prioridad
+            // FACTURAS
             if (facturasGuardadas) {
                 try {
                     facturas = JSON.parse(facturasGuardadas);
-                    console.log('✅ Facturas cargadas desde localStorage:', facturas.length);
+                    console.log('✅ Facturas desde localStorage:', facturas.length);
                 } catch(e) {
-                    console.warn('⚠️ Error parsing facturas localStorage');
-                    facturas = [];
+                    // Intentar IndexedDB como respaldo
+                    const facturasDB = await cargarDeIndexedDB('facturas');
+                    if (facturasDB) {
+                        facturas = facturasDB;
+                        console.log('✅ Facturas restauradas desde IndexedDB:', facturas.length);
+                        guardarEnStorage();
+                    } else {
+                        facturas = [];
+                    }
                 }
             } else {
-                facturas = [];
+                // localStorage vacío, intentar IndexedDB
+                const facturasDB = await cargarDeIndexedDB('facturas');
+                if (facturasDB) {
+                    facturas = facturasDB;
+                    console.log('✅ Facturas restauradas desde IndexedDB:', facturas.length);
+                    localStorage.setItem('facturas_huella', JSON.stringify(facturas));
+                } else {
+                    facturas = [];
+                }
             }
         }
 
@@ -1984,20 +2073,30 @@
         }
 
         async function guardarEnStorage() {
-            // ✅ LOCAL-FIRST — Guardar en localStorage PRIMERO
+            // ✅ PRIMARIO: localStorage
             try {
                 localStorage.setItem('clientes_huella', JSON.stringify(clientes));
                 localStorage.setItem('facturas_huella', JSON.stringify(facturas));
                 console.log('✅ Guardado en localStorage');
-                
-                // Respaldo: Intentar sincronizar con Supabase (si falla, localStorage ya tiene los datos)
-                if (SUPABASE_KEY) {
-                    sincronizarConSupabase().catch(() => {
-                        // Silencio - localStorage es suficiente
-                    });
-                }
             } catch (error) {
                 console.error('❌ Error al guardar en localStorage:', error);
+            }
+            
+            // ✅ RESPALDO: IndexedDB (protección contra historial borrado)
+            try {
+                await guardarEnIndexedDB('clientes', clientes);
+                await guardarEnIndexedDB('facturas', facturas);
+                console.log('✅ Guardado en IndexedDB (respaldo)');
+            } catch (error) {
+                // Silencio si IndexedDB falla
+            }
+            
+            // ✅ NUBE: Supabase (si está disponible)
+            if (SUPABASE_KEY) {
+                sincronizarConSupabase().catch(() => {
+                    // Silencio - localStorage + IndexedDB ya tienen los datos
+                });
+            }
                 alert('❌ Error al guardar datos localmente');
                 return false;  // No intentar Supabase si localStorage falló
             }
@@ -3011,9 +3110,9 @@
             }
 
             const mensajes = {
-                'Pedido recibido': `Hola, *${nombreCliente}*. ¡Qué alegría que llegues a Huella de Origen! ☕️✨\nGracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total: $${total}*\n\nTe notificaremos cuando esté listo.`,
+                'Pedido recibido': `Hola, *${nombreCliente}*. ¡Qué alegría que llegues a Huella de Origen! ☕️✨\nGracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n🏠 *Domicilio:* ${factura.cliente.direccion || 'Sin domicilio'}\n\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total: $${total}*\n\nTe notificaremos cuando esté listo.`,
                 
-                'Solicitud de pago': `💳 Puedes realizar el pago con **Bre-B** a la llave: **0090417769**\n\n🧾 *Orden:* ${numeroOrden}\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total a pagar: $${total}*`,
+                'Solicitud de pago': `💳 Puedes realizar el pago con **Bre-B** a la llave: **0090417769**\n\n🧾 *Orden:* ${numeroOrden}\n💰 *Total a pagar: $${total}*`,
                 
                 'Pago recibido': `💳 *¡Tu pago ha sido recibido con éxito!*\n\n🧾 *Orden:* ${numeroOrden}\n💰 *Total pagado: $${total}*\n✅ Tu pedido está siendo preparado.`,
                 
