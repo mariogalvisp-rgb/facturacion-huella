@@ -2057,63 +2057,91 @@
         }
 
         async function cargarFacturasDeSupabase() {
-            if (!sbClient || !currentUser) return;
+            console.log('📤 cargarFacturasDeSupabase - sbClient:', !!sbClient, 'currentUser:', !!currentUser);
+            
+            if (!sbClient || !currentUser) {
+                console.warn('⚠️ sbClient o currentUser no disponibles');
+                return;
+            }
             
             try {
-                // PRIMERO: Cargar TODAS las facturas (sin filtro, para migración)
+                console.log('🔄 Cargando facturas desde Supabase...');
                 const { data, error } = await sbClient
                     .from('facturas')
                     .select('*');
                 
+                console.log('📥 Respuesta Supabase facturas:', { count: data?.length, error: error?.message });
+                
                 if (error) throw error;
                 
                 if (data && data.length > 0) {
-                    facturas = data.map(f => ({
+                    // COMBINAR: No reemplazar, sino agregar lo que no está
+                    const facturasFromSupabase = data.map(f => ({
                         id: f.numero_factura || f.id,
                         numero_orden: f.numero_factura || f.id,
                         cliente: { nombre: f.cliente_nombre || 'Cliente' },
                         fecha: f.fecha,
                         estado: f.estado,
                         total: f.total,
-                        descuento: f.descuento || 0,
+                        descuentoPorcentaje: f.descuento_porcentaje || 0,
+                        descuentoMonto: f.descuento_monto || 0,
                         envio: f.envio || 0,
                         items: typeof f.items === 'string' ? JSON.parse(f.items) : (f.items || [])
                     }));
-                    localStorage.setItem('facturas_huella', JSON.stringify(facturas));
-                    console.log('✅ Facturas cargadas de Supabase:', facturas.length);
                     
-                    // SEGUNDO: Asignar user_id a facturas que no lo tienen y sincronizar
-                    for (const factura of data) {
-                        if (!factura.user_id) {
+                    // Combinar: agregar solo las que NO están en localStorage
+                    for (const fSupabase of facturasFromSupabase) {
+                        const existe = facturas.find(f => f.id === fSupabase.id);
+                        if (!existe) {
+                            facturas.push(fSupabase);
+                            console.log('   📥 Agregada factura de Supabase:', fSupabase.id);
+                        }
+                    }
+                    
+                    localStorage.setItem('facturas_huella', JSON.stringify(facturas));
+                    console.log('✅ Facturas combinadas:', facturas.length, 'total');
+                    
+                    // Asignar user_id a las que no lo tienen
+                    for (const f of data) {
+                        if (!f.user_id) {
                             try {
                                 await sbClient.from('facturas').update({
                                     user_id: currentUser.id
-                                }).eq('id', factura.id);
-                                console.log('✅ Asignado user_id a factura', factura.id);
+                                }).eq('numero_factura', f.numero_factura || f.id);
                             } catch(e) {
-                                // Silencio
+                                console.warn('⚠️ Error asignando user_id a factura:', e.message);
                             }
                         }
                     }
+                } else {
+                    console.log('ℹ️ No hay facturas en Supabase');
                 }
             } catch (error) {
-                console.warn('⚠️ Error cargando facturas:', error.message);
+                console.error('❌ Error cargando facturas:', error.message);
             }
         }
 
         async function cargarClientesDeSupabase() {
-            if (!sbClient || !currentUser) return;
+            console.log('📤 cargarClientesDeSupabase - sbClient:', !!sbClient, 'currentUser:', !!currentUser);
+            
+            if (!sbClient || !currentUser) {
+                console.warn('⚠️ sbClient o currentUser no disponibles');
+                return;
+            }
             
             try {
-                // PRIMERO: Cargar TODOS los clientes (sin filtro, para migración)
+                console.log('🔄 Cargando clientes desde Supabase...');
                 const { data, error } = await sbClient
                     .from('clientes')
                     .select('*');
                 
+                console.log('📥 Respuesta Supabase clientes:', { count: data?.length, error: error?.message });
+                
                 if (error) throw error;
                 
                 if (data && data.length > 0) {
-                    clientes = data.map(c => ({
+                    // COMBINAR: No reemplazar, sino agregar lo que no está
+                    const clientesFromSupabase = data.map(c => ({
                         id: c.id,
                         nombre: c.nombre,
                         celular: c.celular || '',
@@ -2122,25 +2150,36 @@
                         direccion: c.direccion || '',
                         identificacion: c.identificacion || ''
                     }));
-                    localStorage.setItem('clientes_huella', JSON.stringify(clientes));
-                    console.log('✅ Clientes cargados de Supabase:', clientes.length);
                     
-                    // SEGUNDO: Asignar user_id a clientes que no lo tienen
-                    for (const cliente of data) {
-                        if (!cliente.user_id) {
+                    // Combinar: agregar solo los que NO están en localStorage
+                    for (const cSupabase of clientesFromSupabase) {
+                        const existe = clientes.find(c => c.id === cSupabase.id);
+                        if (!existe) {
+                            clientes.push(cSupabase);
+                            console.log('   📥 Agregado cliente de Supabase:', cSupabase.nombre);
+                        }
+                    }
+                    
+                    localStorage.setItem('clientes_huella', JSON.stringify(clientes));
+                    console.log('✅ Clientes combinados:', clientes.length, 'total');
+                    
+                    // Asignar user_id a los que no lo tienen
+                    for (const c of data) {
+                        if (!c.user_id) {
                             try {
                                 await sbClient.from('clientes').update({
                                     user_id: currentUser.id
-                                }).eq('id', cliente.id);
-                                console.log('✅ Asignado user_id a cliente', cliente.id);
+                                }).eq('id', c.id);
                             } catch(e) {
-                                // Silencio
+                                console.warn('⚠️ Error asignando user_id a cliente:', e.message);
                             }
                         }
                     }
+                } else {
+                    console.log('ℹ️ No hay clientes en Supabase');
                 }
             } catch (error) {
-                console.warn('⚠️ Error cargando clientes:', error.message);
+                console.error('❌ Error cargando clientes:', error.message);
             }
         }
 
@@ -2176,16 +2215,21 @@
 
         // ☁️ FUNCIONES SUPABASE
         async function sincronizarConSupabase() {
-            if (!sbClient || !currentUser) return;
+            if (!sbClient || !currentUser) {
+                console.warn('⚠️ No sbClient o currentUser para sincronizar');
+                return;
+            }
             
             const userId = currentUser.id;
+            console.log('🔄 Sincronizando con userId:', userId);
             
             try {
                 // SINCRONIZAR CLIENTES
                 if (clientes && clientes.length > 0) {
+                    console.log('📤 Sincronizando', clientes.length, 'clientes...');
                     for (const cliente of clientes) {
                         try {
-                            await sbClient.from('clientes').upsert({
+                            const { error } = await sbClient.from('clientes').upsert({
                                 id: cliente.id,
                                 user_id: userId,
                                 nombre: cliente.nombre,
@@ -2195,37 +2239,52 @@
                                 direccion: cliente.direccion || '',
                                 identificacion: cliente.identificacion || ''
                             }, { onConflict: 'id' });
+                            if (error) {
+                                console.warn('⚠️ Error cliente', cliente.id, ':', error.message);
+                            }
                         } catch(e) {
-                            // Silencio
+                            console.error('❌ Exception cliente', cliente.id, ':', e.message);
                         }
                     }
+                    console.log('✅ Clientes sincronizados');
                 }
                 
                 // SINCRONIZAR FACTURAS
                 if (facturas && facturas.length > 0) {
+                    console.log('📤 Sincronizando', facturas.length, 'facturas...');
                     for (const factura of facturas) {
+                        console.log('   📝 Factura:', factura.id, 'user_id:', userId);
                         try {
-                            await sbClient.from('facturas').upsert({
-                                id: factura.id,
-                                user_id: userId,
+                            // NO insertar 'id' manualmente - dejar que Supabase lo genere
+                            // Usar 'numero_factura' como identificador único
+                            const { error } = await sbClient.from('facturas').upsert({
                                 numero_factura: factura.id,
+                                user_id: userId,
                                 cliente_nombre: factura.cliente?.nombre || 'Cliente',
                                 fecha: factura.fecha,
                                 estado: factura.estado || 'Pendiente',
                                 total: factura.total,
-                                descuento: factura.descuento || 0,
+                                descuento_porcentaje: factura.descuentoPorcentaje || 0,
+                                descuento_monto: factura.descuentoMonto || 0,
                                 envio: factura.envio || 0,
                                 items: JSON.stringify(factura.items || [])
-                            }, { onConflict: 'id' });
+                            }, { onConflict: 'numero_factura' });
+                            
+                            if (error) {
+                                console.warn('⚠️ Error factura', factura.id, ':', error.message);
+                            } else {
+                                console.log('   ✅ Factura guardada:', factura.id);
+                            }
                         } catch(e) {
-                            // Silencio
+                            console.error('❌ Exception factura', factura.id, ':', e.message);
                         }
                     }
+                    console.log('✅ Facturas sincronizadas');
                 }
                 
                 console.log('✅ Datos sincronizados con Supabase');
             } catch(error) {
-                console.warn('⚠️ Error sincronizando:', error.message);
+                console.error('❌ Error CRÍTICO sincronizando:', error.message);
             }
         }
         function configurarSupabase() {
@@ -3009,7 +3068,7 @@
                 
                 'Pago recibido': `💳 *¡Tu pago ha sido recibido con éxito!*\n\n🧾 *Orden:* ${numeroOrden}\n💰 *Total pagado: $${total}*\n✅ Tu pedido está siendo preparado.`,
                 
-                'Pedido entregado': `🎉 *¡Tu pedido ha llegado!*\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n\n*PRODUCTOS ENTREGADOS:*\n${productoTexto}\n\n💰 *Total: $${total}*\n¡Gracias por tu compra! Disfruta nuestro café. 😊`,
+                'Pedido entregado': `☕ *¡Tu pedido ha llegado!*\n\n☕ *Orden N.º:* ${numeroOrden}\n☕ *Fecha:* ${fecha}\n\n¡Gracias por tu compra! Disfruta nuestro café. ☕`,
                 
                 'Orden completada': `🎉 *Tu orden ha sido completada.*\n\n🧾 *Orden N.º:* ${numeroOrden}\n💰 *Total: $${total}*\n\nGracias por tu compra, te esperamos pronto en Huella de Origen para que pruebes nuevas experiencias. ☕️✨`,
                 
@@ -3087,15 +3146,114 @@
         // FACTURAS
         function renderFacturas() {
             const tbody = document.getElementById('facturasTable');
-            tbody.innerHTML = facturas.map(f => `<tr>
+            tbody.innerHTML = facturas.map((f, idx) => `<tr>
                 <td><strong>${f.id}</strong></td>
                 <td>${f.cliente.nombre}</td>
                 <td>${f.fecha}</td>
                 <td>${f.vendedor}</td>
                 <td>$${Math.round(f.total).toLocaleString('es-ES')}</td>
                 <td><span class="badge ${f.estado === 'Pagada' ? 'badge-success' : f.estado === 'Pendiente' ? 'badge-danger' : 'badge-warning'}">${f.estado}</span></td>
-                <td><button class="btn-small" onclick="verFactura(${facturas.indexOf(f)})">Ver</button></td>
+                <td>
+                    <button class="btn-small" onclick="verFactura(${idx})">Ver</button>
+                    <button class="btn-small" style="background: #FF9800; color: white; margin-left: 5px;" onclick="intentarEditarFactura(${idx})">Editar</button>
+                </td>
             </tr>`).join('');
+        }
+
+        function intentarEditarFactura(idx) {
+            const factura = facturas[idx];
+            if (!factura) return;
+            
+            // Verificar si está bloqueada
+            if (factura.estado === 'Orden completada' || factura.estado === 'Orden cancelada') {
+                alert(`❌ No puedes editar facturas ${factura.estado.toLowerCase()}.\n\nEstado actual: ${factura.estado}`);
+                return;
+            }
+            
+            // Si está permitida, abrir editor
+            editarFactura(idx);
+        }
+
+        function editarFactura(idx) {
+            const factura = facturas[idx];
+            if (!factura) return;
+            
+            // Crear modal de edición
+            const modalHTML = `
+                <div id="editFacturaModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+                    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                        <h2>Editar Factura ${factura.id}</h2>
+                        
+                        <div style="margin-top: 20px;">
+                            <label style="display: block; margin-bottom: 5px;"><strong>Estado:</strong></label>
+                            <select id="editEstado" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <option value="Pendiente" ${factura.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                                <option value="Pagada" ${factura.estado === 'Pagada' ? 'selected' : ''}>Pagada</option>
+                                <option value="Pedido entregado" ${factura.estado === 'Pedido entregado' ? 'selected' : ''}>Pedido entregado</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-top: 15px;">
+                            <label style="display: block; margin-bottom: 5px;"><strong>Cliente:</strong></label>
+                            <input type="text" id="editCliente" value="${factura.cliente.nombre}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+
+                        <div style="margin-top: 15px;">
+                            <label style="display: block; margin-bottom: 5px;"><strong>Celular:</strong></label>
+                            <input type="text" id="editCelular" value="${factura.cliente.celular}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+
+                        <div style="margin-top: 15px;">
+                            <label style="display: block; margin-bottom: 5px;"><strong>Dirección:</strong></label>
+                            <input type="text" id="editDireccion" value="${factura.cliente.direccion}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+
+                        <div style="margin-top: 15px;">
+                            <label style="display: block; margin-bottom: 5px;"><strong>Vendedor:</strong></label>
+                            <input type="text" id="editVendedor" value="${factura.vendedor}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+
+                        <div style="margin-top: 20px; display: flex; gap: 10px;">
+                            <button onclick="guardarEdicionFactura(${idx})" style="flex: 1; padding: 10px; background: #2C1810; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Guardar</button>
+                            <button onclick="cerrarEditFactura()" style="flex: 1; padding: 10px; background: #ccc; color: #333; border: none; border-radius: 4px; cursor: pointer;">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Insertar modal en el DOM
+            const existingModal = document.getElementById('editFacturaModal');
+            if (existingModal) existingModal.remove();
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        function guardarEdicionFactura(idx) {
+            const estado = document.getElementById('editEstado').value;
+            const cliente = document.getElementById('editCliente').value;
+            const celular = document.getElementById('editCelular').value;
+            const direccion = document.getElementById('editDireccion').value;
+            const vendedor = document.getElementById('editVendedor').value;
+            
+            // Actualizar factura
+            facturas[idx].estado = estado;
+            facturas[idx].cliente.nombre = cliente;
+            facturas[idx].cliente.celular = celular;
+            facturas[idx].cliente.direccion = direccion;
+            facturas[idx].vendedor = vendedor;
+            
+            // Guardar
+            guardarEnStorage();
+            renderFacturas();
+            renderSeguimiento();
+            
+            cerrarEditFactura();
+            alert('✅ Factura actualizada correctamente');
+        }
+
+        function cerrarEditFactura() {
+            const modal = document.getElementById('editFacturaModal');
+            if (modal) modal.remove();
         }
 
         function verFactura(idx) {
@@ -3510,14 +3668,60 @@
         }
 
         function actualizarSeguimiento(idx, nuevoEstado) {
-            if (facturas[idx]) {
+            if (!facturas[idx]) return;
+            
+            const factura = facturas[idx];
+            
+            // Si es "Orden completada", enviar WhatsApp PRIMERO
+            if (nuevoEstado === 'Orden completada') {
+                const celular = factura.cliente.celular || '';
+                if (celular) {
+                    enviarMensajePedidoEntregado(factura, idx, nuevoEstado);
+                } else {
+                    // Sin celular, solo actualizar
+                    facturas[idx].estado = nuevoEstado;
+                    guardarEnStorage();
+                    renderSeguimiento();
+                    alert(`✅ Estado actualizado a: ${nuevoEstado}`);
+                }
+            } else {
+                // Otros estados, solo actualizar
                 facturas[idx].estado = nuevoEstado;
                 guardarEnStorage();
                 renderSeguimiento();
-                // Mostrar confirmación
-                const nombreEstado = nuevoEstado;
-                alert(`✅ Estado actualizado a: ${nombreEstado}`);
+                alert(`✅ Estado actualizado a: ${nuevoEstado}`);
             }
+        }
+
+        function enviarMensajePedidoEntregado(factura, idx, nuevoEstado) {
+            // Mensaje exacto para "Pedido entregado"
+            const mensaje = `☕ *¡Tu pedido ha llegado!*\n\n☕ *Orden N.º:* ${factura.id}\n☕ *Fecha:* ${factura.fecha}\n\n¡Gracias por tu compra! Disfruta nuestro café. ☕`;
+            
+            const celular = factura.cliente.celular || '';
+            const numeroLimpio = celular.replace(/\D/g, '');
+            
+            if (numeroLimpio.length < 7) {
+                alert('❌ El número de celular no es válido');
+                return;
+            }
+            
+            let numeroFinal = numeroLimpio;
+            if (!numeroFinal.startsWith('57')) {
+                numeroFinal = '57' + numeroFinal;
+            }
+            
+            const urlWA = `https://wa.me/${numeroFinal}?text=${encodeURIComponent(mensaje)}`;
+            
+            // Abrir WhatsApp
+            window.open(urlWA, '_blank');
+            
+            // DESPUÉS de enviar, actualizar estado en Supabase
+            setTimeout(() => {
+                facturas[idx].estado = nuevoEstado;
+                guardarEnStorage();
+                renderSeguimiento();
+                console.log('✅ Estado actualizado a Orden completada después de enviar WhatsApp');
+            }, 500);
         }
 
         function enviarWhatsAppSeguimiento(idx) {
@@ -3567,43 +3771,54 @@
 
         // REPORTES
         function renderReportes() {
-            // Usar datos reales de localStorage
-            const facturasDelStorage = JSON.parse(localStorage.getItem('facturas_huella') || '[]');
-            const facturasParaReporte = facturasDelStorage.length > 0 ? facturasDelStorage : facturas;
-            
-            if (facturasParaReporte.length === 0) {
-                document.getElementById('totalVentas').parentElement.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: #999;">
-                        <p style="font-size: 16px;">📊 No hay facturas para mostrar reportes</p>
-                        <p style="font-size: 12px;">Crea una factura para ver los análisis</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // ========== RESUMEN DE VENTAS ==========
-            const totalVentas = facturasParaReporte.filter(f => f.estado !== 'Orden cancelada').reduce((s, f) => s + (f.total || 0), 0);
-            const totalPagado = facturasParaReporte.filter(f => f.estado === 'Pagada' || f.estado === 'Orden completada').reduce((s, f) => s + (f.total || 0), 0);
-            const totalPendiente = totalVentas - totalPagado;
-            const numeroFacturas = facturasParaReporte.length;
-            const ticketPromedio = numeroFacturas > 0 ? totalVentas / numeroFacturas : 0;
-            
-            // Unidades vendidas
-            const unidadesVendidas = facturasParaReporte.filter(f => f.estado !== 'Orden cancelada').reduce((total, f) => {
-                return total + (f.items ? f.items.reduce((s, item) => s + (item.cantidad || 0), 0) : 0);
-            }, 0);
-            
-            // Clientes únicos con compras
-            const clientesUnicos = new Set(facturasParaReporte.filter(f => f.estado !== 'Orden cancelada').map(f => f.cliente_id || f.cliente?.id)).size;
-            
-            // Cancelaciones
-            const cancelaciones = facturasParaReporte.filter(f => f.estado === 'Orden cancelada').length;
-            
-            // Mostrar Resumen
-            document.getElementById('totalVentas').textContent = Math.round(totalVentas).toLocaleString('es-ES');
-            document.getElementById('totalFacturas').textContent = numeroFacturas;
-            document.getElementById('totalPagadas').textContent = Math.round(totalPagado).toLocaleString('es-ES');
-            document.getElementById('totalPendientes').textContent = Math.round(totalPendiente).toLocaleString('es-ES');
+            try {
+                // Usar datos reales de localStorage
+                const facturasDelStorage = JSON.parse(localStorage.getItem('facturas_huella') || '[]');
+                const facturasParaReporte = facturasDelStorage.length > 0 ? facturasDelStorage : facturas;
+                
+                if (facturasParaReporte.length === 0) {
+                    const totalVentasEl = document.getElementById('totalVentas');
+                    if (totalVentasEl && totalVentasEl.parentElement) {
+                        totalVentasEl.parentElement.innerHTML = `
+                            <div style="text-align: center; padding: 40px; color: #999;">
+                                <p style="font-size: 16px;">📊 No hay facturas para mostrar reportes</p>
+                                <p style="font-size: 12px;">Crea una factura para ver los análisis</p>
+                            </div>
+                        `;
+                    }
+                    return;
+                }
+                
+                // ========== RESUMEN DE VENTAS ==========
+                const totalVentas = facturasParaReporte.filter(f => f.estado !== 'Orden cancelada').reduce((s, f) => s + (f.total || 0), 0);
+                const totalPagado = facturasParaReporte.filter(f => f.estado === 'Pagada' || f.estado === 'Orden completada').reduce((s, f) => s + (f.total || 0), 0);
+                const totalPendiente = totalVentas - totalPagado;
+                const numeroFacturas = facturasParaReporte.length;
+                const ticketPromedio = numeroFacturas > 0 ? totalVentas / numeroFacturas : 0;
+                
+                // Unidades vendidas
+                const unidadesVendidas = facturasParaReporte.filter(f => f.estado !== 'Orden cancelada').reduce((total, f) => {
+                    return total + (f.items ? f.items.reduce((s, item) => s + (item.cantidad || 0), 0) : 0);
+                }, 0);
+                
+                // Clientes únicos con compras
+                const clientesUnicos = new Set(facturasParaReporte.filter(f => f.estado !== 'Orden cancelada').map(f => f.cliente_id || f.cliente?.id)).size;
+                
+                // Cancelaciones
+                const cancelaciones = facturasParaReporte.filter(f => f.estado === 'Orden cancelada').length;
+                
+                // Mostrar Resumen (protegido contra null)
+                const totalVentasEl = document.getElementById('totalVentas');
+                if (totalVentasEl) totalVentasEl.textContent = Math.round(totalVentas).toLocaleString('es-ES');
+                
+                const totalFacturasEl = document.getElementById('totalFacturas');
+                if (totalFacturasEl) totalFacturasEl.textContent = numeroFacturas;
+                
+                const totalPagasEl = document.getElementById('totalPagadas');
+                if (totalPagasEl) totalPagasEl.textContent = Math.round(totalPagado).toLocaleString('es-ES');
+                
+                const totalPendientesEl = document.getElementById('totalPendientes');
+                if (totalPendientesEl) totalPendientesEl.textContent = Math.round(totalPendiente).toLocaleString('es-ES');
             
             // Mostrar resumen completo
             const resumenHTML = `
@@ -3835,6 +4050,10 @@
             if (ventasPorVendedorEl) {
                 ventasPorVendedorEl.innerHTML = resumenHTML + vendedoresHTML + productosHTML + clientesHTML + estadosHTML;
             }
+            } catch(e) {
+                console.error('❌ Error en renderReportes:', e.message);
+                // No romper la app si fallan los reportes
+            }
         }
 
         function descargarReporte() {
@@ -3994,12 +4213,15 @@
         let currentUser = null;
 
         async function checkAuth() {
-            if (!sbClient) {
-                showLoginScreen();
-                return;
-            }
+            console.log('🔐 checkAuth iniciado');
             
             try {
+                if (!sbClient) {
+                    console.log('⚠️ sbClient no disponible, mostrando login');
+                    showLoginScreen();
+                    return;
+                }
+                
                 const { data } = await sbClient.auth.getSession();
                 
                 if (data && data.session && data.session.user) {
@@ -4007,22 +4229,42 @@
                     window.userSession = currentUser;
                     console.log('✅ Sesión activa:', currentUser.email);
                     
-                    // Cargar desde localStorage primero
-                    await cargarDatos();
+                    // PASO 1: Cargar desde localStorage (NUNCA FALLA)
+                    try {
+                        await cargarDatos();
+                    } catch(e) {
+                        console.error('❌ Error cargarDatos:', e.message);
+                    }
                     
-                    // Luego sincronizar desde Supabase
-                    await cargarFacturasDeSupabase();
-                    await cargarClientesDeSupabase();
+                    // PASO 2: Intentar Supabase (NO rompe si falla)
+                    try {
+                        await cargarFacturasDeSupabase();
+                    } catch(e) {
+                        console.error('❌ Error cargarFacturasDeSupabase:', e.message);
+                    }
                     
-                    // Finalmente, sincronizar de vuelta a Supabase (datos nuevos)
-                    await sincronizarConSupabase();
+                    try {
+                        await cargarClientesDeSupabase();
+                    } catch(e) {
+                        console.error('❌ Error cargarClientesDeSupabase:', e.message);
+                    }
                     
+                    // PASO 3: Sincronizar de vuelta (NO rompe si falla)
+                    try {
+                        await sincronizarConSupabase();
+                    } catch(e) {
+                        console.error('❌ Error sincronizarConSupabase:', e.message);
+                    }
+                    
+                    console.log('✅ checkAuth completado');
                     showApp();
                 } else {
+                    console.log('ℹ️ Sin sesión activa');
                     showLoginScreen();
                 }
             } catch (e) {
-                console.error('Auth check error:', e);
+                console.error('❌ ERROR CRÍTICO en checkAuth:', e);
+                // IMPORTANTE: No cerrar, mostrar login
                 showLoginScreen();
             }
         }
