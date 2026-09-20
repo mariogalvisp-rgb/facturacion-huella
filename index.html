@@ -2123,24 +2123,24 @@
 
         async function cargarClientesDeSupabase() {
             console.log('📤 cargarClientesDeSupabase - sbClient:', !!sbClient, 'currentUser:', !!currentUser);
-            
+
             if (!sbClient || !currentUser) {
                 console.warn('⚠️ sbClient o currentUser no disponibles');
                 return;
             }
-            
+
             try {
                 console.log('🔄 Cargando clientes desde Supabase...');
                 const { data, error } = await sbClient
                     .from('clientes')
                     .select('*');
-                
+
                 console.log('📥 Respuesta Supabase clientes:', { count: data?.length, error: error?.message });
-                
+
                 if (error) throw error;
-                
+
                 if (data && data.length > 0) {
-                    // COMBINAR: No reemplazar, sino agregar lo que no está
+                    // NORMALIZAR: Traer todos los clientes de Supabase
                     const clientesFromSupabase = data.map(c => ({
                         id: c.id,
                         nombre: c.nombre,
@@ -2150,19 +2150,28 @@
                         direccion: c.direccion || '',
                         identificacion: c.identificacion || ''
                     }));
-                    
-                    // Combinar: agregar solo los que NO están en localStorage
-                    for (const cSupabase of clientesFromSupabase) {
-                        const existe = clientes.find(c => c.id === cSupabase.id);
-                        if (!existe) {
-                            clientes.push(cSupabase);
-                            console.log('   📥 Agregado cliente de Supabase:', cSupabase.nombre);
+
+                    // REEMPLAZAR localStorage solo si está vacío o corrupto
+                    const clientesLocal = JSON.parse(localStorage.getItem('clientes_huella') || '[]');
+
+                    if (!clientesLocal || clientesLocal.length === 0) {
+                        // Si localStorage está vacío, usar Supabase como fuente de verdad
+                        clientes = clientesFromSupabase;
+                        localStorage.setItem('clientes_huella', JSON.stringify(clientes));
+                        console.log('✅ Clientes recuperados desde Supabase:', clientes.length);
+                    } else {
+                        // Si localStorage tiene datos, combinar pero no duplicar
+                        for (const cSupabase of clientesFromSupabase) {
+                            const existe = clientes.find(c => c.id === cSupabase.id);
+                            if (!existe) {
+                                clientes.push(cSupabase);
+                                console.log('   📥 Agregado cliente de Supabase:', cSupabase.nombre);
+                            }
                         }
+                        localStorage.setItem('clientes_huella', JSON.stringify(clientes));
+                        console.log('✅ Clientes combinados:', clientes.length, 'total');
                     }
-                    
-                    localStorage.setItem('clientes_huella', JSON.stringify(clientes));
-                    console.log('✅ Clientes combinados:', clientes.length, 'total');
-                    
+
                     // Asignar user_id a los que no lo tienen
                     for (const c of data) {
                         if (!c.user_id) {
@@ -2213,42 +2222,197 @@
             return true;  // ✅ Guardado exitoso
         }
 
-        // ☁️ FUNCIONES SUPABASE
+        // ☁️ FUNCIONES SUPABASE PARA CLIENTES
+
+        // CREAR CLIENTE CON INSERT + VERIFICACIÓN
+        async function guardarClienteEnSupabase(nuevoCliente) {
+            console.log('📝 Guardando cliente nuevo en Supabase:', nuevoCliente.nombre);
+
+            if (!sbClient || !currentUser) {
+                console.warn('⚠️ sbClient o currentUser no disponibles para guardar cliente');
+                mostrarMensaje('clientFormMessage', '⚠️ Error: No hay conexión a Supabase', 'error');
+                return false;
+            }
+
+            try {
+                // 1️⃣ INSERT del nuevo cliente
+                console.log('1️⃣ Intentando INSERT en Supabase...');
+                const { data: insertedData, error: insertError } = await sbClient
+                    .from('clientes')
+                    .insert([{
+                        nombre: nuevoCliente.nombre,
+                        celular: nuevoCliente.celular,
+                        identificacion: nuevoCliente.identificacion,
+                        email: nuevoCliente.email,
+                        ciudad: nuevoCliente.ciudad,
+                        direccion: nuevoCliente.direccion,
+                        user_id: currentUser.id
+                    }])
+                    .select();
+
+                if (insertError) {
+                    console.error('❌ Error INSERT cliente:', insertError.message);
+                    mostrarMensaje('clientFormMessage', `❌ Error al guardar: ${insertError.message}`, 'error');
+                    return false;
+                }
+
+                if (!insertedData || insertedData.length === 0) {
+                    console.error('❌ INSERT no devolvió datos');
+                    mostrarMensaje('clientFormMessage', '❌ Error: El cliente no se guardó correctamente', 'error');
+                    return false;
+                }
+
+                const clienteGuardado = insertedData[0];
+                console.log('✅ Cliente insertado con ID:', clienteGuardado.id);
+
+                // 2️⃣ VERIFICACIÓN con GET
+                console.log('2️⃣ Verificando cliente en Supabase...');
+                const { data: verifyData, error: verifyError } = await sbClient
+                    .from('clientes')
+                    .select('*')
+                    .eq('id', clienteGuardado.id);
+
+                if (verifyError) {
+                    console.error('❌ Error verificando cliente:', verifyError.message);
+                    mostrarMensaje('clientFormMessage', '⚠️ Cliente guardado pero no se pudo verificar', 'error');
+                    return false;
+                }
+
+                if (!verifyData || verifyData.length === 0) {
+                    console.error('❌ Verificación falló: cliente no existe en Supabase');
+                    mostrarMensaje('clientFormMessage', '❌ Error: El cliente no se guardó correctamente en Supabase', 'error');
+                    return false;
+                }
+
+                const clienteVerificado = verifyData[0];
+                console.log('✅ Cliente verificado en Supabase:', clienteVerificado.nombre);
+
+                // 3️⃣ ACTUALIZAR localStorage con el cliente guardado (ahora tiene ID de Supabase)
+                console.log('3️⃣ Actualizando localStorage...');
+                const clienteActualizado = {
+                    id: clienteVerificado.id,
+                    nombre: clienteVerificado.nombre,
+                    celular: clienteVerificado.celular || '',
+                    email: clienteVerificado.email || '',
+                    ciudad: clienteVerificado.ciudad || '',
+                    direccion: clienteVerificado.direccion || '',
+                    identificacion: clienteVerificado.identificacion || ''
+                };
+
+                // Reemplazar el cliente local con ID de fecha por el ID real de Supabase
+                const idx = clientes.findIndex(c => c.id === nuevoCliente.id);
+                if (idx >= 0) {
+                    clientes[idx] = clienteActualizado;
+                } else {
+                    clientes.push(clienteActualizado);
+                }
+
+                localStorage.setItem('clientes_huella', JSON.stringify(clientes));
+                console.log('✅ Cliente actualizado en localStorage');
+
+                // 4️⃣ Mensaje de éxito
+                mostrarMensaje('clientFormMessage', `✅ Cliente "${clienteVerificado.nombre}" guardado correctamente en Supabase`, 'success');
+                return true;
+
+            } catch (error) {
+                console.error('❌ Error CRÍTICO guardando cliente:', error.message);
+                mostrarMensaje('clientFormMessage', `❌ Error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // ACTUALIZAR CLIENTE CON PATCH + VERIFICACIÓN
+        async function actualizarClienteEnSupabase(clienteActualizado) {
+            console.log('✏️ Actualizando cliente en Supabase:', clienteActualizado.id);
+
+            if (!sbClient || !currentUser) {
+                console.warn('⚠️ sbClient o currentUser no disponibles para actualizar cliente');
+                alert('⚠️ Error: No hay conexión a Supabase');
+                return false;
+            }
+
+            try {
+                // 1️⃣ PATCH del cliente
+                console.log('1️⃣ Intentando PATCH en Supabase...');
+                const { error: patchError } = await sbClient
+                    .from('clientes')
+                    .update({
+                        nombre: clienteActualizado.nombre,
+                        celular: clienteActualizado.celular,
+                        identificacion: clienteActualizado.identificacion,
+                        email: clienteActualizado.email,
+                        ciudad: clienteActualizado.ciudad,
+                        direccion: clienteActualizado.direccion
+                    })
+                    .eq('id', clienteActualizado.id);
+
+                if (patchError) {
+                    console.error('❌ Error PATCH cliente:', patchError.message);
+                    alert(`❌ Error al actualizar: ${patchError.message}`);
+                    return false;
+                }
+
+                console.log('✅ PATCH ejecutado para cliente ID:', clienteActualizado.id);
+
+                // 2️⃣ VERIFICACIÓN con GET
+                console.log('2️⃣ Verificando cambios en Supabase...');
+                const { data: verifyData, error: verifyError } = await sbClient
+                    .from('clientes')
+                    .select('*')
+                    .eq('id', clienteActualizado.id);
+
+                if (verifyError) {
+                    console.error('❌ Error verificando cliente:', verifyError.message);
+                    alert('⚠️ Cliente actualizado pero no se pudo verificar cambios');
+                    return false;
+                }
+
+                if (!verifyData || verifyData.length === 0) {
+                    console.error('❌ Verificación falló: cliente no existe');
+                    alert('❌ Error: El cliente desapareció de Supabase');
+                    return false;
+                }
+
+                const clienteVerificado = verifyData[0];
+                console.log('✅ Cliente verificado en Supabase:', {
+                    nombre: clienteVerificado.nombre,
+                    celular: clienteVerificado.celular,
+                    direccion: clienteVerificado.direccion
+                });
+
+                // 3️⃣ Confirmar que los datos coinciden con lo que enviamos
+                if (clienteVerificado.celular !== clienteActualizado.celular ||
+                    clienteVerificado.nombre !== clienteActualizado.nombre ||
+                    clienteVerificado.direccion !== clienteActualizado.direccion) {
+                    console.warn('⚠️ Datos no coinciden exactamente después de PATCH');
+                    console.log('   Esperado celular:', clienteActualizado.celular, '| Real:', clienteVerificado.celular);
+                }
+
+                // 4️⃣ Ya está en localStorage desde guardarEditarCliente()
+                console.log('✅ Cliente actualizado correctamente en Supabase y verificado');
+                return true;
+
+            } catch (error) {
+                console.error('❌ Error CRÍTICO actualizando cliente:', error.message);
+                alert(`❌ Error: ${error.message}`);
+                return false;
+            }
+        }
+
+        // ☁️ SINCRONIZACIÓN DE FACTURAS
         async function sincronizarConSupabase() {
             if (!sbClient || !currentUser) {
                 console.warn('⚠️ No sbClient o currentUser para sincronizar');
                 return;
             }
-            
+
             const userId = currentUser.id;
-            console.log('🔄 Sincronizando con userId:', userId);
-            
+            console.log('🔄 Sincronizando facturas con userId:', userId);
+
             try {
-                // SINCRONIZAR CLIENTES
-                if (clientes && clientes.length > 0) {
-                    console.log('📤 Sincronizando', clientes.length, 'clientes...');
-                    for (const cliente of clientes) {
-                        try {
-                            const { error } = await sbClient.from('clientes').upsert({
-                                id: cliente.id,
-                                user_id: userId,
-                                nombre: cliente.nombre,
-                                celular: cliente.celular || '',
-                                email: cliente.email || '',
-                                ciudad: cliente.ciudad || '',
-                                direccion: cliente.direccion || '',
-                                identificacion: cliente.identificacion || ''
-                            }, { onConflict: 'id' });
-                            if (error) {
-                                console.warn('⚠️ Error cliente', cliente.id, ':', error.message);
-                            }
-                        } catch(e) {
-                            console.error('❌ Exception cliente', cliente.id, ':', e.message);
-                        }
-                    }
-                    console.log('✅ Clientes sincronizados');
-                }
-                
+                // NOTA: Clientes se guardan explícitamente con guardarClienteEnSupabase() y actualizarClienteEnSupabase()
+                // No se usa UPSERT aquí para clientes porque necesitamos verificación real (INSERT + GET, PATCH + GET)
+
                 // SINCRONIZAR FACTURAS
                 if (facturas && facturas.length > 0) {
                     console.log('📤 Sincronizando', facturas.length, 'facturas...');
@@ -2261,6 +2425,9 @@
                                 numero_factura: factura.id,
                                 user_id: userId,
                                 cliente_nombre: factura.cliente?.nombre || 'Cliente',
+                                cliente_celular: factura.cliente?.celular || '',
+                                cliente_direccion: factura.cliente?.direccion || '',
+                                cliente_comercial: factura.vendedor || '',
                                 fecha: factura.fecha,
                                 estado: factura.estado || 'Pendiente',
                                 total: factura.total,
@@ -2424,21 +2591,29 @@
             clienteEnEdicion = null;
         }
         
-        function guardarEditarCliente() {
+        async function guardarEditarCliente() {
             if (!clienteEnEdicion) return;
-            
-            // Actualizar datos del cliente
+
+            // Actualizar datos del cliente en memoria
             clienteEnEdicion.nombre = document.getElementById('editClientNombre').value.trim();
             clienteEnEdicion.celular = document.getElementById('editClientCelular').value.trim();
             clienteEnEdicion.identificacion = document.getElementById('editClientIdentificacion').value.trim();
             clienteEnEdicion.email = document.getElementById('editClientEmail').value.trim();
             clienteEnEdicion.ciudad = document.getElementById('editClientCiudad').value.trim();
             clienteEnEdicion.direccion = document.getElementById('editClientDireccion').value.trim();
-            
-            // Guardar en localStorage
+
+            // Guardar en localStorage (respaldo temporal)
             guardarEnStorage();
-            
-            alert('✅ Cliente actualizado correctamente');
+
+            // Actualizar en Supabase con PATCH + GET de verificación
+            const exito = await actualizarClienteEnSupabase(clienteEnEdicion);
+
+            if (exito) {
+                alert('✅ Cliente actualizado correctamente en Supabase');
+            } else {
+                alert('⚠️ Cliente actualizado localmente, pero hay problemas con Supabase');
+            }
+
             cerrarEditarCliente();
             renderClienteModalList();
         }
@@ -2526,7 +2701,7 @@
         }
 
         // CREAR CLIENTE
-        document.getElementById('newClientForm')?.addEventListener('submit', function(e) {
+        document.getElementById('newClientForm')?.addEventListener('submit', async function(e) {
             e.preventDefault();
             const nombre = document.getElementById('clientNombre').value.trim();
             const celular = normalizarTelefono(document.getElementById('clientCelular').value);
@@ -2546,25 +2721,35 @@
                 return;
             }
 
-            const nuevoCliente = { 
-                id: Date.now(), 
+            // Crear objeto cliente con ID temporal
+            const nuevoCliente = {
+                id: Date.now(),
                 user_id: currentUser?.id || null,
-                nombre, 
-                celular, 
-                identificacion, 
-                email, 
-                ciudad, 
-                direccion 
+                nombre,
+                celular,
+                identificacion,
+                email,
+                ciudad,
+                direccion
             };
+
+            // Agregar a localStorage primero (como respaldo)
             clientes.push(nuevoCliente);
-            guardarEnStorage();
-            mostrarMensaje('clientFormMessage', `✅ Cliente "${nombre}" creado exitosamente`, 'success');
-            this.reset();
-            renderClientesTable();
-            setTimeout(() => {
-                document.querySelector('[data-section="clientes"]').click();
+            localStorage.setItem('clientes_huella', JSON.stringify(clientes));
+
+            // Guardar en Supabase con INSERT + GET de verificación
+            const exito = await guardarClienteEnSupabase(nuevoCliente);
+
+            if (exito) {
+                // Solo limpiar y navegar si fue exitoso
+                this.reset();
                 renderClientesTable();
-            }, 1500);
+                setTimeout(() => {
+                    document.querySelector('[data-section="clientes"]').click();
+                    renderClientesTable();
+                }, 1500);
+            }
+            // Si no fue exitoso, mostrar mensaje de error (ya mostrado por guardarClienteEnSupabase())
         });
 
         // BUSCAR CLIENTE POR CELULAR
@@ -3234,21 +3419,25 @@
             const celular = document.getElementById('editCelular').value;
             const direccion = document.getElementById('editDireccion').value;
             const vendedor = document.getElementById('editVendedor').value;
-            
+
             // Actualizar factura
             facturas[idx].estado = estado;
             facturas[idx].cliente.nombre = cliente;
             facturas[idx].cliente.celular = celular;
             facturas[idx].cliente.direccion = direccion;
             facturas[idx].vendedor = vendedor;
-            
-            // Guardar
+
+            // Guardar en localStorage
             guardarEnStorage();
             renderFacturas();
             renderSeguimiento();
-            
+
             cerrarEditFactura();
-            alert('✅ Factura actualizada correctamente');
+
+            // Sincronizar con Supabase
+            sincronizarConSupabase();
+
+            alert('✅ Factura actualizada correctamente\n(Sincronizando con Supabase...)');
         }
 
         function cerrarEditFactura() {
