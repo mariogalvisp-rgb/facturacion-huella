@@ -3247,7 +3247,7 @@
             }
 
             const mensajes = {
-                'Pedido recibido': `Hola, *${nombreCliente}*. ¡Qué alegría que llegues a Huella de Origen! ☕️✨\nGracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n🏠 *Domicilio:* ${factura.cliente.direccion || 'Sin domicilio'}\n\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total: $${total}*\n\nTe notificaremos cuando esté listo.`,
+                'Pedido recibido': `Hola, *${nombreCliente}*. ¡Qué alegría que llegues a Huella de Origen! ☕️✨\nGracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n🏠 *Domicilio:* ${factura.cliente.direccion || 'Sin domicilio'}\n\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total: $${total}*\n${factura.observaciones ? '\n📝 *Observaciones:* ' + factura.observaciones : ''}\n\nTe notificaremos cuando esté listo.`,
                 
                 'Solicitud de pago': `💳 Puedes realizar el pago con **Bre-B** a la llave: **0090417769**\n\n🧾 *Orden:* ${numeroOrden}\n💰 *Total a pagar: $${total}*`,
                 
@@ -3883,33 +3883,33 @@
         }
 
         function enviarMensajePedidoEntregado(factura, idx, nuevoEstado) {
-            // Mensaje exacto para "Pedido entregado"
-            const mensaje = `☕ *¡Tu pedido ha llegado!*\n\n☕ *Orden N.º:* ${factura.id}\n☕ *Fecha:* ${factura.fecha}\n\n¡Gracias por tu compra! Disfruta nuestro café. ☕`;
-            
+            // Generar el mensaje correcto según el estado
+            const mensaje = generarMensajeWhatsAppPorEstado(factura, nuevoEstado);
+
             const celular = factura.cliente.celular || '';
             const numeroLimpio = celular.replace(/\D/g, '');
-            
+
             if (numeroLimpio.length < 7) {
                 alert('❌ El número de celular no es válido');
                 return;
             }
-            
+
             let numeroFinal = numeroLimpio;
             if (!numeroFinal.startsWith('57')) {
                 numeroFinal = '57' + numeroFinal;
             }
-            
+
             const urlWA = `https://wa.me/${numeroFinal}?text=${encodeURIComponent(mensaje)}`;
-            
+
             // Abrir WhatsApp
             window.open(urlWA, '_blank');
-            
+
             // DESPUÉS de enviar, actualizar estado en Supabase
             setTimeout(() => {
                 facturas[idx].estado = nuevoEstado;
                 guardarEnStorage();
                 renderSeguimiento();
-                console.log('✅ Estado actualizado a Orden completada después de enviar WhatsApp');
+                console.log('✅ Estado actualizado a ' + nuevoEstado + ' después de enviar WhatsApp');
             }, 500);
         }
 
