@@ -3225,10 +3225,11 @@
             const numeroOrden = factura.id;
             const fecha = factura.fecha;
             const total = Math.round(factura.total).toLocaleString('es-ES');
+            const observacionesTexto = factura.observaciones ? '\n📝 *Observaciones:* ' + factura.observaciones : '';
 
             // Generar lista de productos CON PRECIOS Y LINKS A HUELLA DE ORIGEN
             let productoTexto = '';
-            
+
             if (factura.items && factura.items.length > 0) {
                 productoTexto = factura.items
                     .map(item => {
@@ -3247,7 +3248,7 @@
             }
 
             const mensajes = {
-                'Pedido recibido': `Hola, *${nombreCliente}*. ¡Qué alegría que llegues a Huella de Origen! ☕️✨\nGracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n🏠 *Domicilio:* ${factura.cliente.direccion || 'Sin domicilio'}\n\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total: $${total}*\n${factura.observaciones ? '\n📝 *Observaciones:* ' + factura.observaciones : ''}\n\nTe notificaremos cuando esté listo.`,
+                'Pedido recibido': `Hola, *${nombreCliente}*. ¡Qué alegría que llegues a Huella de Origen! ☕️✨\nGracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n🏠 *Domicilio:* ${factura.cliente.direccion || 'Sin domicilio'}\n\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total: $${total}*${observacionesTexto}\n\nTe notificaremos cuando esté listo.`,
                 
                 'Solicitud de pago': `💳 Puedes realizar el pago con **Bre-B** a la llave: **0090417769**\n\n🧾 *Orden:* ${numeroOrden}\n💰 *Total a pagar: $${total}*`,
                 
