@@ -1414,6 +1414,10 @@
                                 <input type="number" id="envio" value="0" min="0" onchange="calcularTotales()">
                             </div>
                         </div>
+                        <div class="form-group" style="margin-top: 16px;">
+                            <label>Observaciones (Notas del cliente)</label>
+                            <textarea id="observaciones" placeholder="Ej: Sin azúcar, preparación especial..." style="width: 100%; height: 80px; padding: 12px; border: 1px solid var(--borde); border-radius: var(--radio); font-family: inherit; resize: none;"></textarea>
+                        </div>
                     </div>
 
                     <!-- RESUMEN TOTAL -->
@@ -1452,6 +1456,80 @@
             <div class="card">
                 <h2>Historial de Facturas</h2>
                 <p>Consulta todas tus facturas generadas y su estado de pago.</p>
+
+                <!-- FILTROS CONSOLIDADOS EN UN RENGLÓN -->
+                <div style="margin-top: 20px; padding: 12px 16px; background: var(--crema); border-radius: var(--radio); border: 1px solid var(--dorado);">
+                    <div style="display: grid; grid-template-columns: 1.2fr 0.9fr 0.9fr 0.9fr auto; gap: 10px; align-items: flex-end;">
+                        <!-- CLIENTE -->
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--gris-medio); margin-bottom: 4px;">🔍 Cliente</label>
+                            <input type="text" id="filtroClienteInput" placeholder="Buscar cliente..." style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem;" onkeyup="filtrarPorCliente(); filtrarPorFecha(); filtrarPorEstado();">
+                        </div>
+                        <!-- DESDE -->
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--gris-medio); margin-bottom: 4px;">Desde</label>
+                            <input type="date" id="filtroFechaDesde" style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem;" onchange="filtrarPorFecha(); filtrarPorCliente(); filtrarPorEstado();">
+                        </div>
+                        <!-- HASTA -->
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--gris-medio); margin-bottom: 4px;">Hasta</label>
+                            <input type="date" id="filtroFechaHasta" style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem;" onchange="filtrarPorFecha(); filtrarPorCliente(); filtrarPorEstado();">
+                        </div>
+                        <!-- ESTADO -->
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--gris-medio); margin-bottom: 4px;">Estado</label>
+                            <select id="filtroEstado" style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem;" onchange="filtrarPorEstado(); filtrarPorCliente(); filtrarPorFecha();">
+                                <option value="">Todos</option>
+                                <option value="Pedido recibido">Pedido recibido</option>
+                                <option value="Solicitud de pago">Solicitud de pago</option>
+                                <option value="Pago recibido">Pago recibido</option>
+                                <option value="Pedido entregado">Pedido entregado</option>
+                                <option value="Orden completada">Orden completada</option>
+                            </select>
+                        </div>
+                        <!-- BOTÓN LIMPIAR -->
+                        <button type="button" class="btn btn-secondary btn-small" onclick="limpiarTodosFiltros()" style="height: fit-content; padding: 8px 12px; font-size: 0.85rem;">Limpiar</button>
+                    </div>
+                </div>
+
+                <!-- RESUMEN POR ESTADO -->
+                <div id="resumenPorEstadoBox" style="display: none; margin-top: 16px; padding: 16px; background: var(--crema); border-radius: var(--radio); border: 1px solid var(--dorado);">
+                    <h4 style="margin: 0 0 16px 0; color: var(--cafe-principal);">📊 Total por Estado</h4>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--dorado);">
+                                <th style="text-align: left; padding: 8px; color: var(--cafe-principal); font-weight: 600;">Estado</th>
+                                <th style="text-align: right; padding: 8px; color: var(--cafe-principal); font-weight: 600;">Total $</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resumenEstadoTableBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- RESUMEN DEL CLIENTE FILTRADO -->
+                <div id="resumenClienteBox" style="display: none; margin-top: 16px; padding: 16px; background: linear-gradient(135deg, var(--cafe-principal) 0%, var(--cafe-secundario) 100%); border-radius: var(--radio); color: white;">
+                    <h4 style="margin: 0 0 16px 0; color: white;">📊 Resumen de Compras</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+                        <div>
+                            <small style="opacity: 0.9;">Cliente</small>
+                            <p style="margin: 4px 0 0 0; font-size: 1.1rem; font-weight: 600;" id="resumenClienteNombre">-</p>
+                        </div>
+                        <div>
+                            <small style="opacity: 0.9;">Total de Compras</small>
+                            <p style="margin: 4px 0 0 0; font-size: 1.1rem; font-weight: 600;" id="resumenClienteCompras">0</p>
+                        </div>
+                        <div>
+                            <small style="opacity: 0.9;">Monto Total</small>
+                            <p style="margin: 4px 0 0 0; font-size: 1.1rem; font-weight: 600;" id="resumenClienteTotal">$0</p>
+                        </div>
+                        <div>
+                            <small style="opacity: 0.9;">Ticket Promedio</small>
+                            <p style="margin: 4px 0 0 0; font-size: 1.1rem; font-weight: 600;" id="resumenClientePromedio">$0</p>
+                        </div>
+                    </div>
+                </div>
+
                 <table style="margin-top: 24px;">
                     <thead>
                         <tr>
@@ -1474,9 +1552,23 @@
             <div class="card">
                 <h2>Reportes y Análisis</h2>
                 <p>Consulta tus métricas de ventas y desempeño por vendedor.</p>
+
+                <!-- SELECTOR DE PERÍODO -->
+                <div style="margin-top: 20px; padding: 16px; background: var(--crema); border-radius: var(--radio); border: 1px solid var(--dorado);">
+                    <label style="font-weight: 600; display: block; margin-bottom: 12px;">📅 Período</label>
+                    <select id="selectorPeriodo" style="width: 100%; max-width: 350px; padding: 12px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 1rem; font-family: inherit;" onchange="cambiarPeriodo()">
+                        <option value="septiembre">Septiembre</option>
+                        <option value="octubre" selected>Octubre</option>
+                        <!-- PRÓXIMA INCORPORACIÓN: Noviembre <option value="noviembre">Noviembre</option> -->
+                        <option value="trimestre">Trimestre</option>
+                        <option value="semestre">Semestre</option>
+                        <option value="ano">1 año</option>
+                        <option value="total">Total ventas</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="grid-2" style="margin-top: 24px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 24px;">
                 <div class="card">
                     <h3>Resumen de Ventas</h3>
                     <div style="margin-top: 20px;">
@@ -1505,6 +1597,11 @@
                 <div class="card">
                     <h3>Vendedores / Canales</h3>
                     <div id="ventasPorVendedor" style="margin-top: 20px;"></div>
+                </div>
+
+                <div class="card">
+                    <h3>📦 Total de Bolsas Vendidas</h3>
+                    <div id="totalBolsasVendidas" style="margin-top: 20px;"></div>
                 </div>
             </div>
         </section>
@@ -1906,7 +2003,11 @@
             
             // DILOGIA DE ORIGEN
             { id: 40, nombre: 'DILOGIA HUELLA DE ORIGEN GRANO', precio: 92000 },
-            { id: 41, nombre: 'DILOGIA HUELLA DE ORIGEN MOLIDO', precio: 92000 }
+            { id: 41, nombre: 'DILOGIA HUELLA DE ORIGEN MOLIDO', precio: 92000 },
+
+            // DUO COLIBRI
+            { id: 42, nombre: 'DUO COLIBRI AMAZILIA GRANO', precio: 96000 },
+            { id: 43, nombre: 'DUO COLIBRI AMAZILIA MOLIDO', precio: 96000 }
         ];
 
         // VARIABLES
@@ -1916,12 +2017,95 @@
         let clienteSeleccionado = null;
         let itemsTemp = [];
         let productosSeleccionados = {};
+        let mesSeleccionado = null; // Mes seleccionado en formato "2026-10"
+
+        // ========== FUNCIÓN DE LIMPIEZA DE DUPLICADOS ==========
+        function limpiarFacturasDelStorage() {
+            try {
+                const facturasOriginal = JSON.parse(localStorage.getItem('facturas_huella') || '[]');
+                console.log(`🧹 Iniciando limpieza: ${facturasOriginal.length} facturas en storage`);
+
+                // PASO 1: Eliminar duplicados de Antonio (mantener solo HO-00043)
+                let facturasLimpias = facturasOriginal.filter(f => {
+                    if (f.cliente?.nombre === 'Antonio Ortiz') {
+                        const mantener = f.numero_factura === 'HO-00043';
+                        if (!mantener) console.log(`  ❌ Eliminado Antonio: ${f.numero_factura}`);
+                        return mantener;
+                    }
+                    return true;
+                });
+
+                // PASO 2: Limpiar Maria Fernanda (mantener solo sept-oct)
+                facturasLimpias = facturasLimpias.filter(f => {
+                    if (f.cliente?.nombre === 'MARIA FERNANDA SARDI' || f.cliente?.nombre === 'Maria Fernanda Sardi') {
+                        const fecha = f.fecha || '';
+                        const esSeptOct = fecha.includes('/09/') || fecha.includes('/10/') || fecha.includes('-09-') || fecha.includes('-10-');
+                        if (!esSeptOct) console.log(`  ❌ Eliminado M.F.: ${f.numero_factura} (${f.fecha})`);
+                        return esSeptOct;
+                    }
+                    return true;
+                });
+
+                // PASO 3: Limpiar Inversiones (mantener máximo 2 de sept, 2 de oct)
+                const facturasInversiones = facturasLimpias.filter(f =>
+                    f.cliente?.nombre === 'Inversiones' || f.cliente?.nombre === 'INVERSIONES'
+                );
+
+                let contadorSept = 0, contadorOct = 0;
+                const idsInversionesAMantener = new Set();
+
+                // Mantener máximo 2 de septiembre
+                facturasInversiones.forEach(f => {
+                    const fecha = f.fecha || '';
+                    const esSeptiembre = fecha.includes('/09/') || fecha.includes('-09-');
+                    if (esSeptiembre && contadorSept < 2) {
+                        idsInversionesAMantener.add(f.numero_factura);
+                        contadorSept++;
+                    }
+                });
+
+                // Mantener máximo 2 de octubre
+                facturasInversiones.forEach(f => {
+                    const fecha = f.fecha || '';
+                    const esOctubre = fecha.includes('/10/') || fecha.includes('-10-');
+                    if (esOctubre && contadorOct < 2) {
+                        idsInversionesAMantener.add(f.numero_factura);
+                        contadorOct++;
+                    }
+                });
+
+                facturasLimpias = facturasLimpias.filter(f => {
+                    if (f.cliente?.nombre === 'Inversiones' || f.cliente?.nombre === 'INVERSIONES') {
+                        const mantener = idsInversionesAMantener.has(f.numero_factura);
+                        if (!mantener) console.log(`  ❌ Eliminado Inversiones: ${f.numero_factura} (${f.fecha})`);
+                        return mantener;
+                    }
+                    return true;
+                });
+
+                // PASO 4: Guardar y actualizar
+                if (facturasLimpias.length !== facturasOriginal.length) {
+                    const eliminadas = facturasOriginal.length - facturasLimpias.length;
+                    localStorage.setItem('facturas_huella', JSON.stringify(facturasLimpias));
+                    facturas = facturasLimpias;
+                    console.log(`✅ Limpieza completada: ${eliminadas} facturas eliminadas`);
+                    console.log(`   - Septiembre Inversiones: ${contadorSept}, Octubre: ${contadorOct}`);
+                } else {
+                    console.log('✅ Datos ya están limpios');
+                }
+            } catch(e) {
+                console.error('❌ Error en limpieza:', e.message);
+            }
+        }
 
         // INICIALIZAR
         async function init() {
             cargarConfigSupabase();
             await cargarDatos();
-            
+
+            // ✅ LIMPIAR DATOS ANTES DE RENDERIZAR
+            limpiarFacturasDelStorage();
+
             // Renderizar solo si elementos existen
             if (document.getElementById('productsList')) renderProductos();
             if (document.getElementById('facturasTable')) renderFacturas();
@@ -1932,6 +2116,14 @@
             document.getElementById('clientesModalSearch')?.addEventListener('input', filtrarClientesModal);
             document.getElementById('clienteModalSearch')?.addEventListener('input', renderClienteListaFactura);
             document.getElementById('productSearch')?.addEventListener('input', renderProductos);
+
+            // Inicializar período de reportes
+            setTimeout(() => {
+                if (document.getElementById('selectorPeriodo')) {
+                    document.getElementById('selectorPeriodo').value = 'octubre';
+                    cambiarPeriodo();
+                }
+            }, 100);
         }
 
         
@@ -3103,6 +3295,9 @@
             const maxNumero = facturasExistentes.length > 0 ? Math.max(...facturasExistentes) : 0;
             const nuevoNumero = maxNumero + 1;
             
+            const observacionesEl = document.getElementById('observaciones');
+            const observaciones = observacionesEl ? observacionesEl.value.trim() : '';
+
             const factura = {
                 id: 'HO-' + String(nuevoNumero).padStart(5, '0'),
                 user_id: currentUser?.id || null,
@@ -3116,7 +3311,8 @@
                 total: total,
                 vendedor: vendedorEl.value,
                 estado: estadoPagoEl ? (estadoPagoEl.value || 'Pendiente') : 'Pendiente',
-                fecha: new Date().toLocaleDateString('es-ES')
+                fecha: new Date().toISOString().split('T')[0],  // Formato ISO: YYYY-MM-DD
+                observaciones: observaciones
             };
 
             facturas.push(factura);
@@ -3225,11 +3421,10 @@
             const numeroOrden = factura.id;
             const fecha = factura.fecha;
             const total = Math.round(factura.total).toLocaleString('es-ES');
-            const observacionesTexto = factura.observaciones ? '\n📝 *Observaciones:* ' + factura.observaciones : '';
 
             // Generar lista de productos CON PRECIOS Y LINKS A HUELLA DE ORIGEN
             let productoTexto = '';
-
+            
             if (factura.items && factura.items.length > 0) {
                 productoTexto = factura.items
                     .map(item => {
@@ -3246,6 +3441,9 @@
             } else {
                 productoTexto = 'Pedido personalizado';
             }
+
+            // Generar observaciones si existen
+            const observacionesTexto = factura.observaciones ? `\n📝 *Observaciones:* ${factura.observaciones}` : '';
 
             const mensajes = {
                 'Pedido recibido': `Hola, *${nombreCliente}*. ¡Qué alegría que llegues a Huella de Origen! ☕️✨\nGracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n🏠 *Domicilio:* ${factura.cliente.direccion || 'Sin domicilio'}\n\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total: $${total}*${observacionesTexto}\n\nTe notificaremos cuando esté listo.`,
@@ -3332,10 +3530,26 @@
         // FACTURAS
         function renderFacturas() {
             const tbody = document.getElementById('facturasTable');
-            tbody.innerHTML = facturas.map((f, idx) => `<tr>
+
+            // Llenar select de clientes únicos
+            const selectCliente = document.getElementById('filtroClienteSelect');
+            const clientesUnicos = [...new Set(facturas.map(f => f.cliente?.nombre))].filter(Boolean).sort();
+            if (selectCliente && clientesUnicos.length > 0) {
+                const optionsHTML = clientesUnicos.map(nombre => `<option value="${nombre}">${nombre}</option>`).join('');
+                selectCliente.innerHTML = '<option value="">-- Todos los clientes --</option>' + optionsHTML;
+            }
+
+            tbody.innerHTML = facturas.map((f, idx) => {
+                // Convertir fecha de ISO (YYYY-MM-DD) a formato legible (DD/MM/YYYY)
+                let fechaLegible = f.fecha;
+                if (f.fecha && f.fecha.includes('-')) {
+                    const [año, mes, día] = f.fecha.split('-');
+                    fechaLegible = `${día}/${mes}/${año}`;
+                }
+                return `<tr data-cliente="${f.cliente?.nombre || ''}" data-fecha="${f.fecha}" data-estado="${f.estado || ''}">
                 <td><strong>${f.id}</strong></td>
-                <td>${f.cliente.nombre}</td>
-                <td>${f.fecha}</td>
+                <td>${f.cliente?.nombre || 'Desconocido'}</td>
+                <td>${fechaLegible}</td>
                 <td>${f.vendedor}</td>
                 <td>$${Math.round(f.total).toLocaleString('es-ES')}</td>
                 <td><span class="badge ${f.estado === 'Pagada' ? 'badge-success' : f.estado === 'Pendiente' ? 'badge-danger' : 'badge-warning'}">${f.estado}</span></td>
@@ -3343,7 +3557,244 @@
                     <button class="btn-small" onclick="verFactura(${idx})">Ver</button>
                     <button class="btn-small" style="background: #FF9800; color: white; margin-left: 5px;" onclick="intentarEditarFactura(${idx})">Editar</button>
                 </td>
-            </tr>`).join('');
+            </tr>`;
+            }).join('');
+
+            // Calcular y mostrar totales por estado
+            calcularTotalesPorEstado();
+
+            // Limpiar filtro al renderizar
+            limpiarFiltroCliente();
+        }
+
+        // Función auxiliar para convertir fecha a formato ISO (YYYY-MM-DD)
+        function normalizarFecha(fechaStr) {
+            if (!fechaStr) return '1900-01-01'; // Valor por defecto si no hay fecha
+
+            // Limpiar espacios
+            fechaStr = String(fechaStr).trim();
+
+            // Si ya está en formato ISO (YYYY-MM-DD)
+            if (fechaStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                return fechaStr;
+            }
+
+            // Si está en formato DD/MM/YYYY
+            if (fechaStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+                const partes = fechaStr.split('/');
+                const día = partes[0].padStart(2, '0');
+                const mes = partes[1].padStart(2, '0');
+                const año = partes[2];
+                return `${año}-${mes}-${día}`;
+            }
+
+            // Si es otro formato, intentar parsearlo
+            console.warn(`⚠️ Formato de fecha no reconocido: ${fechaStr}`);
+            return '1900-01-01';
+        }
+
+        function aplicarFiltrosCombinados() {
+            const inputCliente = document.getElementById('filtroClienteInput');
+            const inputDesde = document.getElementById('filtroFechaDesde');
+            const inputHasta = document.getElementById('filtroFechaHasta');
+            const selectEstado = document.getElementById('filtroEstado');
+            const tbody = document.getElementById('facturasTable');
+            const resumenBox = document.getElementById('resumenClienteBox');
+
+            // Obtener valores de filtros
+            const clienteSeleccionado = (inputCliente?.value || '').trim().toLowerCase();
+            // Usar directamente los strings de fecha sin conversión (evita problemas de zona horaria)
+            const fechaDesdeStr = inputDesde?.value || '';  // Formato: YYYY-MM-DD
+            const fechaHastaStr = inputHasta?.value || '';  // Formato: YYYY-MM-DD
+            const estadoSeleccionado = (selectEstado?.value || '').trim();
+
+            // Aplicar filtros a todas las filas
+            const rows = tbody.querySelectorAll('tr');
+            let facturasDelCliente = [];
+
+            rows.forEach(row => {
+                const clienteRow = (row.getAttribute('data-cliente') || '').toLowerCase();
+                let fechaRow = row.getAttribute('data-fecha');
+                const estadoRow = (row.getAttribute('data-estado') || '').trim();
+
+                // Validar cliente
+                let coincideCliente = !clienteSeleccionado || clienteRow.includes(clienteSeleccionado);
+
+                // Validar fecha - normalizar ambas fechas a formato ISO para comparación
+                let coincideFecha = true;
+                if (fechaRow && (fechaDesdeStr || fechaHastaStr)) {
+                    // Normalizar la fecha de la fila al formato ISO
+                    fechaRow = normalizarFecha(fechaRow);
+
+                    if (fechaDesdeStr && fechaRow < fechaDesdeStr) {
+                        coincideFecha = false;
+                    }
+                    if (fechaHastaStr && fechaRow > fechaHastaStr) {
+                        coincideFecha = false;
+                    }
+                }
+
+                // Validar estado
+                let coincideEstado = !estadoSeleccionado || estadoRow === estadoSeleccionado;
+
+                // Si cumple todos los filtros, mostrar
+                if (coincideCliente && coincideFecha && coincideEstado) {
+                    row.style.display = '';
+                    // Guardar datos para el resumen (solo si hay filtro de cliente)
+                    if (clienteSeleccionado) {
+                        const celdas = row.querySelectorAll('td');
+                        if (celdas.length >= 5) {
+                            facturasDelCliente.push({
+                                nombre: row.getAttribute('data-cliente'),
+                                total: parseFloat(celdas[4].textContent.replace(/[^0-9]/g, '')) || 0
+                            });
+                        }
+                    }
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Mostrar resumen si hay cliente seleccionado y facturas
+            if (clienteSeleccionado && facturasDelCliente.length > 0) {
+                const nombreCliente = facturasDelCliente[0].nombre;
+                const totalCompras = facturasDelCliente.length;
+                const montoTotal = facturasDelCliente.reduce((sum, f) => sum + f.total, 0);
+                const promedioTicket = totalCompras > 0 ? montoTotal / totalCompras : 0;
+
+                document.getElementById('resumenClienteNombre').textContent = nombreCliente;
+                document.getElementById('resumenClienteCompras').textContent = totalCompras;
+                document.getElementById('resumenClienteTotal').textContent = '$' + Math.round(montoTotal).toLocaleString('es-ES');
+                document.getElementById('resumenClientePromedio').textContent = '$' + Math.round(promedioTicket).toLocaleString('es-ES');
+
+                resumenBox.style.display = 'block';
+            } else {
+                resumenBox.style.display = 'none';
+            }
+
+            // Actualizar totales por estado después de aplicar filtros
+            calcularTotalesPorEstado();
+        }
+
+        function filtrarPorCliente() {
+            aplicarFiltrosCombinados();
+        }
+
+        function limpiarFiltroCliente() {
+            const inputFiltro = document.getElementById('filtroClienteInput');
+            const selectFiltro = document.getElementById('filtroClienteSelect');
+            const tbody = document.getElementById('facturasTable');
+            const resumenBox = document.getElementById('resumenClienteBox');
+
+            if (inputFiltro) inputFiltro.value = '';
+            if (selectFiltro) selectFiltro.value = '';
+
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach(row => row.style.display = '');
+
+            resumenBox.style.display = 'none';
+        }
+
+        function filtrarPorFecha() {
+            aplicarFiltrosCombinados();
+        }
+
+        function limpiarFiltroFecha() {
+            const inputDesde = document.getElementById('filtroFechaDesde');
+            const inputHasta = document.getElementById('filtroFechaHasta');
+            const tbody = document.getElementById('facturasTable');
+
+            if (inputDesde) inputDesde.value = '';
+            if (inputHasta) inputHasta.value = '';
+
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach(row => row.style.display = '');
+
+            // Actualizar totales después de limpiar
+            calcularTotalesPorEstado();
+        }
+
+        function filtrarPorEstado() {
+            aplicarFiltrosCombinados();
+        }
+
+        function limpiarTodosFiltros() {
+            // Limpiar inputs
+            const inputCliente = document.getElementById('filtroClienteInput');
+            const inputDesde = document.getElementById('filtroFechaDesde');
+            const inputHasta = document.getElementById('filtroFechaHasta');
+            const selectEstado = document.getElementById('filtroEstado');
+
+            if (inputCliente) inputCliente.value = '';
+            if (inputDesde) inputDesde.value = '';
+            if (inputHasta) inputHasta.value = '';
+            if (selectEstado) selectEstado.value = '';
+
+            // Aplicar los filtros (que ahora están vacíos, mostrará todo)
+            aplicarFiltrosCombinados();
+        }
+
+        function calcularTotalesPorEstado() {
+            // Obtener TODAS las filas visibles de la tabla (ya filtradas por aplicarFiltrosCombinados)
+            const tbody = document.getElementById('facturasTable');
+            const rows = tbody?.querySelectorAll('tr') || [];
+
+            const totalesPorEstado = {};
+            let totalGeneral = 0;
+
+            // Sumar totales desde las filas visibles (respetando filtros aplicados)
+            rows.forEach(row => {
+                if (row.style.display !== 'none') {  // Solo filas visibles
+                    const estadoRow = (row.getAttribute('data-estado') || '').trim();
+                    const celdas = row.querySelectorAll('td');
+
+                    // NO contar "Orden cancelada" en los totales
+                    if (estadoRow !== 'Orden cancelada' && celdas.length >= 5) {
+                        const montoStr = celdas[4].textContent.replace(/[^0-9]/g, '');
+                        const monto = parseFloat(montoStr) || 0;
+
+                        if (estadoRow) {
+                            if (!totalesPorEstado[estadoRow]) {
+                                totalesPorEstado[estadoRow] = 0;
+                            }
+                            totalesPorEstado[estadoRow] += monto;
+                            totalGeneral += monto;
+                        }
+                    }
+                }
+            });
+
+            // Generar tabla HTML con estados encontrados + TOTAL
+            const resumenTbody = document.getElementById('resumenEstadoTableBody');
+            if (resumenTbody) {
+                let html = '';
+
+                // Mostrar cada estado con su total
+                Object.entries(totalesPorEstado).forEach(([estado, total]) => {
+                    html += `
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 8px; color: #333;">${estado}</td>
+                            <td style="padding: 8px; text-align: right; color: var(--cafe-principal); font-weight: 600;">$${Math.round(total).toLocaleString('es-ES')}</td>
+                        </tr>
+                    `;
+                });
+
+                // Agregar fila de TOTAL GENERAL
+                html += `
+                    <tr style="border-top: 2px solid var(--cafe-principal); border-bottom: 2px solid var(--cafe-principal); background: #f9f6f3;">
+                        <td style="padding: 12px; color: #2C1810; font-weight: 700;">TOTAL VENTAS</td>
+                        <td style="padding: 12px; text-align: right; color: var(--cafe-principal); font-weight: 900; font-size: 1.1rem;">$${Math.round(totalGeneral).toLocaleString('es-ES')}</td>
+                    </tr>
+                `;
+
+                resumenTbody.innerHTML = html;
+
+                // Mostrar caja de resumen si hay datos
+                const resumenBox = document.getElementById('resumenPorEstadoBox');
+                if (resumenBox && totalGeneral > 0) {
+                    resumenBox.style.display = 'block';
+                }
+            }
         }
 
         function intentarEditarFactura(idx) {
@@ -3886,31 +4337,31 @@
         function enviarMensajePedidoEntregado(factura, idx, nuevoEstado) {
             // Generar el mensaje correcto según el estado
             const mensaje = generarMensajeWhatsAppPorEstado(factura, nuevoEstado);
-
+            
             const celular = factura.cliente.celular || '';
             const numeroLimpio = celular.replace(/\D/g, '');
-
+            
             if (numeroLimpio.length < 7) {
                 alert('❌ El número de celular no es válido');
                 return;
             }
-
+            
             let numeroFinal = numeroLimpio;
             if (!numeroFinal.startsWith('57')) {
                 numeroFinal = '57' + numeroFinal;
             }
-
+            
             const urlWA = `https://wa.me/${numeroFinal}?text=${encodeURIComponent(mensaje)}`;
-
+            
             // Abrir WhatsApp
             window.open(urlWA, '_blank');
-
+            
             // DESPUÉS de enviar, actualizar estado en Supabase
             setTimeout(() => {
                 facturas[idx].estado = nuevoEstado;
                 guardarEnStorage();
                 renderSeguimiento();
-                console.log('✅ Estado actualizado a ' + nuevoEstado + ' después de enviar WhatsApp');
+                console.log('✅ Estado actualizado a Orden completada después de enviar WhatsApp');
             }, 500);
         }
 
@@ -3964,7 +4415,21 @@
             try {
                 // Usar datos reales de localStorage
                 const facturasDelStorage = JSON.parse(localStorage.getItem('facturas_huella') || '[]');
-                const facturasParaReporte = facturasDelStorage.length > 0 ? facturasDelStorage : facturas;
+                let facturasParaReporte = facturasDelStorage.length > 0 ? facturasDelStorage : facturas;
+
+                // Filtrar por período seleccionado
+                if (window.periodoSeleccionado && window.periodoSeleccionado.inicio && window.periodoSeleccionado.fin) {
+                    const { inicio, fin } = window.periodoSeleccionado;
+                    console.log(`🔍 Filtrando período: ${inicio} a ${fin}, Total antes: ${facturasParaReporte.length}`);
+
+                    facturasParaReporte = facturasParaReporte.filter(f => {
+                        const fechaNormalizada = normalizarFecha(f.fecha);
+                        const cumple = fechaNormalizada >= inicio && fechaNormalizada <= fin;
+                        return cumple;
+                    });
+
+                    console.log(`✅ Total facturas después de filtro: ${facturasParaReporte.length}`);
+                }
                 
                 if (facturasParaReporte.length === 0) {
                     const totalVentasEl = document.getElementById('totalVentas');
@@ -4099,6 +4564,60 @@
                 </div>
             `;
             
+            // ========== TOTAL DE BOLSAS VENDIDAS ==========
+            const bolsasMap = {
+                'QUETZAL GRANO': 0,
+                'QUETZAL MOLIDO': 0,
+                'CHIVITO GRANO': 0,
+                'CHIVITO MOLIDO': 0,
+                'COLIBRI GRANO': 0,
+                'COLIBRI MOLIDO': 0
+            };
+
+            // Contar bolsas del período filtrado
+            const facturasParaBolsas = facturasParaReporte.filter(f => f.estado !== 'Orden cancelada');
+            facturasParaBolsas.forEach(f => {
+                if (f.items) {
+                    f.items.forEach(item => {
+                        const desglose = desglozarProducto(item.nombre, item.cantidad || 0);
+                        Object.entries(desglose).forEach(([productoDesglosado, cantidadDesglosada]) => {
+                            // Normalizar nombres para que coincidan con las claves
+                            let clave = null;
+                            if (productoDesglosado.includes('QUETZAL') && productoDesglosado.includes('GRANO')) clave = 'QUETZAL GRANO';
+                            else if (productoDesglosado.includes('QUETZAL') && productoDesglosado.includes('MOLIDO')) clave = 'QUETZAL MOLIDO';
+                            else if (productoDesglosado.includes('CHIVITO') && productoDesglosado.includes('GRANO')) clave = 'CHIVITO GRANO';
+                            else if (productoDesglosado.includes('CHIVITO') && productoDesglosado.includes('MOLIDO')) clave = 'CHIVITO MOLIDO';
+                            else if (productoDesglosado.includes('COLIBRI') && productoDesglosado.includes('GRANO')) clave = 'COLIBRI GRANO';
+                            else if (productoDesglosado.includes('COLIBRI') && productoDesglosado.includes('MOLIDO')) clave = 'COLIBRI MOLIDO';
+
+                            if (clave && bolsasMap.hasOwnProperty(clave)) {
+                                bolsasMap[clave] += cantidadDesglosada;
+                            }
+                        });
+                    });
+                }
+            });
+
+            // Calcular total de bolsas
+            const totalBolsas = Object.values(bolsasMap).reduce((sum, qty) => sum + qty, 0);
+
+            const bolsasHTML = `
+                <div style="margin-top: 0;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        ${Object.entries(bolsasMap).map(([producto, cantidad]) => `
+                            <div style="padding: 12px; background: #f9f6f3; border-radius: 6px; border-left: 4px solid var(--cafe-principal);">
+                                <small style="color: #666;">${producto}</small>
+                                <p style="margin: 6px 0 0 0; font-size: 1.5rem; font-weight: 700; color: var(--cafe-principal);">${cantidad}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div style="margin-top: 16px; padding: 16px; background: linear-gradient(135deg, #D4A574 0%, #C79560 100%); border-radius: 8px; text-align: center;">
+                        <small style="color: white; font-weight: 600;">TOTAL BOLSAS VENDIDAS</small>
+                        <p style="margin: 8px 0 0 0; font-size: 2.5rem; font-weight: 900; color: white;">${totalBolsas}</p>
+                    </div>
+                </div>
+            `;
+
             // ========== PRODUCTOS ==========
             const productosMap = {};
             facturasParaReporte.filter(f => f.estado !== 'Orden cancelada').forEach(f => {
@@ -4147,15 +4666,16 @@
             `;
             
             // ========== CLIENTES ==========
+            // ✅ ARREGLO: Agrupar por NOMBRE de cliente (no por ID que puede estar vacío)
             const clientesMap = {};
             facturasParaReporte.filter(f => f.estado !== 'Orden cancelada').forEach(f => {
-                const clienteId = f.cliente_id || f.cliente?.id || 'Desconocido';
-                const clienteNombre = f.cliente?.nombre || 'Desconocido';
-                if (!clientesMap[clienteId]) {
-                    clientesMap[clienteId] = { nombre: clienteNombre, compras: 0, total: 0 };
+                const clienteNombre = (f.cliente?.nombre || 'Desconocido').trim().toUpperCase();
+
+                if (!clientesMap[clienteNombre]) {
+                    clientesMap[clienteNombre] = { nombre: f.cliente?.nombre || 'Desconocido', compras: 0, total: 0 };
                 }
-                clientesMap[clienteId].compras += 1;
-                clientesMap[clienteId].total += f.total || 0;
+                clientesMap[clienteNombre].compras += 1;
+                clientesMap[clienteNombre].total += f.total || 0;
             });
             
             const clientesHTML = `
@@ -4239,6 +4759,12 @@
             const ventasPorVendedorEl = document.getElementById('ventasPorVendedor');
             if (ventasPorVendedorEl) {
                 ventasPorVendedorEl.innerHTML = resumenHTML + vendedoresHTML + productosHTML + clientesHTML + estadosHTML;
+            }
+
+            // Renderizar Total de Bolsas
+            const bolsasEl = document.getElementById('totalBolsasVendidas');
+            if (bolsasEl) {
+                bolsasEl.innerHTML = bolsasHTML;
             }
             } catch(e) {
                 console.error('❌ Error en renderReportes:', e.message);
@@ -4339,8 +4865,159 @@
                 alert('❌ Error al descargar: ' + error.message);
             }
         }
-        
 
+        // ========== FUNCIONES PARA MES Y BOLSAS ==========
+        function obtenerRangoFechas(mesAno) {
+            // mesAno en formato "2026-10"
+            if (!mesAno) {
+                const hoy = new Date();
+                mesAno = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+            }
+
+            const [ano, mes] = mesAno.split('-');
+            const inicio = new Date(parseInt(ano), parseInt(mes) - 1, 1);
+            const fin = new Date(parseInt(ano), parseInt(mes), 0);
+
+            return { inicio, fin };
+        }
+
+        function obtenerMesesDisponibles(facturasLista) {
+            // Obtener todos los meses únicos de las facturas
+            const meses = new Set();
+            facturasLista.forEach(f => {
+                if (f.fecha) {
+                    const fecha = new Date(f.fecha);
+                    const mesAno = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+                    meses.add(mesAno);
+                }
+            });
+
+            return Array.from(meses).sort().reverse(); // Más recientes primero
+        }
+
+        function llenarSelectorMeses() {
+            const facturasDelStorage = JSON.parse(localStorage.getItem('facturas_huella') || '[]');
+            const facturasParaUsar = facturasDelStorage.length > 0 ? facturasDelStorage : facturas;
+
+            const meses = obtenerMesesDisponibles(facturasParaUsar);
+            const select = document.getElementById('selectorMes');
+
+            if (select) {
+                const optionsHTML = meses.map(mes => {
+                    const [ano, mesNum] = mes.split('-');
+                    const fecha = new Date(parseInt(ano), parseInt(mesNum) - 1);
+                    const nombre = fecha.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+                    return `<option value="${mes}">${nombre.charAt(0).toUpperCase() + nombre.slice(1)}</option>`;
+                }).join('');
+
+                select.innerHTML = '<option value="">-- Seleccionar Mes --</option>' + optionsHTML;
+
+                // Seleccionar el mes actual por defecto
+                const hoy = new Date();
+                const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+                if (meses.includes(mesActual)) {
+                    select.value = mesActual;
+                    mesSeleccionado = mesActual;
+                } else if (meses.length > 0) {
+                    select.value = meses[0];
+                    mesSeleccionado = meses[0];
+                }
+            }
+        }
+
+        function desglozarProducto(nombreProducto, cantidad) {
+            // Mapeo de productos combinados a sus componentes
+            const desglose = {};
+
+            if (nombreProducto.includes('DUO QUETZAL')) {
+                desglose['QUETZAL DEL TOLIMA ' + (nombreProducto.includes('GRANO') ? 'GRANO' : 'MOLIDO')] = cantidad * 2;
+            } else if (nombreProducto.includes('DUO CHIVITO')) {
+                desglose['CHIVITO DE PARAMO ' + (nombreProducto.includes('GRANO') ? 'GRANO' : 'MOLIDO')] = cantidad * 2;
+            } else if (nombreProducto.includes('DUO COLIBRI')) {
+                desglose['COLIBRI AMAZILIA ' + (nombreProducto.includes('GRANO') ? 'GRANO' : 'MOLIDO')] = cantidad * 2;
+            } else if (nombreProducto.includes('TRILOGÍA')) {
+                const tipo = nombreProducto.includes('GRANO') ? 'GRANO' : 'MOLIDO';
+                desglose['QUETZAL DEL TOLIMA ' + tipo] = cantidad;
+                desglose['CHIVITO DE PARAMO ' + tipo] = cantidad;
+                desglose['COLIBRI AMAZILIA ' + tipo] = cantidad;
+            } else if (nombreProducto.includes('DILOGIA')) {
+                const tipo = nombreProducto.includes('GRANO') ? 'GRANO' : 'MOLIDO';
+                desglose['QUETZAL DEL TOLIMA ' + tipo] = cantidad;
+                desglose['CHIVITO DE PARAMO ' + tipo] = cantidad;
+            } else {
+                // Si no es un combo, contar el producto tal cual
+                desglose[nombreProducto] = cantidad;
+            }
+
+            return desglose;
+        }
+
+        function dateToISO(d) {
+            // Convierte Date a ISO sin problemas de zona horaria
+            if (!d) return null;
+            const año = d.getFullYear();
+            const mes = String(d.getMonth() + 1).padStart(2, '0');
+            const día = String(d.getDate()).padStart(2, '0');
+            return `${año}-${mes}-${día}`;
+        }
+
+        function cambiarPeriodo() {
+            const select = document.getElementById('selectorPeriodo');
+            if (select) {
+                const periodoSeleccionado = select.value;
+                const hoy = new Date();
+                let inicio, fin;
+
+                switch(periodoSeleccionado) {
+                    case 'septiembre':
+                        // Septiembre 1 a Septiembre 30, 2026
+                        inicio = dateToISO(new Date(2026, 8, 1));
+                        fin = dateToISO(new Date(2026, 8, 30));
+                        mesSeleccionado = null;
+                        break;
+                    case 'octubre':
+                        // Octubre 1 a Octubre 31, 2026 (o hasta hoy si no hemos llegado)
+                        inicio = dateToISO(new Date(2026, 9, 1));
+                        fin = dateToISO(hoy);
+                        mesSeleccionado = null;
+                        break;
+                    case 'trimestre':
+                        // Últimos 3 meses desde hoy
+                        const hace3meses = new Date(hoy);
+                        hace3meses.setMonth(hace3meses.getMonth() - 3);
+                        inicio = dateToISO(hace3meses);
+                        fin = dateToISO(hoy);
+                        mesSeleccionado = null;
+                        break;
+                    case 'semestre':
+                        // Últimos 6 meses desde hoy
+                        const hace6meses = new Date(hoy);
+                        hace6meses.setMonth(hace6meses.getMonth() - 6);
+                        inicio = dateToISO(hace6meses);
+                        fin = dateToISO(hoy);
+                        mesSeleccionado = null;
+                        break;
+                    case 'ano':
+                        // Últimos 12 meses desde hoy
+                        const hace1ano = new Date(hoy);
+                        hace1ano.setFullYear(hace1ano.getFullYear() - 1);
+                        inicio = dateToISO(hace1ano);
+                        fin = dateToISO(hoy);
+                        mesSeleccionado = null;
+                        break;
+                    case 'total':
+                        // Total ventas (sin filtro)
+                        inicio = null;
+                        fin = null;
+                        mesSeleccionado = null;
+                        break;
+                }
+
+                // Guardar el período seleccionado
+                window.periodoSeleccionado = { tipo: periodoSeleccionado, inicio, fin };
+            }
+            renderReportes();
+        }
 
         function mostrarMensaje(elementId, mensaje, tipo) {
             const el = document.getElementById(elementId);
@@ -4360,7 +5037,16 @@
                 if (sec === 'clientes') renderClientesTable();
                 if (sec === 'seguimiento') renderSeguimiento();
                 if (sec === 'facturas') renderFacturas();
-                if (sec === 'reportes') renderReportes();
+                if (sec === 'reportes') {
+                    // Inicializar período por defecto (Últimos 3 meses)
+                    const selectPeriodo = document.getElementById('selectorPeriodo');
+                    if (selectPeriodo && !selectPeriodo.value) {
+                        selectPeriodo.value = 'ultimos3';
+                        cambiarPeriodo();
+                    } else {
+                        renderReportes();
+                    }
+                }
                 // Cerrar dropdowns al cambiar sección
                 const dropdown1 = document.getElementById('clientesDropdown');
                 const dropdown2 = document.getElementById('facturaClientesDropdown');
@@ -4673,7 +5359,52 @@
             }
         }
 
+        // FUNCIÓN DE DIAGNÓSTICO
+        window.diagnostico = function() {
+            const facturas = JSON.parse(localStorage.getItem('facturas_huella') || '[]');
+            console.log('\n=== DIAGNÓSTICO COMPLETO ===\n');
+            console.log(`Total facturas en localStorage: ${facturas.length}\n`);
+
+            const clientes = {};
+            facturas.forEach(f => {
+                const nombre = f.cliente?.nombre || 'Desconocido';
+                if (!clientes[nombre]) clientes[nombre] = [];
+                clientes[nombre].push({
+                    numero: f.numero_factura,
+                    fecha: f.fecha,
+                    total: f.total,
+                    estado: f.estado
+                });
+            });
+
+            Object.entries(clientes).forEach(([nombre, datos]) => {
+                console.log(`\n👤 ${nombre}: ${datos.length} facturas`);
+                datos.forEach(d => {
+                    console.log(`   ${d.numero} | ${d.fecha} | $${d.total} | ${d.estado}`);
+                });
+            });
+        };
+
+        // Llamar automáticamente
+        setTimeout(() => {
+            console.log('💡 Ejecuta: diagnostico() en la consola para ver todos los datos');
+            window.diagnostico();
+        }, 2000);
+
         window.addEventListener('DOMContentLoaded', function() {
+            // Establecer período inicial a Octubre si no está definido
+            if (!window.periodoSeleccionado) {
+                const hoy = new Date();
+                const año = hoy.getFullYear();
+                const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+                const día = String(hoy.getDate()).padStart(2, '0');
+                window.periodoSeleccionado = {
+                    tipo: 'octubre',
+                    inicio: '2026-10-01',
+                    fin: `${año}-${mes}-${día}`
+                };
+            }
+
             // Esperar a que Supabase esté listo
             let waitCount = 0;
             const checkSupabaseReady = setInterval(() => {
