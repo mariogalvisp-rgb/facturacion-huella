@@ -1447,6 +1447,57 @@
             <div class="card">
                 <h2>Seguimiento de Pedidos</h2>
                 <p>Actualiza el estado de tus pedidos y envía notificaciones automáticas por WhatsApp a tus clientes.</p>
+
+                <!-- FILTROS EN 2 RENGLONES -->
+                <div style="margin-top: 20px; padding: 12px 16px; background: var(--crema); border-radius: var(--radio); border: 1px solid var(--dorado);">
+                    <!-- RENGLÓN 1: Mes + Estado -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: flex-end; margin-bottom: 12px;">
+                        <!-- MES -->
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--gris-medio); margin-bottom: 4px;">📅 Mes</label>
+                            <select id="selectorMesSeguimiento" style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem;" onchange="cambiarMesEnSeguimiento()">
+                                <option value="septiembre">Septiembre</option>
+                                <option value="octubre" selected>Octubre</option>
+                                <!-- Los próximos meses se agregarán automáticamente cuando lleguen -->
+                                <option value="todos">Todos los meses</option>
+                            </select>
+                        </div>
+                        <!-- ESTADO -->
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--gris-medio); margin-bottom: 4px;">Estado</label>
+                            <select id="filtroEstadoSeguimiento" style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem;" onchange="cambiarEstadoEnSeguimiento()">
+                                <option value="">Todos</option>
+                                <option value="Pedido recibido">Pedido recibido</option>
+                                <option value="Solicitud de pago">Solicitud de pago</option>
+                                <option value="Pago recibido">Pago recibido</option>
+                                <option value="Pedido entregado">Pedido entregado</option>
+                                <option value="Orden completada">Orden completada</option>
+                            </select>
+                        </div>
+                        <!-- BOTÓN LIMPIAR -->
+                        <button type="button" class="btn btn-secondary btn-small" onclick="limpiarFiltrosSeguimiento()" style="height: fit-content; padding: 8px 12px; font-size: 0.85rem;">Limpiar</button>
+                    </div>
+
+                    <!-- RENGLÓN 2: Fecha Desde + Fecha Hasta + Cliente -->
+                    <div style="display: grid; grid-template-columns: 0.9fr 0.9fr 1.2fr; gap: 10px; align-items: flex-end;">
+                        <!-- DESDE -->
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--gris-medio); margin-bottom: 4px;">Desde</label>
+                            <input type="date" id="filtroFechaDesdeSegui" style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem;" onchange="cambiarFechaDesdeEnSeguimiento();">
+                        </div>
+                        <!-- HASTA -->
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--gris-medio); margin-bottom: 4px;">Hasta</label>
+                            <input type="date" id="filtroFechaHastaSegui" style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem;" onchange="cambiarFechaHastaEnSeguimiento();">
+                        </div>
+                        <!-- CLIENTE -->
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--gris-medio); margin-bottom: 4px;">🔍 Cliente</label>
+                            <input type="text" id="filtroClienteSeguimiento" placeholder="Buscar cliente..." style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem;" onkeyup="buscarClienteEnSeguimiento();">
+                        </div>
+                    </div>
+                </div>
+
                 <div id="seguimientoList" style="margin-top: 24px;"></div>
             </div>
         </section>
@@ -1457,23 +1508,19 @@
                 <h2>Historial de Facturas</h2>
                 <p>Consulta todas tus facturas generadas y su estado de pago.</p>
 
-                <!-- FILTROS CONSOLIDADOS EN UN RENGLÓN -->
+                <!-- FILTROS EN 2 RENGLONES -->
                 <div style="margin-top: 20px; padding: 12px 16px; background: var(--crema); border-radius: var(--radio); border: 1px solid var(--dorado);">
-                    <div style="display: grid; grid-template-columns: 1.2fr 0.9fr 0.9fr 0.9fr auto; gap: 10px; align-items: flex-end;">
-                        <!-- CLIENTE -->
+                    <!-- RENGLÓN 1: Mes + Estado + Limpiar -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: flex-end; margin-bottom: 12px;">
+                        <!-- MES -->
                         <div>
-                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--gris-medio); margin-bottom: 4px;">🔍 Cliente</label>
-                            <input type="text" id="filtroClienteInput" placeholder="Buscar cliente..." style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem;" onkeyup="filtrarPorCliente(); filtrarPorFecha(); filtrarPorEstado();">
-                        </div>
-                        <!-- DESDE -->
-                        <div>
-                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--gris-medio); margin-bottom: 4px;">Desde</label>
-                            <input type="date" id="filtroFechaDesde" style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem;" onchange="filtrarPorFecha(); filtrarPorCliente(); filtrarPorEstado();">
-                        </div>
-                        <!-- HASTA -->
-                        <div>
-                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--gris-medio); margin-bottom: 4px;">Hasta</label>
-                            <input type="date" id="filtroFechaHasta" style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem;" onchange="filtrarPorFecha(); filtrarPorCliente(); filtrarPorEstado();">
+                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--gris-medio); margin-bottom: 4px;">📅 Mes</label>
+                            <select id="selectorMesFacturas" style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem;" onchange="filtrarPorMes(); filtrarPorCliente(); filtrarPorFecha(); filtrarPorEstado();">
+                                <option value="septiembre">Septiembre</option>
+                                <option value="octubre" selected>Octubre</option>
+                                <!-- Los próximos meses se agregarán automáticamente cuando lleguen -->
+                                <option value="todos">Todos los meses</option>
+                            </select>
                         </div>
                         <!-- ESTADO -->
                         <div>
@@ -1489,6 +1536,25 @@
                         </div>
                         <!-- BOTÓN LIMPIAR -->
                         <button type="button" class="btn btn-secondary btn-small" onclick="limpiarTodosFiltros()" style="height: fit-content; padding: 8px 12px; font-size: 0.85rem;">Limpiar</button>
+                    </div>
+
+                    <!-- RENGLÓN 2: Desde + Hasta + Cliente -->
+                    <div style="display: grid; grid-template-columns: 0.9fr 0.9fr 1.2fr; gap: 10px; align-items: flex-end;">
+                        <!-- DESDE -->
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--gris-medio); margin-bottom: 4px;">Desde</label>
+                            <input type="date" id="filtroFechaDesde" style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem;" onchange="filtrarPorFecha(); filtrarPorCliente(); filtrarPorEstado();">
+                        </div>
+                        <!-- HASTA -->
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--gris-medio); margin-bottom: 4px;">Hasta</label>
+                            <input type="date" id="filtroFechaHasta" style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem;" onchange="filtrarPorFecha(); filtrarPorCliente(); filtrarPorEstado();">
+                        </div>
+                        <!-- CLIENTE -->
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--gris-medio); margin-bottom: 4px;">🔍 Cliente</label>
+                            <input type="text" id="filtroClienteInput" placeholder="Buscar cliente..." style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem;" onkeyup="filtrarPorCliente(); filtrarPorFecha(); filtrarPorEstado();">
+                        </div>
                     </div>
                 </div>
 
@@ -2019,6 +2085,13 @@
         let productosSeleccionados = {};
         let mesSeleccionado = null; // Mes seleccionado en formato "2026-10"
 
+        // ===== FILTROS DE SEGUIMIENTO =====
+        let mesSeleccionadoEnSeguimiento = 'octubre'; // Mes seleccionado en Seguimiento (default: octubre)
+        let estadoSeleccionadoEnSeguimiento = ''; // Estado seleccionado (vacío = mostrar todos)
+        let fechaDesdeEnSeguimiento = null; // Fecha inicio para filtrado por rango
+        let fechaHastaEnSeguimiento = null; // Fecha fin para filtrado por rango
+        let clienteFiltroEnSeguimiento = ''; // Cliente para búsqueda
+
         // ========== FUNCIÓN DE LIMPIEZA DE DUPLICADOS ==========
         function limpiarFacturasDelStorage() {
             try {
@@ -2271,7 +2344,15 @@
                     const facturasFromSupabase = data.map(f => ({
                         id: f.numero_factura || f.id,
                         numero_orden: f.numero_factura || f.id,
-                        cliente: { nombre: f.cliente_nombre || 'Cliente' },
+                        cliente: {
+                            nombre: f.cliente_nombre || 'Cliente',
+                            celular: f.cliente_celular || '',
+                            direccion: f.cliente_direccion || '',
+                            email: f.cliente_email || '',
+                            ciudad: f.cliente_ciudad || '',
+                            identificacion: f.cliente_identificacion || ''
+                        },
+                        vendedor: f.cliente_comercial || f.vendedor || '',
                         fecha: f.fecha,
                         estado: f.estado,
                         total: f.total,
@@ -3563,8 +3644,11 @@
             // Calcular y mostrar totales por estado
             calcularTotalesPorEstado();
 
-            // Limpiar filtro al renderizar
+            // Limpiar filtro de cliente pero mantener el de mes
             limpiarFiltroCliente();
+
+            // Re-aplicar el filtro de mes después de renderizar la tabla
+            aplicarFiltrosCombinados();
         }
 
         // Función auxiliar para convertir fecha a formato ISO (YYYY-MM-DD)
@@ -3593,11 +3677,28 @@
             return '1900-01-01';
         }
 
+        function obtenerRangoMesPorNombre(nombreMes) {
+            switch(nombreMes) {
+                case 'septiembre':
+                    return { inicio: '2026-09-01', fin: '2026-09-30' };
+                case 'octubre':
+                    return { inicio: '2026-10-01', fin: '2026-10-31' };
+                case 'noviembre':
+                    return { inicio: '2026-11-01', fin: '2026-11-30' };
+                case 'diciembre':
+                    return { inicio: '2026-12-01', fin: '2026-12-31' };
+                case 'todos':
+                default:
+                    return { inicio: null, fin: null };
+            }
+        }
+
         function aplicarFiltrosCombinados() {
             const inputCliente = document.getElementById('filtroClienteInput');
             const inputDesde = document.getElementById('filtroFechaDesde');
             const inputHasta = document.getElementById('filtroFechaHasta');
             const selectEstado = document.getElementById('filtroEstado');
+            const selectorMes = document.getElementById('selectorMesFacturas');
             const tbody = document.getElementById('facturasTable');
             const resumenBox = document.getElementById('resumenClienteBox');
 
@@ -3607,6 +3708,10 @@
             const fechaDesdeStr = inputDesde?.value || '';  // Formato: YYYY-MM-DD
             const fechaHastaStr = inputHasta?.value || '';  // Formato: YYYY-MM-DD
             const estadoSeleccionado = (selectEstado?.value || '').trim();
+            const mesSeleccionado = selectorMes?.value || 'octubre';
+
+            // Obtener rango de fechas del mes seleccionado
+            const { inicio: mesInicio, fin: mesFin } = obtenerRangoMesPorNombre(mesSeleccionado);
 
             // Aplicar filtros a todas las filas
             const rows = tbody.querySelectorAll('tr');
@@ -3622,15 +3727,25 @@
 
                 // Validar fecha - normalizar ambas fechas a formato ISO para comparación
                 let coincideFecha = true;
-                if (fechaRow && (fechaDesdeStr || fechaHastaStr)) {
+                if (fechaRow) {
                     // Normalizar la fecha de la fila al formato ISO
                     fechaRow = normalizarFecha(fechaRow);
 
-                    if (fechaDesdeStr && fechaRow < fechaDesdeStr) {
-                        coincideFecha = false;
+                    // PRIMERO: Filtrar por rango del mes seleccionado
+                    if (mesInicio && mesFin) {
+                        if (fechaRow < mesInicio || fechaRow > mesFin) {
+                            coincideFecha = false;
+                        }
                     }
-                    if (fechaHastaStr && fechaRow > fechaHastaStr) {
-                        coincideFecha = false;
+
+                    // SEGUNDO: Filtrar por rango de fechas específico (si está ingresado)
+                    if (coincideFecha && (fechaDesdeStr || fechaHastaStr)) {
+                        if (fechaDesdeStr && fechaRow < fechaDesdeStr) {
+                            coincideFecha = false;
+                        }
+                        if (fechaHastaStr && fechaRow > fechaHastaStr) {
+                            coincideFecha = false;
+                        }
                     }
                 }
 
@@ -3674,6 +3789,10 @@
 
             // Actualizar totales por estado después de aplicar filtros
             calcularTotalesPorEstado();
+        }
+
+        function filtrarPorMes() {
+            aplicarFiltrosCombinados();
         }
 
         function filtrarPorCliente() {
@@ -3800,13 +3919,13 @@
         function intentarEditarFactura(idx) {
             const factura = facturas[idx];
             if (!factura) return;
-            
-            // Verificar si está bloqueada
-            if (factura.estado === 'Orden completada' || factura.estado === 'Orden cancelada') {
+
+            // Verificar si está bloqueada - Solo bloquear "Orden cancelada"
+            if (factura.estado === 'Orden cancelada') {
                 alert(`❌ No puedes editar facturas ${factura.estado.toLowerCase()}.\n\nEstado actual: ${factura.estado}`);
                 return;
             }
-            
+
             // Si está permitida, abrir editor
             editarFactura(idx);
         }
@@ -3814,19 +3933,53 @@
         function editarFactura(idx) {
             const factura = facturas[idx];
             if (!factura) return;
-            
+
+            // Crear lista de opciones de productos
+            const productosOptions = productos.map(p =>
+                `<option value="${p.id}" data-precio="${p.precio}">${p.nombre}</option>`
+            ).join('');
+
+            // Crear filas de items editables - Con data attribute para setear después
+            const itemsHTML = factura.items.map((item, itemIdx) => {
+                const productoId = productos.find(p => p.nombre === item.nombre)?.id || '';
+                return `
+                    <div class="edit-item-row" data-item-idx="${itemIdx}" style="border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; border-radius: 4px; background: #f9f9f9;">
+                        <div style="margin-bottom: 8px;">
+                            <label style="display: block; margin-bottom: 3px; font-size: 12px;"><strong>Producto:</strong></label>
+                            <select id="editProducto_${itemIdx}" data-selected-id="${productoId}" onchange="actualizarPrecioItem(${itemIdx})" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
+                                <option value="">-- Seleccionar producto --</option>
+                                ${productosOptions}
+                            </select>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 3px; font-size: 12px;"><strong>Cantidad:</strong></label>
+                                <input type="number" id="editCantidad_${itemIdx}" value="${item.cantidad}" min="1" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 3px; font-size: 12px;"><strong>Precio:</strong></label>
+                                <input type="number" id="editPrecio_${itemIdx}" value="${item.precio}" min="0" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                        </div>
+                        <button onclick="eliminarItemEdit(${itemIdx})" style="margin-top: 8px; padding: 6px 12px; background: #ff6b6b; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">🗑️ Eliminar</button>
+                    </div>
+                `;
+            }).join('');
+
             // Crear modal de edición
             const modalHTML = `
                 <div id="editFacturaModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-                    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 700px; width: 90%; max-height: 90vh; overflow-y: auto;">
                         <h2>Editar Factura ${factura.id}</h2>
-                        
+
                         <div style="margin-top: 20px;">
                             <label style="display: block; margin-bottom: 5px;"><strong>Estado:</strong></label>
                             <select id="editEstado" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                                <option value="Pendiente" ${factura.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                                <option value="Pagada" ${factura.estado === 'Pagada' ? 'selected' : ''}>Pagada</option>
+                                <option value="Pedido recibido" ${factura.estado === 'Pedido recibido' ? 'selected' : ''}>Pedido recibido</option>
+                                <option value="Solicitud de pago" ${factura.estado === 'Solicitud de pago' ? 'selected' : ''}>Solicitud de pago</option>
+                                <option value="Pago recibido" ${factura.estado === 'Pago recibido' ? 'selected' : ''}>Pago recibido</option>
                                 <option value="Pedido entregado" ${factura.estado === 'Pedido entregado' ? 'selected' : ''}>Pedido entregado</option>
+                                <option value="Orden completada" ${factura.estado === 'Orden completada' ? 'selected' : ''}>Orden completada</option>
                             </select>
                         </div>
 
@@ -3847,7 +4000,23 @@
 
                         <div style="margin-top: 15px;">
                             <label style="display: block; margin-bottom: 5px;"><strong>Vendedor:</strong></label>
-                            <input type="text" id="editVendedor" value="${factura.vendedor}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <select id="editVendedor" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <option value="">-- Seleccionar --</option>
+                                <option value="Felipe">Felipe</option>
+                                <option value="Mario">Mario</option>
+                                <option value="Juana">Juana</option>
+                                <option value="Angela">Angela</option>
+                                <option value="Página web">Página web</option>
+                                <option value="MercadoLibre">MercadoLibre</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-top: 20px; border-top: 2px solid #ddd; padding-top: 15px;">
+                            <h3 style="margin-top: 0;">Productos</h3>
+                            <div id="editItemsContainer">
+                                ${itemsHTML}
+                            </div>
+                            <button onclick="agregarItemEdit()" style="margin-top: 10px; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;">+ Agregar Producto</button>
                         </div>
 
                         <div style="margin-top: 20px; display: flex; gap: 10px;">
@@ -3857,39 +4026,201 @@
                     </div>
                 </div>
             `;
-            
+
             // Insertar modal en el DOM
             const existingModal = document.getElementById('editFacturaModal');
             if (existingModal) existingModal.remove();
-            
+
             document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+            // Setear los valores seleccionados después de insertar el HTML
+            factura.items.forEach((item, itemIdx) => {
+                const selectEl = document.getElementById(`editProducto_${itemIdx}`);
+                if (selectEl) {
+                    const productoId = selectEl.getAttribute('data-selected-id');
+                    if (productoId) {
+                        selectEl.value = productoId;
+                    }
+                }
+            });
+        }
+
+        function actualizarPrecioItem(itemIdx) {
+            const selectProducto = document.getElementById(`editProducto_${itemIdx}`);
+            const inputPrecio = document.getElementById(`editPrecio_${itemIdx}`);
+
+            if (!selectProducto || !inputPrecio) return;
+
+            const productoId = parseInt(selectProducto.value);
+            if (!productoId) return;
+
+            const producto = productos.find(p => p.id === productoId);
+            if (producto) {
+                inputPrecio.value = producto.precio;
+            }
+        }
+
+        function agregarItemEdit() {
+            const container = document.getElementById('editItemsContainer');
+            const itemIdx = container.children.length;
+
+            const productosOptions = productos.map(p =>
+                `<option value="${p.id}" data-precio="${p.precio}">${p.nombre}</option>`
+            ).join('');
+
+            const nuevoItem = `
+                <div class="edit-item-row" data-item-idx="${itemIdx}" style="border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; border-radius: 4px; background: #f9f9f9;">
+                    <div style="margin-bottom: 8px;">
+                        <label style="display: block; margin-bottom: 3px; font-size: 12px;"><strong>Producto:</strong></label>
+                        <select id="editProducto_${itemIdx}" onchange="actualizarPrecioItem(${itemIdx})" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
+                            <option value="">-- Seleccionar producto --</option>
+                            ${productosOptions}
+                        </select>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 3px; font-size: 12px;"><strong>Cantidad:</strong></label>
+                            <input type="number" id="editCantidad_${itemIdx}" value="1" min="1" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 3px; font-size: 12px;"><strong>Precio:</strong></label>
+                            <input type="number" id="editPrecio_${itemIdx}" value="0" min="0" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                    </div>
+                    <button onclick="eliminarItemEdit(${itemIdx})" style="margin-top: 8px; padding: 6px 12px; background: #ff6b6b; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">🗑️ Eliminar</button>
+                </div>
+            `;
+
+            container.insertAdjacentHTML('beforeend', nuevoItem);
+        }
+
+        function eliminarItemEdit(itemIdx) {
+            const container = document.getElementById('editItemsContainer');
+            const items = container.querySelectorAll('div[style*="border: 1px solid"]');
+            if (items[itemIdx]) {
+                items[itemIdx].remove();
+            }
         }
 
         function guardarEdicionFactura(idx) {
-            const estado = document.getElementById('editEstado').value;
-            const cliente = document.getElementById('editCliente').value;
-            const celular = document.getElementById('editCelular').value;
-            const direccion = document.getElementById('editDireccion').value;
-            const vendedor = document.getElementById('editVendedor').value;
+            try {
+                console.log('Iniciando guardarEdicionFactura con idx:', idx);
 
-            // Actualizar factura
-            facturas[idx].estado = estado;
-            facturas[idx].cliente.nombre = cliente;
-            facturas[idx].cliente.celular = celular;
-            facturas[idx].cliente.direccion = direccion;
-            facturas[idx].vendedor = vendedor;
+                const estado = document.getElementById('editEstado').value;
+                const cliente = document.getElementById('editCliente').value;
+                const celular = document.getElementById('editCelular').value;
+                const direccion = document.getElementById('editDireccion').value;
+                const vendedor = document.getElementById('editVendedor').value;
 
-            // Guardar en localStorage
-            guardarEnStorage();
-            renderFacturas();
-            renderSeguimiento();
+                console.log('Estado:', estado, 'Cliente:', cliente);
 
-            cerrarEditFactura();
+                // Recopilar items editados
+                const container = document.getElementById('editItemsContainer');
+                if (!container) {
+                    alert('❌ Error: No se pudo encontrar el contenedor de items');
+                    console.error('Container editItemsContainer no encontrado');
+                    return;
+                }
 
-            // Sincronizar con Supabase
-            sincronizarConSupabase();
+                const itemsEditados = [];
+                const itemDivs = container.querySelectorAll('.edit-item-row');
 
-            alert('✅ Factura actualizada correctamente\n(Sincronizando con Supabase...)');
+                console.log('Items encontrados:', itemDivs.length);
+
+                if (itemDivs.length === 0) {
+                    alert('⚠️ Debes agregar al menos un producto a la factura');
+                    return;
+                }
+
+                itemDivs.forEach((div, itemIdx) => {
+                    const selectProducto = div.querySelector('select');
+                    const inputCantidad = div.querySelector('input[id^="editCantidad_"]');
+                    const inputPrecio = div.querySelector('input[id^="editPrecio_"]');
+
+                    if (selectProducto && selectProducto.value) {
+                        const productoId = parseInt(selectProducto.value);
+                        const producto = productos.find(p => p.id === productoId);
+
+                        if (producto) {
+                            const cantidad = parseInt(inputCantidad.value) || 1;
+                            const precio = parseInt(inputPrecio.value) || producto.precio;
+
+                            itemsEditados.push({
+                                nombre: producto.nombre,
+                                cantidad: cantidad,
+                                precio: precio
+                            });
+
+                            console.log('Item añadido:', producto.nombre, 'Cantidad:', cantidad);
+                        }
+                    }
+                });
+
+                if (itemsEditados.length === 0) {
+                    alert('⚠️ Debes seleccionar al menos un producto válido');
+                    return;
+                }
+
+                // Actualizar factura
+                if (!facturas[idx]) {
+                    alert('❌ Error: Factura no encontrada con índice ' + idx);
+                    console.error('Factura no encontrada:', idx);
+                    return;
+                }
+
+                facturas[idx].estado = estado;
+                facturas[idx].cliente.nombre = cliente;
+                facturas[idx].cliente.celular = celular;
+                facturas[idx].cliente.direccion = direccion;
+                facturas[idx].vendedor = vendedor;
+                facturas[idx].items = itemsEditados;
+
+                // Recalcular totales
+                const subtotal = itemsEditados.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+                const descuentoMonto = facturas[idx].descuentoMonto || 0;
+                const envio = facturas[idx].envio || 0;
+                const total = subtotal - descuentoMonto + envio;
+
+                facturas[idx].subtotal = subtotal;
+                facturas[idx].total = total;
+
+                console.log('Factura actualizada - Subtotal:', subtotal, 'Total:', total);
+
+                // Guardar en localStorage
+                guardarEnStorage();
+
+                // Mantener el mes seleccionado en HISTORIAL antes de renderizar
+                const selectorMesHistorial = document.getElementById('selectorMesFacturas');
+                const mesActualHistorial = selectorMesHistorial ? selectorMesHistorial.value : 'octubre';
+
+                renderFacturas();
+
+                // Asegurar que el selector de historial mantenga su valor después de renderizar
+                if (selectorMesHistorial) {
+                    selectorMesHistorial.value = mesActualHistorial;
+                }
+
+                // También mantener el mes en SEGUIMIENTO si está activo
+                const selectorMesSeguimiento = document.getElementById('selectorMesSeguimiento');
+                const mesActualSeguimiento = selectorMesSeguimiento ? selectorMesSeguimiento.value : mesSeleccionadoEnSeguimiento;
+
+                renderSeguimiento();
+
+                // Asegurar que el selector de seguimiento mantenga su valor
+                if (selectorMesSeguimiento) {
+                    selectorMesSeguimiento.value = mesActualSeguimiento;
+                }
+
+                cerrarEditFactura();
+
+                // Sincronizar con Supabase
+                sincronizarConSupabase();
+
+                alert('✅ Factura actualizada correctamente\n(Sincronizando con Supabase...)');
+            } catch (error) {
+                console.error('Error completo:', error);
+                alert('❌ Error al guardar la factura:\n' + error.message + '\n\nAbre la consola para más detalles');
+            }
         }
 
         function cerrarEditFactura() {
@@ -4253,29 +4584,83 @@
         // SEGUIMIENTO
         function renderSeguimiento() {
             const container = document.getElementById('seguimientoList');
-            
-            // Filtrar solo facturas que NO estén completadas
-            const facturasActivas = facturas
+
+            // PASO 1: Filtrar solo facturas que NO estén completadas/canceladas
+            let facturasActivas = facturas
                 .map((f, idx) => ({ factura: f, idx: idx }))
                 .filter(item => item.factura.estado !== 'Orden completada' && item.factura.estado !== 'Orden cancelada');
-            
+
+            console.log('🔍 renderSeguimiento - Mes seleccionado:', mesSeleccionadoEnSeguimiento);
+            console.log('🔍 Facturas totales (sin filtro completa/cancelada):', facturasActivas.length);
+            facturasActivas.forEach((item, i) => {
+                console.log(`  [${i}] ${item.factura.cliente.nombre} - Fecha: ${item.factura.fecha} - Estado: ${item.factura.estado}`);
+            });
+
+            // PASO 2: Aplicar filtro de MES (según selector)
+            const { inicio: fechaInicio, fin: fechaFin } = obtenerRangoMesEnSeguimiento();
+            console.log('🔍 Rango de fechas:', { inicio: fechaInicio, fin: fechaFin });
+            if (fechaInicio && fechaFin) {
+                facturasActivas = facturasActivas.filter(item => {
+                    const fechaNormalizada = normalizarFecha(item.factura.fecha);
+                    const pasa = fechaNormalizada >= fechaInicio && fechaNormalizada <= fechaFin;
+                    console.log(`  ✓ ${item.factura.cliente.nombre} - ${item.factura.fecha} → ${fechaNormalizada} - Pasa filtro: ${pasa}`);
+                    return pasa;
+                });
+                console.log('🔍 Después de filtro de mes:', facturasActivas.length);
+            } else {
+                console.log('🔍 Sin filtro de mes (null/null)');
+            }
+
+            // PASO 3: Aplicar filtro de ESTADO
+            if (estadoSeleccionadoEnSeguimiento) {
+                facturasActivas = facturasActivas.filter(item =>
+                    item.factura.estado === estadoSeleccionadoEnSeguimiento
+                );
+            }
+
+            // PASO 4: Aplicar filtro de FECHA DESDE-HASTA (filtro adicional granular)
+            if (fechaDesdeEnSeguimiento || fechaHastaEnSeguimiento) {
+                facturasActivas = facturasActivas.filter(item => {
+                    const fechaNormalizada = normalizarFecha(item.factura.fecha);
+
+                    if (fechaDesdeEnSeguimiento && fechaNormalizada < fechaDesdeEnSeguimiento) {
+                        return false;
+                    }
+                    if (fechaHastaEnSeguimiento && fechaNormalizada > fechaHastaEnSeguimiento) {
+                        return false;
+                    }
+                    return true;
+                });
+            }
+
+            // PASO 5: Aplicar filtro de CLIENTE
+            if (clienteFiltroEnSeguimiento) {
+                facturasActivas = facturasActivas.filter(item =>
+                    item.factura.cliente.nombre.toLowerCase().includes(clienteFiltroEnSeguimiento)
+                );
+            }
+
+            // PASO 6: Mostrar mensaje si no hay resultados
             if (facturasActivas.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">✅ ¡Todos los pedidos están completados!</p>';
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">✅ ¡No hay pedidos pendientes con estos filtros!</p>';
                 return;
             }
 
+            // PASO 7: Renderizar facturas filtradas
             container.innerHTML = facturasActivas.map(item => {
                 const f = item.factura;
                 const idx = item.idx;
                 const estados = ['Pedido recibido', 'Solicitud de pago', 'Pago recibido', 'Pedido entregado', 'Orden completada'];
                 const estadoActual = f.estado || 'Pedido recibido';
-                
+
                 return `
                     <div class="card" style="margin-bottom: 15px; border-left: 4px solid #2C1810;">
                         <div style="display: flex; justify-content: space-between; align-items: start;">
                             <div>
                                 <p style="margin: 5px 0;"><strong>📌 ${f.id}</strong> - ${f.cliente.nombre}</p>
-                                <p style="margin: 5px 0; color: #666; font-size: 14px;">Celular: <strong>${f.cliente.celular}</strong></p>
+                                <p style="margin: 5px 0; color: #666; font-size: 14px;">📱 Celular: <strong>${f.cliente.celular || 'No registrado'}</strong></p>
+                                <p style="margin: 5px 0; color: #666; font-size: 14px;">📍 Dirección: <strong>${f.cliente.direccion || 'No registrada'}</strong></p>
+                                <p style="margin: 5px 0; color: #666; font-size: 14px;">👤 Vendedor: <strong>${f.vendedor || 'No asignado'}</strong></p>
                                 <p style="margin: 5px 0; color: #999; font-size: 12px;">${f.fecha}</p>
                             </div>
                             <div style="text-align: right;">
@@ -4283,22 +4668,22 @@
                                 <p style="margin: 5px 0; padding: 5px 10px; background: #f0f0f0; border-radius: 4px; font-weight: bold; font-size: 13px;">Estado: ${estadoActual}</p>
                             </div>
                         </div>
-                        
+
                         <div style="margin-top: 12px;">
                             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                                 ${estados.map((estado) => `
-                                    <button class="btn-small" style="background: ${estado === estadoActual ? '#2C1810' : '#ddd'}; color: ${estado === estadoActual ? 'white' : '#666'};" 
+                                    <button class="btn-small" style="background: ${estado === estadoActual ? '#2C1810' : '#ddd'}; color: ${estado === estadoActual ? 'white' : '#666'};"
                                             onclick="actualizarSeguimiento(${idx}, '${estado}')">
                                         ${estado}
                                     </button>
                                 `).join('')}
-                                <button class="btn-small" style="background: #E74C3C; color: white;" 
+                                <button class="btn-small" style="background: #E74C3C; color: white;"
                                         onclick="actualizarSeguimiento(${idx}, 'Orden cancelada')">
                                     ❌ Cancelada
                                 </button>
                                 <button class="btn-small" style="background: #FF9800; color: white;" onclick="mostrarStickerDomicilio(${idx})">🏠 Domicilio</button>
                             </div>
-                            <button class="btn" style="margin-top: 10px; width: 100%; background: #25D366; border: none; color: white; cursor: pointer; font-weight: 600;" 
+                            <button class="btn" style="margin-top: 10px; width: 100%; background: #25D366; border: none; color: white; cursor: pointer; font-weight: 600;"
                                     onclick="enviarWhatsAppSeguimiento(${idx})">
                                 📱 Enviar Mensaje WhatsApp
                             </button>
@@ -5019,6 +5404,109 @@
             renderReportes();
         }
 
+        // ===== FUNCIONES DE FILTROS DEL SEGUIMIENTO =====
+        function cambiarMesEnSeguimiento() {
+            const select = document.getElementById('selectorMesSeguimiento');
+            if (select) {
+                mesSeleccionadoEnSeguimiento = select.value;
+                renderSeguimiento();
+            }
+        }
+
+        function cambiarEstadoEnSeguimiento() {
+            const select = document.getElementById('filtroEstadoSeguimiento');
+            if (select) {
+                estadoSeleccionadoEnSeguimiento = select.value;
+                renderSeguimiento();
+            }
+        }
+
+        function cambiarFechaDesdeEnSeguimiento() {
+            const input = document.getElementById('filtroFechaDesdeSegui');
+            if (input) {
+                fechaDesdeEnSeguimiento = input.value ? input.value : null;
+                renderSeguimiento();
+            }
+        }
+
+        function cambiarFechaHastaEnSeguimiento() {
+            const input = document.getElementById('filtroFechaHastaSegui');
+            if (input) {
+                fechaHastaEnSeguimiento = input.value ? input.value : null;
+                renderSeguimiento();
+            }
+        }
+
+        function buscarClienteEnSeguimiento() {
+            const input = document.getElementById('filtroClienteSeguimiento');
+            if (input) {
+                clienteFiltroEnSeguimiento = input.value.toLowerCase();
+                renderSeguimiento();
+            }
+        }
+
+        function limpiarFiltrosSeguimiento() {
+            // Reset de todos los filtros a los valores por defecto
+            mesSeleccionadoEnSeguimiento = 'octubre';
+            estadoSeleccionadoEnSeguimiento = '';
+            fechaDesdeEnSeguimiento = null;
+            fechaHastaEnSeguimiento = null;
+            clienteFiltroEnSeguimiento = '';
+
+            // Limpiar los valores en los inputs
+            const selectorMes = document.getElementById('selectorMesSeguimiento');
+            const selectorEstado = document.getElementById('filtroEstadoSeguimiento');
+            const inputDesde = document.getElementById('filtroFechaDesdeSegui');
+            const inputHasta = document.getElementById('filtroFechaHastaSegui');
+            const inputCliente = document.getElementById('filtroClienteSeguimiento');
+
+            if (selectorMes) selectorMes.value = 'octubre';
+            if (selectorEstado) selectorEstado.value = '';
+            if (inputDesde) inputDesde.value = '';
+            if (inputHasta) inputHasta.value = '';
+            if (inputCliente) inputCliente.value = '';
+
+            // Re-renderizar con filtros limpios
+            renderSeguimiento();
+        }
+
+        // Función auxiliar para obtener rango de fechas según mes seleccionado
+        function obtenerRangoMesEnSeguimiento() {
+            let inicio, fin;
+            console.log('📅 obtenerRangoMesEnSeguimiento - mesSeleccionadoEnSeguimiento:', mesSeleccionadoEnSeguimiento);
+
+            switch(mesSeleccionadoEnSeguimiento) {
+                case 'septiembre':
+                    inicio = '2026-09-01';
+                    fin = '2026-09-30';
+                    break;
+                case 'octubre':
+                    inicio = '2026-10-01';
+                    fin = '2026-10-31';
+                    break;
+                case 'noviembre':
+                    inicio = '2026-11-01';
+                    fin = '2026-11-30';
+                    break;
+                case 'diciembre':
+                    inicio = '2026-12-01';
+                    fin = '2026-12-31';
+                    break;
+                case 'todos':
+                    // Sin filtro de fechas
+                    inicio = null;
+                    fin = null;
+                    break;
+                default:
+                    console.log('⚠️ Caso default en obtenerRangoMesEnSeguimiento, mesSeleccionadoEnSeguimiento:', mesSeleccionadoEnSeguimiento);
+                    inicio = '2026-10-01';
+                    fin = '2026-10-31';
+            }
+
+            console.log('📅 Retornando rango:', { inicio, fin });
+            return { inicio, fin };
+        }
+
         function mostrarMensaje(elementId, mensaje, tipo) {
             const el = document.getElementById(elementId);
             if (!el) return; // Si elemento no existe, no hacer nada
@@ -5035,7 +5523,14 @@
                 const sec = e.target.dataset.section;
                 document.getElementById(sec).classList.add('active');
                 if (sec === 'clientes') renderClientesTable();
-                if (sec === 'seguimiento') renderSeguimiento();
+                if (sec === 'seguimiento') {
+                    // Asegurar que el selector esté en octubre al abrir seguimiento
+                    const selectorMes = document.getElementById('selectorMesSeguimiento');
+                    if (selectorMes) {
+                        selectorMes.value = mesSeleccionadoEnSeguimiento || 'octubre';
+                    }
+                    renderSeguimiento();
+                }
                 if (sec === 'facturas') renderFacturas();
                 if (sec === 'reportes') {
                     // Inicializar período por defecto (Últimos 3 meses)
@@ -5391,7 +5886,63 @@
             window.diagnostico();
         }, 2000);
 
+        // Función para agregar meses automáticamente al selector cuando lleguen
+        function agregarMesesAutomaticamente() {
+            const hoy = new Date();
+            const mesActual = hoy.getMonth() + 1; // 1-12
+            const mesesNombres = {
+                1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril', 5: 'Mayo', 6: 'Junio',
+                7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+            };
+            const mesesValores = {
+                1: 'enero', 2: 'febrero', 3: 'marzo', 4: 'abril', 5: 'mayo', 6: 'junio',
+                7: 'julio', 8: 'agosto', 9: 'septiembre', 10: 'octubre', 11: 'noviembre', 12: 'diciembre'
+            };
+
+            // Meses que ya existen en el HTML
+            const mesesExistentes = ['septiembre', 'octubre'];
+
+            // Agregar noviembre si estamos en noviembre o después
+            if (mesActual >= 11 && !mesesExistentes.includes('noviembre')) {
+                const selectores = document.querySelectorAll('[id$="Mes"]');
+                selectores.forEach(select => {
+                    const option = document.createElement('option');
+                    option.value = 'noviembre';
+                    option.textContent = 'Noviembre';
+                    // Insertar antes de "Todos"
+                    const todoOption = Array.from(select.options).find(o => o.value === 'todos');
+                    if (todoOption) {
+                        select.insertBefore(option, todoOption);
+                    } else {
+                        select.appendChild(option);
+                    }
+                });
+                mesesExistentes.push('noviembre');
+            }
+
+            // Agregar diciembre si estamos en diciembre
+            if (mesActual === 12 && !mesesExistentes.includes('diciembre')) {
+                const selectores = document.querySelectorAll('[id$="Mes"]');
+                selectores.forEach(select => {
+                    const option = document.createElement('option');
+                    option.value = 'diciembre';
+                    option.textContent = 'Diciembre';
+                    // Insertar antes de "Todos"
+                    const todoOption = Array.from(select.options).find(o => o.value === 'todos');
+                    if (todoOption) {
+                        select.insertBefore(option, todoOption);
+                    } else {
+                        select.appendChild(option);
+                    }
+                });
+                mesesExistentes.push('diciembre');
+            }
+        }
+
         window.addEventListener('DOMContentLoaded', function() {
+            // Agregar meses automáticamente según la fecha actual
+            agregarMesesAutomaticamente();
+
             // Establecer período inicial a Octubre si no está definido
             if (!window.periodoSeleccionado) {
                 const hoy = new Date();
