@@ -1156,8 +1156,41 @@
                 </div>
             </div>
 
+            <!-- RESET PASSWORD FORM -->
+            <div id="resetForm" style="display:none;">
+                <div class="login-form-group">
+                    <label>📧 Correo para recuperar</label>
+                    <input type="email" id="resetEmail" placeholder="tu@email.com">
+                </div>
+                <div class="login-buttons">
+                    <button class="btn-register" onclick="enviarEmailRecuperacion()">📧 Enviar enlace</button>
+                    <button class="btn-login" style="background:#999;" onclick="toggleLoginForm('login')">← Volver</button>
+                </div>
+            </div>
+
+            <!-- CHANGE PASSWORD FORM -->
+            <div id="changePasswordForm" style="display:none;">
+                <div class="login-form-group">
+                    <label>🔐 Nueva contraseña</label>
+                    <div style="position: relative;">
+                        <input type="password" id="newPassword" placeholder="Nueva contraseña">
+                        <button type="button" onclick="togglePasswordVisibility('newPassword')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; padding: 0;">👁️</button>
+                    </div>
+                </div>
+                <div class="login-form-group">
+                    <label>🔐 Confirmar contraseña</label>
+                    <div style="position: relative;">
+                        <input type="password" id="confirmPassword" placeholder="Confirmar contraseña">
+                        <button type="button" onclick="togglePasswordVisibility('confirmPassword')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; padding: 0;">👁️</button>
+                    </div>
+                </div>
+                <div class="login-buttons">
+                    <button class="btn-register" onclick="guardarNuevaContrasena()">✅ Guardar contraseña</button>
+                </div>
+            </div>
+
             <div class="login-toggle-text">
-                ¿Problemas? Probablemente no existe tu cuenta.
+                ¿Problemas? <a href="#" onclick="toggleLoginForm('reset'); return false;" style="color:#D4A574;cursor:pointer;">Recuperar contraseña</a>
             </div>
         </div>
     </div>
@@ -5601,7 +5634,18 @@
                     currentUser = data.session.user;
                     window.userSession = currentUser;
                     console.log('✅ Sesión activa:', currentUser.email);
-                    
+
+                    // 🔐 Si está en modo reset, mostrar formulario de cambio de contraseña
+                    if (window.resetMode) {
+                        console.log('🔐 Modo reset detectado - mostrando formulario de cambio');
+                        document.getElementById('loginScreen').classList.remove('hidden');
+                        document.getElementById('appContainer').style.display = 'none';
+                        document.getElementById('userBadge').classList.remove('active');
+                        toggleLoginForm('change');
+                        showLoginMessage('✅ Ingresa tu nueva contraseña', 'success');
+                        return;
+                    }
+
                     // PASO 1: Cargar desde localStorage (NUNCA FALLA)
                     try {
                         await cargarDatos();
@@ -5753,12 +5797,40 @@
         }
 
         function toggleLoginForm(form) {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const resetForm = document.getElementById('resetForm');
+            const changeForm = document.getElementById('changePasswordForm');
+
+            // Limpiar mensajes
+            document.getElementById('loginMessage').className = 'login-message';
+            document.getElementById('loginMessage').textContent = '';
+
             if (form === 'register') {
-                document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('registerForm').style.display = 'block';
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'block';
+                resetForm.style.display = 'none';
+                changeForm.style.display = 'none';
+            } else if (form === 'reset') {
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'none';
+                resetForm.style.display = 'block';
+                changeForm.style.display = 'none';
+                document.getElementById('resetEmail').value = '';
+            } else if (form === 'change') {
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'none';
+                resetForm.style.display = 'none';
+                changeForm.style.display = 'block';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
             } else {
-                document.getElementById('loginForm').style.display = 'block';
-                document.getElementById('registerForm').style.display = 'none';
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'none';
+                resetForm.style.display = 'none';
+                changeForm.style.display = 'none';
+                document.getElementById('loginEmail').value = '';
+                document.getElementById('loginPassword').value = '';
             }
         }
 
@@ -5783,6 +5855,97 @@
             msgBox.textContent = msg;
             msgBox.className = `login-message ${type}`;
             setTimeout(() => msgBox.className = 'login-message', 3000);
+        }
+
+        // 🔐 RECUPERACIÓN DE CONTRASEÑA
+        async function enviarEmailRecuperacion() {
+            const email = document.getElementById('resetEmail').value.trim();
+
+            if (!email) {
+                showLoginMessage('Por favor ingresa tu correo', 'error');
+                return;
+            }
+
+            if (!sbClient) {
+                showLoginMessage('❌ Supabase no está disponible', 'error');
+                return;
+            }
+
+            try {
+                showLoginMessage('📧 Enviando email...', 'info');
+
+                const { error } = await sbClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: `${window.location.origin}?mode=reset`
+                });
+
+                if (error) {
+                    console.error('❌ Error Supabase:', error);
+                    showLoginMessage('❌ ' + (error.message || 'Error al enviar email'), 'error');
+                    return;
+                }
+
+                showLoginMessage('✅ Email enviado. Revisa tu bandeja de entrada.', 'success');
+                console.log('✅ Email de recuperación enviado a:', email);
+
+                setTimeout(() => {
+                    document.getElementById('resetEmail').value = '';
+                    toggleLoginForm('login');
+                }, 2000);
+
+            } catch (e) {
+                console.error('❌ Exception:', e);
+                showLoginMessage('❌ Error: ' + e.message, 'error');
+            }
+        }
+
+        async function guardarNuevaContrasena() {
+            const newPassword = document.getElementById('newPassword').value.trim();
+            const confirmPassword = document.getElementById('confirmPassword').value.trim();
+
+            if (!newPassword || !confirmPassword) {
+                showLoginMessage('Por favor completa todos los campos', 'error');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showLoginMessage('Las contraseñas no coinciden', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showLoginMessage('La contraseña debe tener mínimo 6 caracteres', 'error');
+                return;
+            }
+
+            if (!sbClient || !currentUser) {
+                showLoginMessage('❌ No hay sesión válida', 'error');
+                return;
+            }
+
+            try {
+                showLoginMessage('🔄 Cambiando contraseña...', 'info');
+
+                const { error } = await sbClient.auth.updateUser({ password: newPassword });
+
+                if (error) {
+                    console.error('❌ Error Supabase:', error);
+                    showLoginMessage('❌ ' + (error.message || 'Error al cambiar contraseña'), 'error');
+                    return;
+                }
+
+                showLoginMessage('✅ Contraseña cambiada exitosamente', 'success');
+                console.log('✅ Contraseña actualizada');
+
+                setTimeout(() => {
+                    window.resetMode = false;
+                    window.resetToken = null;
+                    checkAuth();
+                }, 1500);
+
+            } catch (e) {
+                console.error('❌ Exception:', e);
+                showLoginMessage('❌ Error: ' + e.message, 'error');
+            }
         }
 
         // INICIAR
@@ -5956,6 +6119,17 @@
                     inicio: '2026-10-01',
                     fin: `${año}-${mes}-${día}`
                 };
+            }
+
+            // 🔐 Detectar si viene del link de recuperación de contraseña
+            const params = new URLSearchParams(window.location.hash.slice(1));
+            const accessToken = params.get('access_token');
+            const type = params.get('type');
+
+            if (type === 'recovery' && accessToken) {
+                console.log('🔐 Token de recuperación detectado');
+                window.resetMode = true;
+                window.resetToken = accessToken;
             }
 
             // Esperar a que Supabase esté listo
