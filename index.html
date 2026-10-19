@@ -1525,14 +1525,21 @@
                         <!-- ESTADO -->
                         <div>
                             <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--gris-medio); margin-bottom: 4px;">Estado</label>
-                            <select id="filtroEstado" style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem;" onchange="filtrarPorEstado(); filtrarPorCliente(); filtrarPorFecha();">
-                                <option value="">Todos</option>
-                                <option value="Pedido recibido">Pedido recibido</option>
-                                <option value="Solicitud de pago">Solicitud de pago</option>
-                                <option value="Pago recibido">Pago recibido</option>
-                                <option value="Pedido entregado">Pedido entregado</option>
-                                <option value="Orden completada">Orden completada</option>
-                            </select>
+                            <div style="position: relative;">
+                                <button type="button" id="btnFiltroEstado" onclick="toggleFiltroEstadoPanel(event)" style="width: 100%; padding: 8px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 0.9rem; background: white; text-align: left; cursor: pointer;">Estado: Todos ▾</button>
+                                <div id="panelFiltroEstado" style="display: none; position: absolute; top: 100%; left: 0; min-width: 240px; margin-top: 4px; background: white; border: 1px solid var(--borde); border-radius: var(--radio); box-shadow: 0 6px 18px rgba(0,0,0,0.15); padding: 8px 12px; z-index: 50;">
+                                    <label style="display: block; padding: 4px 0; font-weight: 600; font-size: 0.9rem; cursor: pointer;"><input type="checkbox" id="chkEstadoTodos" checked onchange="marcarTodosEstados(this.checked)"> Todos</label>
+                                    <label style="display: block; padding: 4px 0; font-size: 0.9rem; cursor: pointer;"><input type="checkbox" class="chk-estado" value="Pendiente" checked onchange="onCambioEstado()"> Pendiente</label>
+                                    <label style="display: block; padding: 4px 0; font-size: 0.9rem; cursor: pointer;"><input type="checkbox" class="chk-estado" value="Pagada" checked onchange="onCambioEstado()"> Pagada</label>
+                                    <label style="display: block; padding: 4px 0; font-size: 0.9rem; cursor: pointer;"><input type="checkbox" class="chk-estado" value="Solicitud de pago" checked onchange="onCambioEstado()"> Solicitud de pago</label>
+                                    <label style="display: block; padding: 4px 0; font-size: 0.9rem; cursor: pointer;"><input type="checkbox" class="chk-estado" value="Pedido recibido" checked onchange="onCambioEstado()"> Pedido recibido</label>
+                                    <label style="display: block; padding: 4px 0; font-size: 0.9rem; cursor: pointer;"><input type="checkbox" class="chk-estado" value="Pago recibido" checked onchange="onCambioEstado()"> Pago recibido</label>
+                                    <label style="display: block; padding: 4px 0; font-size: 0.9rem; cursor: pointer;"><input type="checkbox" class="chk-estado" value="Pedido entregado" checked onchange="onCambioEstado()"> Pedido entregado</label>
+                                    <label style="display: block; padding: 4px 0; font-size: 0.9rem; cursor: pointer;"><input type="checkbox" class="chk-estado" value="Orden completada" checked onchange="onCambioEstado()"> Orden completada</label>
+                                    <label style="display: block; padding: 4px 0; font-size: 0.9rem; cursor: pointer;"><input type="checkbox" class="chk-estado" value="Orden cancelada" checked onchange="onCambioEstado()"> Orden cancelada</label>
+                                    <label style="display: block; padding: 4px 0; font-size: 0.9rem; cursor: pointer;"><input type="checkbox" class="chk-estado" value="__vacio__" checked onchange="onCambioEstado()"> Sin estado</label>
+                                </div>
+                            </div>
                         </div>
                         <!-- BOTÓN LIMPIAR -->
                         <button type="button" class="btn btn-secondary btn-small" onclick="limpiarTodosFiltros()" style="height: fit-content; padding: 8px 12px; font-size: 0.85rem;">Limpiar</button>
@@ -1599,12 +1606,12 @@
                 <table style="margin-top: 24px;">
                     <thead>
                         <tr>
-                            <th>Factura</th>
-                            <th>Cliente</th>
-                            <th>Fecha</th>
-                            <th>Vendedor</th>
-                            <th>Total</th>
-                            <th>Estado</th>
+                            <th onclick="ordenarFacturas('factura')" style="cursor: pointer; user-select: none;">Factura<span class="flecha-orden" id="flecha-factura"></span></th>
+                            <th onclick="ordenarFacturas('cliente')" style="cursor: pointer; user-select: none;">Cliente<span class="flecha-orden" id="flecha-cliente"></span></th>
+                            <th onclick="ordenarFacturas('fecha')" style="cursor: pointer; user-select: none;">Fecha<span class="flecha-orden" id="flecha-fecha"></span></th>
+                            <th onclick="ordenarFacturas('vendedor')" style="cursor: pointer; user-select: none;">Vendedor<span class="flecha-orden" id="flecha-vendedor"></span></th>
+                            <th onclick="ordenarFacturas('total')" style="cursor: pointer; user-select: none;">Total<span class="flecha-orden" id="flecha-total"></span></th>
+                            <th onclick="ordenarFacturas('estado')" style="cursor: pointer; user-select: none;">Estado<span class="flecha-orden" id="flecha-estado"></span></th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -2343,6 +2350,7 @@
                     // COMBINAR: No reemplazar, sino agregar lo que no está
                     const facturasFromSupabase = data.map(f => ({
                         id: f.numero_factura || f.id,
+                        numero_factura: f.numero_factura || f.id,
                         numero_orden: f.numero_factura || f.id,
                         cliente: {
                             nombre: f.cliente_nombre || 'Cliente',
@@ -3627,7 +3635,7 @@
                     const [año, mes, día] = f.fecha.split('-');
                     fechaLegible = `${día}/${mes}/${año}`;
                 }
-                return `<tr data-cliente="${f.cliente?.nombre || ''}" data-fecha="${f.fecha}" data-estado="${f.estado || ''}">
+                return `<tr data-idx="${idx}" data-cliente="${f.cliente?.nombre || ''}" data-fecha="${f.fecha}" data-estado="${f.estado || ''}">
                 <td><strong>${f.id}</strong></td>
                 <td>${f.cliente?.nombre || 'Desconocido'}</td>
                 <td>${fechaLegible}</td>
@@ -3649,6 +3657,53 @@
 
             // Re-aplicar el filtro de mes después de renderizar la tabla
             aplicarFiltrosCombinados();
+
+            // Mantener el orden elegido por el usuario al volver a renderizar
+            if (ordenFacturas.col) aplicarOrdenFacturas();
+        }
+
+        // ===== ORDENAR HISTORIAL AL HACER CLIC EN EL TÍTULO =====
+        let ordenFacturas = { col: null, dir: 1 };
+
+        function ordenarFacturas(col) {
+            if (ordenFacturas.col === col) {
+                ordenFacturas.dir = ordenFacturas.dir === 1 ? -1 : 1;
+            } else {
+                ordenFacturas = { col: col, dir: 1 };
+            }
+            aplicarOrdenFacturas();
+        }
+
+        function aplicarOrdenFacturas() {
+            const tbody = document.getElementById('facturasTable');
+            if (!tbody || !ordenFacturas.col) return;
+
+            const claveDe = (f) => {
+                switch (ordenFacturas.col) {
+                    case 'factura':  return parseInt(String(f.id).replace(/\D/g, ''), 10) || 0;
+                    case 'cliente':  return (f.cliente?.nombre || '').toLowerCase();
+                    case 'fecha':    return normalizarFecha(f.fecha);
+                    case 'vendedor': return (f.vendedor || '').toLowerCase();
+                    case 'total':    return Number(f.total) || 0;
+                    case 'estado':   return (f.estado || '').toLowerCase();
+                }
+                return '';
+            };
+
+            const filas = [...tbody.querySelectorAll('tr[data-idx]')];
+            filas.sort((a, b) => {
+                const ka = claveDe(facturas[parseInt(a.dataset.idx, 10)]);
+                const kb = claveDe(facturas[parseInt(b.dataset.idx, 10)]);
+                let r;
+                if (typeof ka === 'number') r = ka - kb;
+                else r = String(ka).localeCompare(String(kb), 'es', { sensitivity: 'base' });
+                return r * ordenFacturas.dir;
+            });
+            filas.forEach(fila => tbody.appendChild(fila));
+
+            document.querySelectorAll('.flecha-orden').forEach(s => s.textContent = '');
+            const flecha = document.getElementById('flecha-' + ordenFacturas.col);
+            if (flecha) flecha.textContent = ordenFacturas.dir === 1 ? ' ▲' : ' ▼';
         }
 
         // Función auxiliar para convertir fecha a formato ISO (YYYY-MM-DD)
@@ -3697,7 +3752,6 @@
             const inputCliente = document.getElementById('filtroClienteInput');
             const inputDesde = document.getElementById('filtroFechaDesde');
             const inputHasta = document.getElementById('filtroFechaHasta');
-            const selectEstado = document.getElementById('filtroEstado');
             const selectorMes = document.getElementById('selectorMesFacturas');
             const tbody = document.getElementById('facturasTable');
             const resumenBox = document.getElementById('resumenClienteBox');
@@ -3707,7 +3761,8 @@
             // Usar directamente los strings de fecha sin conversión (evita problemas de zona horaria)
             const fechaDesdeStr = inputDesde?.value || '';  // Formato: YYYY-MM-DD
             const fechaHastaStr = inputHasta?.value || '';  // Formato: YYYY-MM-DD
-            const estadoSeleccionado = (selectEstado?.value || '').trim();
+            const estadosMarcados = [...document.querySelectorAll('.chk-estado:checked')].map(c => c.value);
+            const totalEstados = document.querySelectorAll('.chk-estado').length;
             const mesSeleccionado = selectorMes?.value || 'octubre';
 
             // Obtener rango de fechas del mes seleccionado
@@ -3750,7 +3805,7 @@
                 }
 
                 // Validar estado
-                let coincideEstado = !estadoSeleccionado || estadoRow === estadoSeleccionado;
+                let coincideEstado = estadosMarcados.length === totalEstados || estadosMarcados.includes(estadoRow || '__vacio__');
 
                 // Si cumple todos los filtros, mostrar
                 if (coincideCliente && coincideFecha && coincideEstado) {
@@ -3837,17 +3892,52 @@
             aplicarFiltrosCombinados();
         }
 
+        // ===== FILTRO DE ESTADO CON CASILLAS (estilo Excel) =====
+        function toggleFiltroEstadoPanel(event) {
+            event.stopPropagation();
+            const panel = document.getElementById('panelFiltroEstado');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        document.addEventListener('click', function(event) {
+            const panel = document.getElementById('panelFiltroEstado');
+            if (panel && !panel.contains(event.target) && event.target.id !== 'btnFiltroEstado') {
+                panel.style.display = 'none';
+            }
+        });
+
+        function actualizarTextoBotonEstado() {
+            const casillas = [...document.querySelectorAll('.chk-estado')];
+            const marcadas = casillas.filter(c => c.checked).length;
+            let texto = 'Todos';
+            if (marcadas === 0) texto = 'Ninguno';
+            else if (marcadas < casillas.length) texto = marcadas + ' de ' + casillas.length;
+            document.getElementById('btnFiltroEstado').textContent = 'Estado: ' + texto + ' ▾';
+            document.getElementById('chkEstadoTodos').checked = marcadas === casillas.length;
+        }
+
+        function onCambioEstado() {
+            actualizarTextoBotonEstado();
+            aplicarFiltrosCombinados();
+        }
+
+        function marcarTodosEstados(valor) {
+            document.querySelectorAll('.chk-estado').forEach(c => c.checked = valor);
+            actualizarTextoBotonEstado();
+            aplicarFiltrosCombinados();
+        }
+
         function limpiarTodosFiltros() {
             // Limpiar inputs
             const inputCliente = document.getElementById('filtroClienteInput');
             const inputDesde = document.getElementById('filtroFechaDesde');
             const inputHasta = document.getElementById('filtroFechaHasta');
-            const selectEstado = document.getElementById('filtroEstado');
 
             if (inputCliente) inputCliente.value = '';
             if (inputDesde) inputDesde.value = '';
             if (inputHasta) inputHasta.value = '';
-            if (selectEstado) selectEstado.value = '';
+            document.querySelectorAll('.chk-estado').forEach(c => c.checked = true);
+            actualizarTextoBotonEstado();
 
             // Aplicar los filtros (que ahora están vacíos, mostrará todo)
             aplicarFiltrosCombinados();
