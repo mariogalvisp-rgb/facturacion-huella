@@ -3468,8 +3468,11 @@
         // Función para obtener datos del producto
         function obtenerDatosProducto(nombreProducto) {
             for (const [producto, datos] of Object.entries(productosCompleto)) {
-                if (nombreProducto.toUpperCase().includes(producto.toUpperCase()) || 
-                    producto.toUpperCase().includes(nombreProducto.toUpperCase())) {
+                // Comparar sin espacios para que "454GM" y "454 GM" coincidan
+                const nombreSinEspacios = nombreProducto.toUpperCase().replace(/\s+/g, '');
+                const productoSinEspacios = producto.toUpperCase().replace(/\s+/g, '');
+                if (nombreSinEspacios.includes(productoSinEspacios) ||
+                    productoSinEspacios.includes(nombreSinEspacios)) {
                     return {
                         nombre: producto,
                         precio: datos.precio,
@@ -3535,7 +3538,7 @@
             const observacionesTexto = factura.observaciones ? `\n📝 *Observaciones:* ${factura.observaciones}` : '';
 
             const mensajes = {
-                'Pedido recibido': `Hola, *${nombreCliente}*. ¡Qué alegría que llegues a Huella de Origen! ☕️✨\nGracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n🏠 *Domicilio:* ${factura.cliente.direccion || 'Sin domicilio'}\n\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total: $${total}*${observacionesTexto}\n\nTe notificaremos cuando esté listo.`,
+                'Pedido recibido': `Hola, *${nombreCliente}*. ¡Qué alegría que llegues a Huella de Origen! ☕️\nGracias por elegir nuestro café especial. Hemos recibido tu pedido con éxito y ya estamos preparando todo para que lo disfrutes pronto.\n\n🧾 *Orden N.º:* ${numeroOrden}\n📅 *Fecha:* ${fecha}\n🏠 *Domicilio:* ${factura.cliente.direccion || 'Sin domicilio'}\n\n*PRODUCTOS:*\n${productoTexto}\n\n💰 *Total: $${total}*${observacionesTexto}\n\n💳Puedes realizar el pago con Bre-B 0090417769 Huella de Origen.\n\nTe notificaremos cuando esté listo.`,
                 
                 'Solicitud de pago': `💳 Puedes realizar el pago con **Bre-B** a la llave: **0090417769**\n\n🧾 *Orden:* ${numeroOrden}\n💰 *Total a pagar: $${total}*`,
                 
