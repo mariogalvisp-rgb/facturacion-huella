@@ -1362,7 +1362,7 @@
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Vendedor / Canal <span style="color: var(--error);">*</span></label>
-                                <select id="vendedor" required>
+                                <select id="vendedor" required onchange="mostrarCamposCanal(); calcularTotales()">
                                     <option value="">-- Seleccionar --</option>
                                     <option value="Felipe">Felipe</option>
                                     <option value="Mario">Mario</option>
@@ -1404,10 +1404,30 @@
 
                     <div style="padding: 24px; background: var(--crema); border-radius: var(--radio); border: 1px solid var(--dorado); margin-bottom: 24px;">
                         <h4 style="margin: 0 0 16px 0;">Paso 4: Ajustes Finales</h4>
+                        <div id="camposCanal" style="display: none; margin-bottom: 16px;">
+                            <div class="form-grid">
+                                <div class="form-group" id="grupoPrecioCanal" style="display: none;">
+                                    <label>Precio ($)</label>
+                                    <input type="number" id="precioCanal" value="0" min="0" oninput="calcularTotales()">
+                                </div>
+                                <div class="form-group" id="grupoComisionCanal" style="display: none;">
+                                    <label>Comisión ($)</label>
+                                    <input type="number" id="comisionCanal" value="0" min="0" oninput="calcularTotales()">
+                                </div>
+                                <div class="form-group" id="grupoIvaCanal" style="display: none;">
+                                    <label>IVA ($)</label>
+                                    <input type="number" id="ivaCanal" value="0" min="0" oninput="calcularTotales()">
+                                </div>
+                                <div class="form-group" id="grupoRetefuenteCanal" style="display: none;">
+                                    <label>Retefuente ($)</label>
+                                    <input type="number" id="retefuenteCanal" value="0" min="0" oninput="calcularTotales()">
+                                </div>
+                            </div>
+                        </div>
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Descuento (%)</label>
-                                <input type="number" id="descuentoPorcentaje" value="0" min="0" max="100" onchange="calcularTotales()">
+                                <input type="number" id="descuentoPorcentaje" value="0" min="0" max="100" step="0.01" style="width: 100%; min-width: 90px;" onchange="calcularTotales()">
                             </div>
                             <div class="form-group">
                                 <label>Envío ($)</label>
@@ -3330,16 +3350,34 @@
             calcularTotales();
         }
 
+        // Total según canal: MercadoLibre = Precio - Comisión - IVA - Envío
+        // Página web = Precio - Comisión - IVA - Retefuente + Envío
+        function calcularTotalFinal(subtotal, descMonto, env) {
+            const canal = document.getElementById('vendedor')?.value || '';
+            if (canal !== 'MercadoLibre' && canal !== 'Página web') {
+                return subtotal - descMonto + env;
+            }
+            const leer = id => parseFloat(document.getElementById(id)?.value) || 0;
+            const precio = leer('precioCanal') || subtotal;
+            const comision = leer('comisionCanal');
+            const iva = leer('ivaCanal');
+            if (canal === 'MercadoLibre') {
+                return precio - comision - iva - env;
+            }
+            const retefuente = leer('retefuenteCanal');
+            return precio - comision - iva - retefuente + env;
+        }
+
         function calcularTotales() {
             const subtotal = itemsTemp.reduce((s, i) => s + (i.precio * i.cantidad), 0);
             
             const descEl = document.getElementById('descuentoPorcentaje');
             const envEl = document.getElementById('envio');
-            const desc = descEl ? (parseInt(descEl.value) || 0) : 0;
+            const desc = descEl ? (parseFloat(descEl.value) || 0) : 0;
             const env = envEl ? (parseInt(envEl.value) || 0) : 0;
             
             const descMonto = subtotal * (desc / 100);
-            const total = subtotal - descMonto + env;
+            const total = calcularTotalFinal(subtotal, descMonto, env);
 
             const subtotalEl = document.getElementById('subtotalDisplay');
             const totalEl = document.getElementById('totalDisplay');
@@ -3370,11 +3408,11 @@
             
             const descEl = document.getElementById('descuentoPorcentaje');
             const envEl = document.getElementById('envio');
-            const desc = descEl ? (parseInt(descEl.value) || 0) : 0;
+            const desc = descEl ? (parseFloat(descEl.value) || 0) : 0;
             const env = envEl ? (parseInt(envEl.value) || 0) : 0;
             
             const descMonto = subtotal * (desc / 100);
-            const total = subtotal - descMonto + env;
+            const total = calcularTotalFinal(subtotal, descMonto, env);
 
             // ✅ CORRECCIÓN 2: Numeración correcta — basarse en el número más alto, no en length
             const facturasExistentes = facturas.map(f => {
@@ -3893,6 +3931,20 @@
 
         function filtrarPorEstado() {
             aplicarFiltrosCombinados();
+        }
+
+        // ===== CAMPOS SEGÚN CANAL (MercadoLibre / Página web) =====
+        function mostrarCamposCanal() {
+            const canal = document.getElementById('vendedor')?.value || '';
+            const esML = canal === 'MercadoLibre';
+            const esWeb = canal === 'Página web';
+            const conComision = esML || esWeb;
+            document.getElementById('camposCanal').style.display = conComision ? 'block' : 'none';
+            document.getElementById('grupoPrecioCanal').style.display = conComision ? 'block' : 'none';
+            document.getElementById('grupoComisionCanal').style.display = conComision ? 'block' : 'none';
+            document.getElementById('grupoIvaCanal').style.display = conComision ? 'block' : 'none';
+            document.getElementById('grupoRetefuenteCanal').style.display = esWeb ? 'block' : 'none';
+            calcularTotales();
         }
 
         // ===== FILTRO DE ESTADO CON CASILLAS (estilo Excel) =====
@@ -4910,15 +4962,20 @@
                 }
                 
                 if (facturasParaReporte.length === 0) {
-                    const totalVentasEl = document.getElementById('totalVentas');
-                    if (totalVentasEl && totalVentasEl.parentElement) {
-                        totalVentasEl.parentElement.innerHTML = `
-                            <div style="text-align: center; padding: 40px; color: #999;">
-                                <p style="font-size: 16px;">📊 No hay facturas para mostrar reportes</p>
-                                <p style="font-size: 12px;">Crea una factura para ver los análisis</p>
-                            </div>
-                        `;
-                    }
+                    // Sin facturas: poner todo en cero sin borrar las tarjetas (así se vuelven a llenar al cambiar de período)
+                    ['totalVentas', 'totalFacturas', 'totalPagadas', 'totalPendientes'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.textContent = '0';
+                    });
+                    const avisoVacio = `
+                        <div style="text-align: center; padding: 40px; color: #999;">
+                            <p style="font-size: 16px;">📊 No hay facturas para mostrar reportes</p>
+                            <p style="font-size: 12px;">Crea una factura para ver los análisis</p>
+                        </div>`;
+                    const ventasEl = document.getElementById('ventasPorVendedor');
+                    if (ventasEl) ventasEl.innerHTML = avisoVacio;
+                    const bolsasEl = document.getElementById('totalBolsasVendidas');
+                    if (bolsasEl) bolsasEl.innerHTML = avisoVacio;
                     return;
                 }
                 
@@ -5459,6 +5516,12 @@
                         fin = dateToISO(hoy);
                         mesSeleccionado = null;
                         break;
+                    case 'noviembre':
+                        // Noviembre 1 a Noviembre 30, año actual
+                        inicio = dateToISO(new Date(hoy.getFullYear(), 10, 1));
+                        fin = dateToISO(new Date(hoy.getFullYear(), 10, 30));
+                        mesSeleccionado = null;
+                        break;
                     case 'trimestre':
                         // Últimos 3 meses desde hoy
                         const hace3meses = new Date(hoy);
@@ -5997,13 +6060,13 @@
 
             // Agregar noviembre si estamos en noviembre o después
             if (mesActual >= 11 && !mesesExistentes.includes('noviembre')) {
-                const selectores = document.querySelectorAll('[id$="Mes"]');
+                const selectores = document.querySelectorAll('[id$="Mes"], #selectorMesSeguimiento, #selectorMesFacturas, #selectorPeriodo');
                 selectores.forEach(select => {
                     const option = document.createElement('option');
                     option.value = 'noviembre';
                     option.textContent = 'Noviembre';
                     // Insertar antes de "Todos"
-                    const todoOption = Array.from(select.options).find(o => o.value === 'todos');
+                    const todoOption = Array.from(select.options).find(o => o.value === 'todos' || o.value === 'trimestre');
                     if (todoOption) {
                         select.insertBefore(option, todoOption);
                     } else {
@@ -6015,13 +6078,13 @@
 
             // Agregar diciembre si estamos en diciembre
             if (mesActual === 12 && !mesesExistentes.includes('diciembre')) {
-                const selectores = document.querySelectorAll('[id$="Mes"]');
+                const selectores = document.querySelectorAll('[id$="Mes"], #selectorMesSeguimiento, #selectorMesFacturas, #selectorPeriodo');
                 selectores.forEach(select => {
                     const option = document.createElement('option');
                     option.value = 'diciembre';
                     option.textContent = 'Diciembre';
                     // Insertar antes de "Todos"
-                    const todoOption = Array.from(select.options).find(o => o.value === 'todos');
+                    const todoOption = Array.from(select.options).find(o => o.value === 'todos' || o.value === 'trimestre');
                     if (todoOption) {
                         select.insertBefore(option, todoOption);
                     } else {
