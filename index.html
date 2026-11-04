@@ -2125,23 +2125,13 @@
                 const facturasOriginal = JSON.parse(localStorage.getItem('facturas_huella') || '[]');
                 console.log(`🧹 Iniciando limpieza: ${facturasOriginal.length} facturas en storage`);
 
-                // PASO 1: Eliminar duplicados de Antonio (mantener solo HO-00043)
-                let facturasLimpias = facturasOriginal.filter(f => {
-                    if (f.cliente?.nombre === 'Antonio Ortiz') {
-                        const mantener = f.numero_factura === 'HO-00043';
-                        if (!mantener) console.log(`  ❌ Eliminado Antonio: ${f.numero_factura}`);
-                        return mantener;
-                    }
-                    return true;
-                });
+                // PASO 1: Antonio Ortiz conserva todas sus facturas (ya no se borran por nombre)
+                let facturasLimpias = facturasOriginal.filter(f => true);
 
-                // PASO 2: Limpiar Maria Fernanda (mantener solo sept-oct)
+                // PASO 2: María Fernanda ya no se limpia por mes (sus facturas de cualquier mes se conservan)
                 facturasLimpias = facturasLimpias.filter(f => {
                     if (f.cliente?.nombre === 'MARIA FERNANDA SARDI' || f.cliente?.nombre === 'Maria Fernanda Sardi') {
-                        const fecha = f.fecha || '';
-                        const esSeptOct = fecha.includes('/09/') || fecha.includes('/10/') || fecha.includes('-09-') || fecha.includes('-10-');
-                        if (!esSeptOct) console.log(`  ❌ Eliminado M.F.: ${f.numero_factura} (${f.fecha})`);
-                        return esSeptOct;
+                        return true;
                     }
                     return true;
                 });
