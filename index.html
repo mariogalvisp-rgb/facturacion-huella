@@ -1490,6 +1490,7 @@
                                 <option value="Pedido recibido">Pedido recibido</option>
                                 <option value="Solicitud de pago">Solicitud de pago</option>
                                 <option value="Pago recibido">Pago recibido</option>
+                                <option value="Pedido enviado">Pedido enviado</option>
                                 <option value="Pedido entregado">Pedido entregado</option>
                                 <option value="Orden completada">Orden completada</option>
                             </select>
@@ -1554,6 +1555,7 @@
                                     <label style="display: block; padding: 4px 0; font-size: 0.9rem; cursor: pointer;"><input type="checkbox" class="chk-estado" value="Solicitud de pago" checked onchange="onCambioEstado()"> Solicitud de pago</label>
                                     <label style="display: block; padding: 4px 0; font-size: 0.9rem; cursor: pointer;"><input type="checkbox" class="chk-estado" value="Pedido recibido" checked onchange="onCambioEstado()"> Pedido recibido</label>
                                     <label style="display: block; padding: 4px 0; font-size: 0.9rem; cursor: pointer;"><input type="checkbox" class="chk-estado" value="Pago recibido" checked onchange="onCambioEstado()"> Pago recibido</label>
+                                    <label style="display: block; padding: 4px 0; font-size: 0.9rem; cursor: pointer;"><input type="checkbox" class="chk-estado" value="Pedido enviado" checked onchange="onCambioEstado()"> Pedido enviado</label>
                                     <label style="display: block; padding: 4px 0; font-size: 0.9rem; cursor: pointer;"><input type="checkbox" class="chk-estado" value="Pedido entregado" checked onchange="onCambioEstado()"> Pedido entregado</label>
                                     <label style="display: block; padding: 4px 0; font-size: 0.9rem; cursor: pointer;"><input type="checkbox" class="chk-estado" value="Orden completada" checked onchange="onCambioEstado()"> Orden completada</label>
                                     <label style="display: block; padding: 4px 0; font-size: 0.9rem; cursor: pointer;"><input type="checkbox" class="chk-estado" value="Orden cancelada" checked onchange="onCambioEstado()"> Orden cancelada</label>
@@ -2113,7 +2115,10 @@
         let mesSeleccionado = null; // Mes seleccionado en formato "2026-10"
 
         // ===== FILTROS DE SEGUIMIENTO =====
-        let mesSeleccionadoEnSeguimiento = 'octubre'; // Mes seleccionado en Seguimiento (default: octubre)
+        function mesActualClave() {
+            return ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][new Date().getMonth()];
+        }
+        let mesSeleccionadoEnSeguimiento = mesActualClave(); // Mes seleccionado en Seguimiento (default: mes actual)
         let estadoSeleccionadoEnSeguimiento = ''; // Estado seleccionado (vacío = mostrar todos)
         let fechaDesdeEnSeguimiento = null; // Fecha inicio para filtrado por rango
         let fechaHastaEnSeguimiento = null; // Fecha fin para filtrado por rango
@@ -2210,7 +2215,10 @@
             // Inicializar período de reportes
             setTimeout(() => {
                 if (document.getElementById('selectorPeriodo')) {
-                    document.getElementById('selectorPeriodo').value = 'octubre';
+                    const mesesClaveInit = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+                    const claveMesInit = mesesClaveInit[new Date().getMonth()];
+                    const selPer = document.getElementById('selectorPeriodo');
+                    if (Array.from(selPer.options).some(o => o.value === claveMesInit)) selPer.value = claveMesInit;
                     cambiarPeriodo();
                 }
             }, 100);
@@ -3347,15 +3355,12 @@
             if (canal !== 'MercadoLibre' && canal !== 'Página web') {
                 return subtotal - descMonto + env;
             }
-            const leer = id => parseFloat(document.getElementById(id)?.value) || 0;
-            const precio = leer('precioCanal') || subtotal;
-            const comision = leer('comisionCanal');
-            const iva = leer('ivaCanal');
+            // Se registra solo el valor bruto de la venta; comisión, IVA, retefuente y envío no se descuentan del total
             if (canal === 'MercadoLibre') {
-                return precio - comision - iva - env;
+                const precioML = parseFloat(document.getElementById('precioCanal')?.value) || 0;
+                return precioML || subtotal;
             }
-            const retefuente = leer('retefuenteCanal');
-            return precio - comision - iva - retefuente + env;
+            return subtotal;
         }
 
         function calcularTotales() {
@@ -3572,6 +3577,8 @@
                 
                 'Pago recibido': `💳 *¡Tu pago ha sido recibido con éxito!*\n\n🧾 *Orden:* ${numeroOrden}\n💰 *Total pagado: $${total}*\n✅ Tu pedido está siendo preparado.`,
                 
+                'Pedido enviado': `📦 Hola, *${nombreCliente}*. Tu pedido *${numeroOrden}* ya fue enviado y va en camino.\n💰 *Total: $${total}*\n\n¡Gracias por elegir Huella de Origen! ☕`,
+
                 'Pedido entregado': `☕ *¡Tu pedido ha llegado!*\n\n☕ *Orden N.º:* ${numeroOrden}\n☕ *Fecha:* ${fecha}\n\n¡Gracias por tu compra! Disfruta nuestro café. ☕`,
                 
                 'Orden completada': `🎉 *Tu orden ha sido completada.*\n\n🧾 *Orden N.º:* ${numeroOrden}\n💰 *Total: $${total}*\n\nGracias por tu compra, te esperamos pronto en Huella de Origen para que pruebes nuevas experiencias. ☕️✨`,
@@ -3794,7 +3801,7 @@
             const fechaHastaStr = inputHasta?.value || '';  // Formato: YYYY-MM-DD
             const estadosMarcados = [...document.querySelectorAll('.chk-estado:checked')].map(c => c.value);
             const totalEstados = document.querySelectorAll('.chk-estado').length;
-            const mesSeleccionado = selectorMes?.value || 'octubre';
+            const mesSeleccionado = selectorMes?.value || mesActualClave();
 
             // Obtener rango de fechas del mes seleccionado
             const { inicio: mesInicio, fin: mesFin } = obtenerRangoMesPorNombre(mesSeleccionado);
@@ -4113,6 +4120,7 @@
                                 <option value="Pedido recibido" ${factura.estado === 'Pedido recibido' ? 'selected' : ''}>Pedido recibido</option>
                                 <option value="Solicitud de pago" ${factura.estado === 'Solicitud de pago' ? 'selected' : ''}>Solicitud de pago</option>
                                 <option value="Pago recibido" ${factura.estado === 'Pago recibido' ? 'selected' : ''}>Pago recibido</option>
+                                <option value="Pedido enviado" ${factura.estado === 'Pedido enviado' ? 'selected' : ''}>Pedido enviado</option>
                                 <option value="Pedido entregado" ${factura.estado === 'Pedido entregado' ? 'selected' : ''}>Pedido entregado</option>
                                 <option value="Orden completada" ${factura.estado === 'Orden completada' ? 'selected' : ''}>Orden completada</option>
                             </select>
@@ -4326,7 +4334,7 @@
 
                 // Mantener el mes seleccionado en HISTORIAL antes de renderizar
                 const selectorMesHistorial = document.getElementById('selectorMesFacturas');
-                const mesActualHistorial = selectorMesHistorial ? selectorMesHistorial.value : 'octubre';
+                const mesActualHistorial = selectorMesHistorial ? selectorMesHistorial.value : mesActualClave();
 
                 renderFacturas();
 
@@ -4682,7 +4690,7 @@
         }
 
         function mostrarSelectorEstados() {
-            const estados = ['Pedido recibido', 'Solicitud de pago', 'Pago recibido', 'Pedido entregado', 'Orden completada'];
+            const estados = ['Pedido recibido', 'Solicitud de pago', 'Pago recibido', 'Pedido enviado', 'Pedido entregado', 'Orden completada'];
             const container = document.getElementById('whatsappPreviewContainer');
             
             if (!container) return;
@@ -4785,7 +4793,7 @@
             container.innerHTML = facturasActivas.map(item => {
                 const f = item.factura;
                 const idx = item.idx;
-                const estados = ['Pedido recibido', 'Solicitud de pago', 'Pago recibido', 'Pedido entregado', 'Orden completada'];
+                const estados = ['Pedido recibido', 'Solicitud de pago', 'Pago recibido', 'Pedido enviado', 'Pedido entregado', 'Orden completada'];
                 const estadoActual = f.estado || 'Pedido recibido';
 
                 return `
@@ -5593,7 +5601,7 @@
 
         function limpiarFiltrosSeguimiento() {
             // Reset de todos los filtros a los valores por defecto
-            mesSeleccionadoEnSeguimiento = 'octubre';
+            mesSeleccionadoEnSeguimiento = mesActualClave();
             estadoSeleccionadoEnSeguimiento = '';
             fechaDesdeEnSeguimiento = null;
             fechaHastaEnSeguimiento = null;
@@ -5606,7 +5614,9 @@
             const inputHasta = document.getElementById('filtroFechaHastaSegui');
             const inputCliente = document.getElementById('filtroClienteSeguimiento');
 
-            if (selectorMes) selectorMes.value = 'octubre';
+            const mesesClaveLimpiar = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+            const claveMesLimpiar = mesesClaveLimpiar[new Date().getMonth()];
+            if (selectorMes && Array.from(selectorMes.options).some(o => o.value === claveMesLimpiar)) selectorMes.value = claveMesLimpiar;
             if (selectorEstado) selectorEstado.value = '';
             if (inputDesde) inputDesde.value = '';
             if (inputHasta) inputHasta.value = '';
@@ -5673,7 +5683,7 @@
                     // Asegurar que el selector esté en octubre al abrir seguimiento
                     const selectorMes = document.getElementById('selectorMesSeguimiento');
                     if (selectorMes) {
-                        selectorMes.value = mesSeleccionadoEnSeguimiento || 'octubre';
+                        selectorMes.value = mesSeleccionadoEnSeguimiento || mesActualClave();
                     }
                     renderSeguimiento();
                 }
@@ -6095,11 +6105,18 @@
                 const año = hoy.getFullYear();
                 const mes = String(hoy.getMonth() + 1).padStart(2, '0');
                 const día = String(hoy.getDate()).padStart(2, '0');
+                // Mes inicial = mes actual (Seguimiento, Historial y Reportes)
+                const mesesClave = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+                const claveMesActual = mesesClave[hoy.getMonth()];
                 window.periodoSeleccionado = {
-                    tipo: 'octubre',
-                    inicio: '2026-10-01',
+                    tipo: claveMesActual,
+                    inicio: `${año}-${mes}-01`,
                     fin: `${año}-${mes}-${día}`
                 };
+                ['selectorMesSeguimiento', 'selectorMesFacturas', 'selectorPeriodo'].forEach(id => {
+                    const sel = document.getElementById(id);
+                    if (sel && Array.from(sel.options).some(o => o.value === claveMesActual)) sel.value = claveMesActual;
+                });
             }
 
             // Esperar a que Supabase esté listo
